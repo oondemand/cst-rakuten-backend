@@ -4,16 +4,17 @@ const { ticketValidation } = require("../validations/ticketValidation");
 
 // Cria um novo ticket
 exports.createTicket = async (req, res) => {
-  const { error } = ticketValidation(req.body);
-  if (error) {
-    return res.status(400).json({
-      message: "Erro de validação",
-      detalhes: error.details.map((detail) => ({
-        mensagem: detail.message,
-        caminho: detail.path.join("."),
-      })),
-    });
-  }
+
+  // const { error } = ticketValidation(req.body);
+  // if (error) {
+  //   return res.status(400).json({
+  //     message: "Erro de validação",
+  //     detalhes: error.details.map((detail) => ({
+  //       mensagem: detail.message,
+  //       caminho: detail.path.join("."),
+  //     })),
+  //   });
+  // }
 
   const { titulo, observacao, etapa, status, nfse } = req.body;
 
@@ -106,16 +107,16 @@ exports.getTicketById = async (req, res) => {
 
 // Atualiza um ticket existente
 exports.updateTicket = async (req, res) => {
-  const { error } = ticketValidation(req.body);
-  if (error) {
-    return res.status(400).json({
-      message: "Erro de validação",
-      detalhes: error.details.map((detail) => ({
-        mensagem: detail.message,
-        caminho: detail.path.join("."),
-      })),
-    });
-  }
+  // const { error } = ticketValidation(req.body);
+  // if (error) {
+  //   return res.status(400).json({
+  //     message: "Erro de validação",
+  //     detalhes: error.details.map((detail) => ({
+  //       mensagem: detail.message,
+  //       caminho: detail.path.join("."),
+  //     })),
+  //   });
+  // }
 
   const { titulo, observacao, etapa, status, nfse } = req.body;
 

@@ -6,7 +6,6 @@ const morgan = require("morgan");
 // Carregar variáveis de ambiente
 dotenv.config();
 
-const connectDB = require("./config/db");
 const authMiddleware = require("./middlewares/authMiddleware"); // Supondo que já existe
 const rastreabilidadeMiddleware = require("./middlewares/rastreabilidadeMiddleware");
 
@@ -22,9 +21,6 @@ app.use(cors());
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
-
-// Conectar ao MongoDB
-connectDB();
 
 app.use("/auth", require("./routes/authRoutes"));
 
