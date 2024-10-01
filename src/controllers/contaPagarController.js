@@ -1,5 +1,5 @@
 const Ticket = require("../models/Ticket");
-const Empresa = require("../models/Empresa");
+const Empresa = require("../models/BaseOmie");
 const { consultar } = require("../services/omie/contaPagarService");
 
 const obterContaPagarOmie = async (req, res) => {

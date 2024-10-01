@@ -51,7 +51,7 @@ const InfoNfseSchema = new Schema({
     type: Number,
     required: true,
   },
-  dataEmissao: { 
+  dataEmissao: {
     type: Date,
     required: true,
   },
@@ -68,20 +68,8 @@ const InfoNfseSchema = new Schema({
 
 // Schema principal para Nfse
 const NfseSchema = new Schema({
-  origem: {
-    type: String,
-    enum: ["xml", "manual"],
-  },
-  tipoXml: {
-    type: String,
-    enum: ["abrasf-resumido", "outro", ""],
-  },
-  tipoXmlOutro: {
-    type: String,
-    maxlength: 100,
-  },
-  xmlOriginal: {
-    type: String, // Base64 encoded file
+  arquivoOriginal: {
+    type: String, // arquivo XML ou pdf original em base64
   },
   infoNfse: InfoNfseSchema, // Subdocumento para as informações da NFSe
 });

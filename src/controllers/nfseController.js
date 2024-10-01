@@ -1,21 +1,8 @@
 const Nfse = require("../models/Nfse");
 const Ticket = require("../models/Ticket");
-const { validateNfse } = require("../validations/nfseValidation");
-const processarXmlNfse = require("../utils/processarXmlNfse");
 
 // Criar uma nova NFSe
 exports.createNfse = async (req, res) => {
-  //   const { error } = validateNfse(req.body);
-  // if (error) {
-  //   return res.status(400).json({
-  //     message: "Erro de validação",
-  //     detalhes: error.details.map((detail) => ({
-  //       mensagem: detail.message,
-  //       caminho: detail.path.join("."),
-  //     })),
-  //   });
-  // }
-
   try {
     const nfse = new Nfse(req.body);
     await nfse.save();
@@ -62,16 +49,6 @@ exports.getNfseById = async (req, res) => {
 
 // Atualizar uma NFSe pelo ID
 exports.updateNfse = async (req, res) => {
-  const { error } = validateNfse(req.body);
-  if (error) {
-    return res.status(400).json({
-      message: "Erro de validação",
-      detalhes: error.details.map((detail) => ({
-        mensagem: detail.message,
-        caminho: detail.path.join("."),
-      })),
-    });
-  }
 
   try {
     const nfse = await Nfse.findByIdAndUpdate(req.params.id, req.body, { new: true });

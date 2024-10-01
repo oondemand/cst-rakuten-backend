@@ -1,6 +1,6 @@
 const Ticket = require("../models/Ticket");
 const Etapa = require("../models/Etapa");
-const Empresa = require("../models/Empresa");
+const Empresa = require("../models/BaseOmie");
 const contaPagarService = require("../services/omie/contaPagarService");
 const clienteService = require("../services/omie/clienteService");
 

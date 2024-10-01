@@ -1,15 +1,21 @@
 const express = require("express");
 const router = express.Router();
-const { listarTodosLogs, listarLogsPorUsuario, filtrarLogs } = require("../controllers/logController");
-const authMiddleware = require("../middlewares/authMiddleware");
+const {
+  listarTodosLogs,
+  listarLogsPorUsuario,
+  filtrarLogs,
+  excluirTodosLogs
+} = require("../controllers/logController");
 
 // Rota para listar todos os logs (protegida por autenticação)
-router.get("/", authMiddleware, listarTodosLogs);
+router.get("/", listarTodosLogs);
 
 // Rota para listar logs por usuário (protegida por autenticação)
-router.get("/usuario/:usuarioId", authMiddleware, listarLogsPorUsuario);
+router.get("/usuario/:usuarioId", listarLogsPorUsuario);
 
 // Rota para filtrar logs por endpoint ou método HTTP (protegida por autenticação)
-router.get("/filtrar", authMiddleware, filtrarLogs);
+router.get("/filtrar", filtrarLogs);
+
+router.post("/excluir-todos, excluirTodosLogs");
 
 module.exports = router;

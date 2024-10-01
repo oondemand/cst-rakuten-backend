@@ -1,0 +1,690 @@
+openapi: 3.1.0
+info:
+  title: Central de Serviços API
+  description: API para gestão de serviços integrada ao Omie
+  version: 1.0.5
+  contact:
+    name: Fabio
+    email: fabio@oondemand.com.br
+
+servers:
+  - url: https://api.oondemand.com.br/central-servicos
+    description: Servidor de Produção
+
+components:
+  schemas:
+    Pessoa:
+      type: object
+      properties:
+        documento:
+          type: string
+          description: Documento da pessoa (CPF ou CNPJ)
+          pattern: '^\d{11}$|^\d{14}$'
+        tipo:
+          type: string
+          enum: [pf, pj]
+        nome:
+          type: string
+          maxLength: 100
+    Valores:
+      type: object
+      properties:
+        aliquota:
+          type: number
+        valorIss:
+          type: number
+        valorServicos:
+          type: number
+    Servico:
+      type: object
+      properties:
+        valores:
+          $ref: '#/components/schemas/Valores'
+        issRetido:
+          type: number
+        discriminacao:
+          type: string
+          maxLength: 500
+    DeclaracaoPrestacaoServico:
+      type: object
+      properties:
+        competencia:
+          type: string
+          description: Competência no formato MM/YYYY
+        servico:
+          $ref: '#/components/schemas/Servico'
+        optanteSimplesNacional:
+          type: number
+    InfoNfse:
+      type: object
+      properties:
+        numero:
+          type: number
+        dataEmissao:
+          type: string
+          format: date
+        prestador:
+          $ref: '#/components/schemas/Pessoa'
+        tomador:
+          $ref: '#/components/schemas/Pessoa'
+        declaracaoPrestacaoServico:
+          $ref: '#/components/schemas/DeclaracaoPrestacaoServico'
+    Nfse:
+      type: object
+      properties:
+        arquivoOriginal:
+          type: string
+          description: Arquivo XML ou PDF original em base64
+        infoNfse:
+          $ref: '#/components/schemas/InfoNfse'
+    Ticket:
+      type: object
+      properties:
+        titulo:
+          type: string
+        observacao:
+          type: string
+        etapa:
+          type: string
+        status:
+          type: string
+        nfse:
+          type: string
+          description: ID da NFSe associada
+    Etapa:
+      type: object
+      properties:
+        nome:
+          type: string
+        codigo:
+          type: string
+        posicao:
+          type: number
+        status:
+          type: string
+          enum: [ativo, inativo, arquivado]
+    Empresa:
+      type: object
+      properties:
+        nome:
+          type: string
+        cnpj:
+          type: string
+        appKeyOmie:
+          type: string
+        appSecretOmie:
+          type: string
+        status:
+          type: string
+          enum: [ativo, inativo, arquivado]
+    Usuario:
+      type: object
+      properties:
+        nome:
+          type: string
+        email:
+          type: string
+        senha:
+          type: string
+        status:
+          type: string
+          enum: [ativo, inativo]
+        permissoes:
+          type: array
+          items:
+            type: string
+    Log:
+      type: object
+      properties:
+        usuario:
+          type: string
+          description: ID do usuário
+        endpoint:
+          type: string
+        metodo:
+          type: string
+        ip:
+          type: string
+        dadosRequisicao:
+          type: object
+        dadosResposta:
+          type: object
+        statusResposta:
+          type: number
+    ContaPagar:
+      type: object
+      properties:
+        numeroDocumento:
+          type: string
+        numeroDocumentoFiscal:
+          type: string
+        codigoFornecedor:
+          type: string
+        dataEmissao:
+          type: string
+          format: date
+        dataVencimento:
+          type: string
+          format: date
+        observacoes:
+          type: string
+        valor:
+          type: number
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+  /auth/login:
+    post:
+      summary: Login
+      operationId: loginUser
+      requestBody:
+        description: Credenciais de login
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                senha:
+                  type: string
+      responses:
+        '200':
+          description: Token JWT
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '401':
+          description: Credenciais inválidas
+
+  /auth/validar-token:
+    get:
+      summary: Validar token JWT
+      operationId: validateToken
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Token válido
+
+  /usuarios:
+    get:
+      summary: Listar todos os usuários
+      operationId: listUsers
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de usuários
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Usuario'
+    post:
+      summary: Registrar novo usuário
+      operationId: createUser
+      requestBody:
+        description: Dados do novo usuário
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Usuario'
+      responses:
+        '201':
+          description: Usuário registrado com sucesso
+
+  /usuarios/{id}:
+    get:
+      summary: Obter usuário por ID
+      operationId: getUserById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID do usuário a ser carregado
+      
+      responses:
+        '200':
+          description: Usuário encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '404':
+          description: Usuário não encontrado
+
+    put:
+      summary: Atualizar dados do usuário
+      operationId: updateUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID do usuário
+      security:
+        - BearerAuth: []
+      requestBody:
+        description: Dados atualizados do usuário
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Usuario'
+      responses:
+        '200':
+          description: Usuário atualizado com sucesso
+        '404':
+          description: Usuário não encontrado
+
+    delete:
+      summary: Excluir usuário
+      operationId: deleteUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Usuário excluído com sucesso
+        '404':
+          description: Usuário não encontrado
+
+  /nfse:
+    get:
+      summary: Listar NFSe
+      operationId: listNfse
+      responses:
+        '200':
+          description: Lista de NFSe
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Nfse'
+    post:
+      summary: Criar NFSe
+      operationId: createNfse
+      requestBody:
+        description: Dados da NFSe
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Nfse'
+      responses:
+        '201':
+          description: NFSe criada com sucesso
+
+  /nfse/{id}:
+    get:
+      summary: Obter NFSe por ID
+      operationId: getNfseById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: NFSe encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Nfse'
+        '404':
+          description: NFSe não encontrada
+
+    put:
+      summary: Atualizar NFSe
+      operationId: updateNfse
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Dados atualizados da NFSe
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Nfse'
+      responses:
+        '200':
+          description: NFSe atualizada com sucesso
+        '404':
+          description: NFSe não encontrada
+
+    delete:
+      summary: Excluir NFSe
+      operationId: deleteNfse
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: NFSe excluída com sucesso
+        '404':
+          description: NFSe não encontrada
+
+  /tickets:
+    get:
+      summary: Listar todos os tickets
+      operationId: listTickets
+      responses:
+        '200':
+          description: Lista de tickets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ticket'
+    post:
+      summary: Criar novo ticket
+      operationId: createTicket
+      requestBody:
+        description: Dados do ticket
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ticket'
+      responses:
+        '201':
+          description: Ticket criado com sucesso
+
+  /tickets/{id}:
+    get:
+      summary: Obter ticket por ID
+      operationId: getTicketById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ticket encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '404':
+          description: Ticket não encontrado
+
+    put:
+      summary: Atualizar ticket
+      operationId: updateTicket
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Dados atualizados do ticket
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ticket'
+      responses:
+        '200':
+          description: Ticket atualizado com sucesso
+        '404':
+          description: Ticket não encontrado
+
+    delete:
+      summary: Excluir ticket
+      operationId: deleteTicket
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Ticket excluído com sucesso
+        '404':
+          description: Ticket não encontrado
+
+  /etapas:
+    get:
+      summary: Listar etapas
+      operationId: listEtapas
+      responses:
+        '200':
+          description: Lista de etapas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Etapa'
+    post:
+      summary: Criar nova etapa
+      operationId: createEtapa
+      requestBody:
+        description: Dados da nova etapa
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Etapa'
+      responses:
+        '201':
+          description: Etapa criada com sucesso
+
+  /etapas/{id}:
+    get:
+      summary: Obter etapa por ID
+      operationId: getEtapaById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Etapa encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Etapa'
+        '404':
+          description: Etapa não encontrada
+
+    put:
+      summary: Atualizar etapa
+      operationId: updateEtapa
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID da etapa a ser alterada
+      requestBody:
+        description: Dados atualizados da etapa
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Etapa'
+      responses:
+        '200':
+          description: Etapa atualizada com sucesso
+        '404':
+          description: Etapa não encontrada
+
+    delete:
+      summary: Excluir etapa
+      operationId: deleteEtapa
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID da etapa a ser excluída
+      responses:
+        '204':
+          description: Etapa excluída com sucesso
+        '404':
+          description: Etapa não encontrada
+
+  /contas-pagar/{codigoLancamento}:
+    get:
+      summary: Obter conta a pagar por código de lançamento
+      operationId: getContaPagar
+      parameters:
+        - name: codigoLancamento
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Conta a pagar encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContaPagar'
+        '404':
+          description: Conta a pagar não encontrada
+
+  /logs/usuario/{usuarioId}:
+    get:
+      summary: Listar logs por usuário
+      operationId: listLogsByUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: usuarioId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Logs do usuário encontrados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Log'
+
+  /logs/filtrar:
+    get:
+      summary: Filtrar logs por endpoint e método
+      operationId: filterLogs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: endpoint
+          in: query
+          schema:
+            type: string
+        - name: metodo
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Logs filtrados encontrados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Log'
+
+  /status:
+    get:
+      summary: Verificar o status do serviço
+      operationId: getStatus
+      responses:
+        '200':
+          description: Status do serviço
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  database:
+                    type: string
+
+  /aprovacoes/{ticketId}/aprovar:
+    post:
+      summary: Aprovar ticket
+      operationId: aprovarTicket
+      parameters:
+        - name: ticketId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID do ticket a ser aprovado
+      responses:
+        '200':
+          description: Ticket aprovado com sucesso
+        '404':
+          description: Ticket não encontrado
+        '400':
+          description: Etapa inválida
+        '500':
+          description: Erro ao aprovar ticket
+
+  /aprovacoes/{ticketId}/recusar:
+    post:
+      summary: Recusar ticket
+      operationId: recusarTicket
+      parameters:
+        - name: ticketId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID do ticket a ser recusado
+      responses:
+        '200':
+          description: Ticket recusado e movido para a etapa anterior
+        '404':
+          description: Ticket não encontrado
+        '500':
+          description: Erro ao recusar ticket

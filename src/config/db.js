@@ -25,10 +25,10 @@ const connectDB = async () => {
       user: config.dbUser,
       pass: config.dbPassword,
     });
-    console.log(`Conectado ao MongoDB`);
-    console.log(`Server: ${config.dbServer}`);
-    console.log(`User: ${config.dbUser}`);
-    console.log(`Database: ${config.dbName}`);
+    console.log(` Conectado ao MongoDB`);
+    console.log(`  - Server: ${config.dbServer}`);
+    console.log(`  - User: ${config.dbUser}`);
+    console.log(`  - Database: ${config.dbName}`);
   } catch (err) {
     console.error(`Erro ao conectar ao MongoDB ${config.dbName}`, err);
     process.exit(1); // Encerra o processo com falha

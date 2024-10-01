@@ -1,6 +1,6 @@
 {
   "name": "central-servicos-backend",
-  "version": "1.0.0",
+  "version": "1.0.6",
   "description": "Backend para a Central de Serviços Integrada ao Omie",
   "main": "src/server.js",
   "scripts": {

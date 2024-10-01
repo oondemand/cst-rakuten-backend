@@ -26,18 +26,6 @@ const TicketSchema = new mongoose.Schema(
     contaPagarOmie: {
       type: String,
     },
-    // arquivos: [
-    //   {
-    //     type: mongoose.Schema.Types.ObjectId,
-    //     ref: "Arquivo", // Referência ao modelo de Arquivo
-    //   },
-    // ], // Lista de arquivos associados ao ticket
-    // comentarios: [
-    //   {
-    //     type: mongoose.Schema.Types.ObjectId,
-    //     ref: "Comentario", // Referência a um modelo de Comentário (opcional)
-    //   },
-    // ], // Lista de comentários associados ao ticket
   },
   { timestamps: true }
 );

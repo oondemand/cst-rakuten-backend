@@ -54,8 +54,18 @@ const filtrarLogs = async (req, res) => {
   }
 };
 
+const excluirTodosLogs = async (req, res) => {
+  try {
+    await Log.deleteMany();
+    res.status(200).json({ message: "Todos os logs foram excluídos com sucesso" });
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao excluir todos os logs", error: error.message });
+  }
+};
+
 module.exports = {
   listarTodosLogs,
   listarLogsPorUsuario,
   filtrarLogs,
+  excluirTodosLogs
 };

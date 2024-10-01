@@ -1,13 +1,13 @@
-// backend/models/Empresa.js
+// backend/models/BaseOmie.js
 
 const mongoose = require('mongoose');
 
-const EmpresaSchema = new mongoose.Schema({
+const BaseOmieSchema = new mongoose.Schema({
     nome: { type: String, required: true },
     cnpj: { type: String, required: true, unique: true },
-    appKeyOmie: { type: String, required: true },
-    appSecretOmie: { type: String, required: true },
+    appKey: { type: String, required: true },
+    appSecret: { type: String, required: true },
     status: { type: String, enum: ['ativo', 'inativo', 'arquivado'], default: 'ativo' },
 });
 
-module.exports = mongoose.model('Empresa', EmpresaSchema);
+module.exports = mongoose.model('BaseOmie', BaseOmieSchema);

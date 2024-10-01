@@ -1,0 +1,28 @@
+# Estágio 1: Builder
+FROM node:18 AS builder
+
+WORKDIR /app
+
+# Copiar os arquivos package.json e package-lock.json da raiz do projeto
+COPY package*.json ./
+
+# Instalar apenas as dependências de produção
+RUN npm install --production
+
+# Copiar o diretório 'src' e os arquivos necessários da raiz do projeto
+COPY src ./src
+COPY .env.prod .env
+
+# Estágio 2: Produção
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copiar os arquivos do estágio de build
+COPY --from=builder /app .
+
+# Expor a porta em que a aplicação será executada
+EXPOSE 4000
+
+# Comando para iniciar a aplicação
+CMD ["npm", "start"]
