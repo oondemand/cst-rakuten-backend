@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: central-servicos-backend
+  name: cst-rakuten-backend
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
-      app: central-servicos-backend
+      app: cst-rakuten-backend
   template:
     metadata:
       labels:
-        app: central-servicos-backend
+        app: cst-rakuten-backend
     spec:
       containers:
-        - name: central-servicos-backend-container
-          image: registry.digitalocean.com/oondemand/central-servicos-backend:1.0.6
+        - name: cst-rakuten-backend-container
+          image: registry.digitalocean.com/oondemand/cst-rakuten-backend:0.0.1
           ports:
             - containerPort: 4000
           resources:

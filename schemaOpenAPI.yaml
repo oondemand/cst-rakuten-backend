@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
-  title: Central de Serviços API
+  title: cst-rakuten-backend
   description: API para gestão de serviços integrada ao Omie
-  version: 1.0.5
+  version: 0.0.1
   contact:
     name: Fabio
     email: fabio@oondemand.com.br
@@ -103,16 +103,16 @@ components:
         status:
           type: string
           enum: [ativo, inativo, arquivado]
-    Empresa:
+    BaseOmie:
       type: object
       properties:
         nome:
           type: string
         cnpj:
           type: string
-        appKeyOmie:
+        appKey:
           type: string
-        appSecretOmie:
+        appSecret:
           type: string
         status:
           type: string

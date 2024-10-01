@@ -1,7 +1,10 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const helmet = require("helmet");
 const morgan = require("morgan");
+const YAML = require("yamljs");
+const path = require("path");
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -11,11 +14,18 @@ const rastreabilidadeMiddleware = require("./middlewares/rastreabilidadeMiddlewa
 
 const app = express();
 
-// Middleware para parsear JSON
+// Middlewares globais
 app.use(express.json());
-
-// Configuração do CORS para permitir todas as origens
 app.use(cors());
+app.use(helmet());
+app.use(express.static(path.join(__dirname, "public")));
+
+if (process.env.NODE_ENV === "development") app.use(morgan("dev"));
+
+// **Rotas públicas** - Não requerem autenticação
+
+// Usar o schemaOpenAPI.yaml como documentação da API
+app.use("/", require("./routers/statusRouter")); // Rota de status
 
 // Verifique se o ambiente é de desenvolvimento
 if (process.env.NODE_ENV === "development") {
@@ -23,8 +33,14 @@ if (process.env.NODE_ENV === "development") {
 }
 
 // **Rotas públicas** - Não requerem autenticação
-app.use("/", require("./routes/statusRoutes"));  // Rota de status
-app.use("/auth", require("./routes/authRoutes"));  // Rotas de autenticação (login, etc.)
+app.use("/", require("./routers/statusRouter"));  // Rota de status
+
+app.use("/open-api", (req, res) => {
+  const schemaOpenAPI = YAML.load(path.join(__dirname, "./schemaOpenAPI.yaml"));
+  res.json(schemaOpenAPI);
+});
+
+app.use("/auth", require("./routers/authRouter"));  // Rotas de autenticação (login, etc.)
 
 // **Middleware de autenticação** - Aplica-se apenas às rotas que necessitam de proteção
 app.use(authMiddleware);
@@ -33,14 +49,14 @@ app.use(authMiddleware);
 app.use(rastreabilidadeMiddleware);
 
 // **Rotas protegidas** - Necessitam de autenticação
-app.use("/usuarios", require("./routes/usuarioRoutes"));
-app.use("/baseomies", require("./routes/baseOmieRoutes"));
-app.use("/tickets", require("./routes/ticketRoutes"));
-app.use("/nfse", require("./routes/nfseRoutes"));
-app.use("/aprovacoes", require("./routes/aprovacaoRoutes"));
-app.use("/contas-pagar", require("./routes/contaPagarRoutes"));
-app.use("/etapas", require("./routes/etapaRoutes"));
-app.use("/logs", require("./routes/logRoutes"));
+app.use("/usuarios", require("./routers/usuarioRouter"));
+app.use("/baseomies", require("./routers/baseOmieRouter"));
+app.use("/tickets", require("./routers/ticketRouter"));
+app.use("/nfse", require("./routers/nfseRouter"));
+app.use("/aprovacoes", require("./routers/aprovacaoRouter"));
+app.use("/contas-pagar", require("./routers/contaPagarRouter"));
+app.use("/etapas", require("./routers/etapaRouter"));
+app.use("/logs", require("./routers/logRouter"));
 
 // Middleware de erro (opcional)
 app.use((err, req, res, next) => {
