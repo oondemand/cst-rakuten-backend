@@ -2,13 +2,13 @@ openapi: 3.1.0
 info:
   title: cst-rakuten-backend
   description: API para gestão de serviços integrada ao Omie
-  version: 0.0.1
+  version: 0.0.2
   contact:
     name: Fabio
     email: fabio@oondemand.com.br
 
 servers:
-  - url: https://api.oondemand.com.br/central-servicos
+  - url: https://api.oondemand.com.br/cst-rakuten
     description: Servidor de Produção
 
 components:

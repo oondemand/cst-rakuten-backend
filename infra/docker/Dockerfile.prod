@@ -12,6 +12,7 @@ RUN npm install --production
 # Copiar o diretório 'src' e os arquivos necessários da raiz do projeto
 COPY src ./src
 COPY .env.prod .env
+COPY schemaOpenAPI.yaml schemaOpenAPI.yaml
 
 # Estágio 2: Produção
 FROM node:18-alpine
