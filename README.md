@@ -2,4 +2,8 @@
 
 ## Melhorias 
   # vs: 0.1.0
-  - Inclusao da Model, Controller e Rota de Prestador
+  - Criação da Model, Controller e Rota de Prestador
+  - Referencia do Prestador no Ticket
+  - Criação da rota prestadores/documento/:documento
+  - Criação da Model Serviço
+  - Referencia no Serviço no Ticket

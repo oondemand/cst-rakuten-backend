@@ -24,6 +24,10 @@ const TicketSchema = new mongoose.Schema(
     status: {
       type: String,
     },
+    prestador: {
+      type: Schema.Types.ObjectId,
+      ref: "Prestador",
+    },
     servico: {
       type: Schema.Types.ObjectId,
       ref: "Servico",
