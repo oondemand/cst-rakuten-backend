@@ -29,7 +29,6 @@ const prestadorSchema = new mongoose.Schema(
     email: { type: String, required: true },
     validacaoEmail: { type: Boolean, default: false },
     validacaoDadosCadastrais: { type: Boolean, default: false },
-    validacaoDadosTributarios: { type: Boolean, default: false },
     endereco: enderecoSchema,
     pessoaFisica: {
       dataNascimento: {
