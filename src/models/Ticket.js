@@ -24,9 +24,13 @@ const TicketSchema = new mongoose.Schema(
     status: {
       type: String,
     },
-    contaPagarOmie: {
-      type: String,
+    servico: {
+      type: Schema.Types.ObjectId,
+      ref: "Servico",
     },
+    // contaPagarOmie: {
+    //   type: String,
+    // },
   },
   { timestamps: true }
 );
