@@ -5,6 +5,7 @@ const ticketController = require("../controllers/ticketController");
 router.post("/", ticketController.createTicket);
 
 router.get("/", ticketController.getAllTickets);
+router.get("/base-omie/:baseOmieId", ticketController.getAllByBaseOmie);
 router.get("/:id", ticketController.getTicketById);
 
 router.put("/:id", ticketController.updateTicket);

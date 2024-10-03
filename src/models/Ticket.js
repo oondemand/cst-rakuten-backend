@@ -1,8 +1,14 @@
 // models/Ticket.js
 const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
 const TicketSchema = new mongoose.Schema(
   {
+    baseOmie: {
+      type: Schema.Types.ObjectId,
+      ref: "BaseOmie",
+      required: true,
+    },
     titulo: {
       type: String,
       required: true,
@@ -17,11 +23,6 @@ const TicketSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-    },
-    nfse: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Nfse",
-      required: true,
     },
     contaPagarOmie: {
       type: String,
