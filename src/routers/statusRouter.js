@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
   };
 
   res.status(200).json({
-    message: `${process.env.SERVICE_NAME} rodando - vs 0.0.2`,
+    message: `${process.env.SERVICE_NAME} rodando - vs 0.1.0`,
     database: `${status[dbState]} em ${process.env.DB_NAME}` || 'Status desconhecido',
   });
 });
