@@ -10,7 +10,7 @@ const aprovar = async (req, res) => {
     const { ticketId } = req.params;
 
     // Buscar o ticket pelo ID
-    const ticket = await Ticket.findById(ticketId).populate("nfse");
+    const ticket = await Ticket.findById(ticketId);
     if (!ticket) {
       return res.status(404).send({ success: false, message: "Ticket não encontrado." });
     }
@@ -60,7 +60,7 @@ const recusar = async (req, res) => {
     const { ticketId } = req.params;
 
     // Buscar o ticket pelo ID
-    const ticket = await Ticket.findById(ticketId).populate("nfse");
+    const ticket = await Ticket.findById(ticketId);
     if (!ticket) {
       return res.status(404).send({ success: false, message: "Ticket não encontrado." });
     }
@@ -74,13 +74,13 @@ const recusar = async (req, res) => {
     }
 
     // Se estiver na primeira etapa, exclui o ticket ao recusar
-    if (currentEtapaIndex === 0) {
-      await Ticket.findByIdAndDelete(ticketId);
-      return res.status(200).send({ success: true, message: "Ticket excluído com sucesso." });
-    }
+    // if (currentEtapaIndex === 0) {
+    //   await Ticket.findByIdAndDelete(ticketId);
+    //   return res.status(200).send({ success: true, message: "Ticket excluído com sucesso." });
+    // }
 
     // Retrocede uma etapa e muda status para 'revisao'
-    ticket.etapa = etapas[currentEtapaIndex - 1].codigo;
+    if (currentEtapaIndex > 0) ticket.etapa = etapas[currentEtapaIndex - 1].codigo;
     ticket.status = "revisao";
 
     await ticket.save();
@@ -96,65 +96,68 @@ const recusar = async (req, res) => {
 
 // Função para gerar a conta a pagar
 const gerarContaPagar = async (ticket) => {
-  const empresa = await Empresa.findOne({ cnpj: ticket.nfse.infoNfse.tomador.documento });
-  if (!empresa)
-    throw `Empresa não encontrada para o CNPJ do tomador: ${ticket.nfse.infoNfse.tomador.documento}`;
+  throw "Função não implementada.";
+  // const empresa = await Empresa.findOne({ cnpj: ticket.nfse.infoNfse.tomador.documento });
+  // if (!empresa)
+  //   throw `Empresa não encontrada para o CNPJ do tomador: ${ticket.nfse.infoNfse.tomador.documento}`;
 
-  const codigoFornecedor = await obterOuCadastrarFornecedor(
-    empresa.appKeyOmie,
-    empresa.appSecretOmie,
-    ticket.nfse.infoNfse.prestador.documento,
-    ticket.nfse.infoNfse.prestador.nome
-  );
+  // const codigoFornecedor = await obterOuCadastrarFornecedor(
+  //   empresa.appKeyOmie,
+  //   empresa.appSecretOmie,
+  //   ticket.nfse.infoNfse.prestador.documento,
+  //   ticket.nfse.infoNfse.prestador.nome
+  // );
 
-  const conta = await cadastrarContaAPagar(
-    empresa.appKeyOmie,
-    empresa.appSecretOmie,
-    codigoFornecedor,
-    ticket.nfse
-  );
+  // const conta = await cadastrarContaAPagar(
+  //   empresa.appKeyOmie,
+  //   empresa.appSecretOmie,
+  //   codigoFornecedor,
+  //   ticket.nfse
+  // );
 
-  return conta;
+  // return conta;
 };
 
 const obterOuCadastrarFornecedor = async (appKey, appSecret, cnpj, nome) => {
-  try {
-    let fornecedor = await clienteService.pesquisarPorCNPJ(appKey, appSecret, cnpj);
-    let codigoFornecedor = fornecedor ? fornecedor.codigo_cliente_omie : null;
+  throw "Função não implementada.";
+  // try {
+  //   let fornecedor = await clienteService.pesquisarPorCNPJ(appKey, appSecret, cnpj);
+  //   let codigoFornecedor = fornecedor ? fornecedor.codigo_cliente_omie : null;
 
-    if (!codigoFornecedor) {
-      const novoFornecedor = clienteService.criarFornecedor(cnpj, nome);
-      const fornecedorCadastrado = await clienteService.incluir(appKey, appSecret, novoFornecedor);
-      codigoFornecedor = fornecedorCadastrado.codigo_cliente_omie;
-    }
+  //   if (!codigoFornecedor) {
+  //     const novoFornecedor = clienteService.criarFornecedor(cnpj, nome);
+  //     const fornecedorCadastrado = await clienteService.incluir(appKey, appSecret, novoFornecedor);
+  //     codigoFornecedor = fornecedorCadastrado.codigo_cliente_omie;
+  //   }
 
-    return codigoFornecedor;
-  } catch (error) {
-    throw `Erro ao obter ou cadastrar fornecedor: ${error}`;
-  }
+  //   return codigoFornecedor;
+  // } catch (error) {
+  //   throw `Erro ao obter ou cadastrar fornecedor: ${error}`;
+  // }
 };
 
 const cadastrarContaAPagar = async (appKey, appSecret, codigoFornecedor, nfse) => {
-  try {
-    const conta = contaPagarService.criarConta(
-      nfse.infoNfse.numero,
-      nfse.infoNfse.numero,
-      codigoFornecedor,
-      nfse.infoNfse.dataEmissao,
-      nfse.infoNfse.dataEmissao,
-      nfse.infoNfse.declaracaoPrestacaoServico.servico.discriminacao,
-      nfse.infoNfse.declaracaoPrestacaoServico.servico.valores.valorServicos
-    );
+  throw "Função não implementada.";
+  // try {
+  //   const conta = contaPagarService.criarConta(
+  //     nfse.infoNfse.numero,
+  //     nfse.infoNfse.numero,
+  //     codigoFornecedor,
+  //     nfse.infoNfse.dataEmissao,
+  //     nfse.infoNfse.dataEmissao,
+  //     nfse.infoNfse.declaracaoPrestacaoServico.servico.discriminacao,
+  //     nfse.infoNfse.declaracaoPrestacaoServico.servico.valores.valorServicos
+  //   );
 
-    if (nfse.infoNfse.declaracaoPrestacaoServico.servico.valores.valorServicos == 0) {
-      console.error("Valor da NFSe é zero. Não será gerada conta a pagar.");
-      return;
-    }
+  //   if (nfse.infoNfse.declaracaoPrestacaoServico.servico.valores.valorServicos == 0) {
+  //     console.error("Valor da NFSe é zero. Não será gerada conta a pagar.");
+  //     return;
+  //   }
 
-    return await contaPagarService.incluir(appKey, appSecret, conta);
-  } catch (error) {
-    throw `Erro ao cadastrar conta a pagar: ${error}`;
-  }
+  //   return await contaPagarService.incluir(appKey, appSecret, conta);
+  // } catch (error) {
+  //   throw `Erro ao cadastrar conta a pagar: ${error}`;
+  // }
 };
 
 module.exports = { aprovar, recusar };
