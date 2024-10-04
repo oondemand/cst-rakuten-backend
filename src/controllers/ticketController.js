@@ -2,11 +2,12 @@ const Ticket = require("../models/Ticket");
 
 // Cria um novo ticket
 exports.createTicket = async (req, res) => {
-  const { titulo, observacao, etapa, status } = req.body;
+  const { baseOmie, titulo, observacao, etapa, status } = req.body;
 
   try {
     // Cria o novo ticket
     const ticket = new Ticket({
+      baseOmie,
       titulo,
       observacao,
       etapa,
