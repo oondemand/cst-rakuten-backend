@@ -2,7 +2,8 @@
 
 const Usuario = require("../models/Usuario");
 const bcrypt = require("bcryptjs");
-const email = require("../utils/email");
+const emailUtils = require("../utils/emailUtils");
+const jwt = require("jsonwebtoken");
 
 exports.seedUsuario = async (req, res) => {
   const { nome, email, senha, status, permissoes } = req.body;
@@ -43,7 +44,7 @@ exports.registrarUsuarioPrestador = async (req, res) => {
     await novoUsuario.save();
 
     // Enviar e-mail de confirmação
-    await email.confirmacaoEmailPrestador(novoUsuario);
+    await emailUtils.confirmacaoEmailPrestador(novoUsuario);
 
     res.status(201).json(novoUsuario);
   } catch (error) {
@@ -85,12 +86,14 @@ exports.loginUsuario = async (req, res) => {
           tipo: usuario.tipo,
         },
       });
+    } else if (usuario.status === "email-nao-confirmado") {
+      res.status(401).json({ mensagem: "E-mail não confirmado", status: usuario.status });
     } else {
       const msg = { mensagem: "O usuário não está ativo", status: usuario.status };
       res.status(401).json(msg);
     }
   } catch (error) {
-    res.status(400).json({ error: "Erro ao fazer login", detalhes: error.message });
+    res.status(400).json({ mensagem: "Erro ao fazer login", detalhes: error.message });
   }
 };
 
