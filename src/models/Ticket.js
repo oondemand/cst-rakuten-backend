@@ -7,7 +7,6 @@ const TicketSchema = new mongoose.Schema(
     baseOmie: {
       type: Schema.Types.ObjectId,
       ref: "BaseOmie",
-      required: true,
     },
     titulo: {
       type: String,
@@ -21,9 +20,6 @@ const TicketSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    status: {
-      type: String,
-    },
     prestador: {
       type: Schema.Types.ObjectId,
       ref: "Prestador",
@@ -32,9 +28,14 @@ const TicketSchema = new mongoose.Schema(
       type: Schema.Types.ObjectId,
       ref: "Servico",
     },
-    // contaPagarOmie: {
-    //   type: String,
-    // },
+    contaPagarOmie: {
+      type: String,
+    },
+    status: {
+      type: String,
+      enum: ["ativo", "arquivado"],
+      default: "ativo",
+    },
   },
   { timestamps: true }
 );

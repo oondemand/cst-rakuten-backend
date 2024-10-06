@@ -23,21 +23,14 @@ app.use(express.static(path.join(__dirname, "public")));
 if (process.env.NODE_ENV === "development") app.use(morgan("dev"));
 
 // **Rotas públicas** - Não requerem autenticação
-
-// Verifique se o ambiente é de desenvolvimento
-if (process.env.NODE_ENV === "development") {
-  app.use(morgan("dev"));
-}
-
-// **Rotas públicas** - Não requerem autenticação
-app.use("/", require("./routers/statusRouter"));  // Rota de status
+app.use("/", require("./routers/statusRouter")); // Rota de status
 
 app.use("/open-api", (req, res) => {
   const schemaOpenAPI = YAML.load("./schemaOpenAPI.yaml");
   res.json(schemaOpenAPI);
 });
 
-app.use("/auth", require("./routers/authRouter"));  // Rotas de autenticação (login, etc.)
+app.use("/auth", require("./routers/authRouter")); // Rotas de autenticação (login, etc.)
 
 // **Middleware de autenticação** - Aplica-se apenas às rotas que necessitam de proteção
 app.use(authMiddleware);

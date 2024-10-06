@@ -4,6 +4,8 @@ const usuarioController = require("../controllers/usuarioController");
 
 router.post("/login", usuarioController.loginUsuario);
 router.post("/seed-usuario", usuarioController.seedUsuario);
-router.get("/validar-token", usuarioController.validarToken); // Rota para validar o token
+router.post("/registrar-usuario", usuarioController.registrarUsuarioPrestador);
+router.post("/confirmar-email", usuarioController.confirmarEmail);
+router.get("/validar-token", usuarioController.validarToken);
 
 module.exports = router;

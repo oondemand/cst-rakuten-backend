@@ -16,17 +16,28 @@ const dadosBancariosSchema = new mongoose.Schema({
   banco: String,
   agencia: String,
   conta: String,
-  tipoConta: { type: String, enum: ["corrente", "poupanca"] },
+  tipoConta: { type: String, enum: ["", "corrente", "poupanca"] },
 });
 
 // Esquema Principal do Prestador
 const prestadorSchema = new mongoose.Schema(
   {
+    usuario: { type: mongoose.Schema.Types.ObjectId, ref: "Usuario" },
     nome: { type: String, required: true },
     tipo: { type: String, enum: ["pj", "pf"], required: true },
     documento: { type: String, match: /^\d{11}$|^\d{14}$/, required: true },
     dadosBancarios: dadosBancariosSchema,
-    email: { type: String, required: true },
+    email: {
+      type: String,
+      required: true,
+      lowercase: true,
+      validate: {
+        validator: function (v) {
+          return /\S+@\S+\.\S+/.test(v);
+        },
+        message: (props) => `${props.value} não é um e-mail válido!`,
+      },
+    },
     validacaoEmail: { type: Boolean, default: false },
     validacaoDadosCadastrais: { type: Boolean, default: false },
     endereco: enderecoSchema,
@@ -52,7 +63,11 @@ const prestadorSchema = new mongoose.Schema(
       codServicoNacional: String,
       regimeTributario: String,
     },
-    status: { type: String, enum: ["ativo", "inativo", "arquivado"], default: "ativo" },
+    status: {
+      type: String,
+      enum: ["ativo", "em-analise", "revisao", "inativo", "arquivado"],
+      default: "ativo",
+    },
   },
   { timestamps: true }
 );

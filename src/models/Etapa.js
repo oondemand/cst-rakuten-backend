@@ -25,7 +25,7 @@ const etapaSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true, // Adiciona campos createdAt e updatedAt automaticamente
+    timestamps: true,
   }
 );
 

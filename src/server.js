@@ -1,19 +1,22 @@
-// backend/server.js
-
 const app = require('./app');
-require('dotenv').config();
 const connectDB = require("./config/db");
 
-const PORT = process.env.PORT;
-const SERVICE_NAME = process.env.SERVICE_NAME;
+const PORT = process.env.PORT || 4000;
+const SERVICE_NAME = process.env.SERVICE_NAME || "CST Rakuten";
 
-app.listen(PORT, async () => {
-    console.log("****************************************************************")
-    console.log(`Iniciando serviço ${SERVICE_NAME}...`);
-    
+const startServer = async () => {
+  try {
     await connectDB();
+    app.listen(PORT, () => {
+      console.log("****************************************************************");
+      console.log(`${SERVICE_NAME} rodando na porta ${PORT} e conectado ao MongoDB`);
+      console.log("****************************************************************");
+      console.log("");
+    });
+  } catch (error) {
+    console.error("Falha ao iniciar o servidor:", error);
+    process.exit(1);
+  }
+};
 
-    console.log(`${SERVICE_NAME} rodando na porta ${PORT} e conectado ao MongoDB`);
-    console.log("****************************************************************")
-    console.log("")
-});
+startServer();

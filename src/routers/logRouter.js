@@ -4,7 +4,7 @@ const {
   listarTodosLogs,
   listarLogsPorUsuario,
   filtrarLogs,
-  excluirTodosLogs
+  excluirTodosLogs,
 } = require("../controllers/logController");
 
 // Rota para listar todos os logs (protegida por autenticação)
@@ -16,6 +16,6 @@ router.get("/usuario/:usuarioId", listarLogsPorUsuario);
 // Rota para filtrar logs por endpoint ou método HTTP (protegida por autenticação)
 router.get("/filtrar", filtrarLogs);
 
-router.post("/excluir-todos, excluirTodosLogs");
+router.post("/excluir-todos", excluirTodosLogs);
 
 module.exports = router;

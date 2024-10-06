@@ -9,7 +9,7 @@ const rastreabilidadeMiddleware = async (req, res, next) => {
   const inicio = Date.now(); // Marca o início da requisição
 
   // Extrair informações da requisição
-  const usuarioId = req.user ? req.user.id : null; // ID do usuário, se estiver logado
+  const usuarioId = req.usuario ? req.usuario.id : null;
   const endpoint = req.originalUrl; // A URL completa
   const metodo = req.method; // O método HTTP (GET, POST, etc.)
   const ip = req.ip || req.headers["x-forwarded-for"] || req.connection.remoteAddress; // IP do cliente
