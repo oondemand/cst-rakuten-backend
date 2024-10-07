@@ -1,6 +1,7 @@
 // models/Ticket.js
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
+const Servico = require("./Servico"); // Importar o modelo Servico
 
 const TicketSchema = new mongoose.Schema(
   {
@@ -20,20 +21,18 @@ const TicketSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    prestador: {
-      type: Schema.Types.ObjectId,
-      ref: "Prestador",
+    data: {
+      type: Date,
+      default: Date.now,
     },
-    servico: {
-      type: Schema.Types.ObjectId,
-      ref: "Servico",
-    },
+    prestador: { type: mongoose.Schema.Types.ObjectId, ref: "Prestador" },
+    servico: { type: mongoose.Schema.Types.ObjectId, ref: "Servico" },
     contaPagarOmie: {
       type: String,
     },
     status: {
       type: String,
-      enum: ["ativo", "arquivado"],
+      enum: ["aguardando-inicio", "trabalhando", "revisao", "arquivado"],
       default: "ativo",
     },
   },

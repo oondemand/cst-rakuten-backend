@@ -38,22 +38,14 @@ const prestadorSchema = new mongoose.Schema(
         message: (props) => `${props.value} não é um e-mail válido!`,
       },
     },
-    validacaoEmail: { type: Boolean, default: false },
-    validacaoDadosCadastrais: { type: Boolean, default: false },
     endereco: enderecoSchema,
     pessoaFisica: {
       dataNascimento: {
         type: Date,
-        required: function () {
-          return this.tipo === "pf";
-        },
       },
       pis: String,
       nomeMae: {
         type: String,
-        required: function () {
-          return this.tipo === "pf";
-        },
       },
     },
     pessoaJuridica: {
@@ -63,9 +55,10 @@ const prestadorSchema = new mongoose.Schema(
       codServicoNacional: String,
       regimeTributario: String,
     },
+    comentariosRevisao: String,
     status: {
       type: String,
-      enum: ["ativo", "em-analise", "revisao", "inativo", "arquivado"],
+      enum: ["ativo", "em-analise", "pendente-de-revisao", "inativo", "arquivado"],
       default: "ativo",
     },
   },

@@ -6,7 +6,9 @@ router.post("/", ticketController.createTicket);
 
 router.get("/", ticketController.getAllTickets);
 router.get("/base-omie/:baseOmieId", ticketController.getAllByBaseOmie);
+router.get('/prestador/:prestadorId', ticketController.getTicketsByPrestadorId);
 router.get("/:id", ticketController.getTicketById);
+router.get("/:id/arquivos", ticketController.listarArquivosDoTicket);
 
 router.put("/:id", ticketController.updateTicket);
 router.put("/:id/status", ticketController.updateStatusTicket);
@@ -17,6 +19,5 @@ router.delete("/:id", ticketController.deleteTicket);
 router.post("/:id/arquivo/:arquivoId", ticketController.associarArquivoAoTicket);
 
 // Listar arquivos associados a uma NFS-e
-router.get("/:id/arquivos", ticketController.listarArquivosDoTicket);
 
 module.exports = router;

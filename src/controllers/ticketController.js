@@ -2,7 +2,7 @@ const Ticket = require("../models/Ticket");
 
 // Cria um novo ticket
 exports.createTicket = async (req, res) => {
-  const { baseOmie, titulo, observacao, etapa, status } = req.body;
+  const { baseOmie, titulo, observacao } = req.body;
 
   try {
     // Cria o novo ticket
@@ -10,8 +10,8 @@ exports.createTicket = async (req, res) => {
       baseOmie,
       titulo,
       observacao,
-      etapa,
-      status,
+      etapa: "requisicao",
+      status: "aguardando-inicio",
     });
 
     await ticket.save();
@@ -50,6 +50,29 @@ exports.getAllTickets = async (req, res) => {
   try {
     // Busca todos os tickets sem filtro inicialmente
     const tickets = await Ticket.find({})
+
+    res.status(200).json(tickets);
+  } catch (error) {
+    console.error("Erro ao buscar tickets:", error);
+    res.status(500).json({
+      message: "Erro ao buscar tickets",
+      detalhes: error.message,
+    });
+  }
+};
+
+// Obtém todos os tickets pelo idUsuario
+exports.getTicketsByPrestadorId = async (req, res) => {
+  const { prestadorId } = req.params;
+  console.log("prestadorId", prestadorId);
+
+  try {
+    // Busca todos os tickets pelo idUsuario
+    const tickets = await Ticket.find({ prestador: prestadorId });
+
+    if (tickets.length === 0) {
+      return res.status(200).json([]);
+    }
 
     res.status(200).json(tickets);
   } catch (error) {

@@ -47,6 +47,7 @@ app.use("/contas-pagar", require("./routers/contaPagarRouter"));
 app.use("/etapas", require("./routers/etapaRouter"));
 app.use("/logs", require("./routers/logRouter"));
 app.use("/prestadores", require("./routers/prestadorRouter"));
+app.use("/servicos", require("./routers/servicoRouter"));
 
 // Middleware de erro (opcional)
 app.use((err, req, res, next) => {
