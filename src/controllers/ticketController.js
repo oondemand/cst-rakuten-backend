@@ -49,7 +49,7 @@ exports.getAllByBaseOmie = async (req, res) => {
 exports.getAllTickets = async (req, res) => {
   try {
     // Busca todos os tickets sem filtro inicialmente
-    const tickets = await Ticket.find({})
+    const tickets = await Ticket.find({});
 
     res.status(200).json(tickets);
   } catch (error) {
@@ -87,17 +87,19 @@ exports.getTicketsByPrestadorId = async (req, res) => {
 // Obtém um ticket específico pelo ID
 exports.getTicketById = async (req, res) => {
   try {
-    const ticket = await Ticket.findById(req.params.id);
+    const ticket = await Ticket.findById(req.params.id)
+      .populate("baseOmie")
+      .populate("prestador")
+      .populate("servico");
+
     if (!ticket) {
       return res.status(404).json({ message: "Ticket não encontrado" });
     }
+
     res.status(200).json(ticket);
   } catch (error) {
     console.error("Erro ao buscar ticket:", error);
-    res.status(500).json({
-      message: "Erro ao buscar ticket",
-      detalhes: error.message,
-    });
+    res.status(500).json({ message: "Erro ao buscar ticket", detalhes: error.message });
   }
 };
 
