@@ -22,6 +22,8 @@ exports.adicionarPrestadorECriarTicket = async (req, res) => {
     novoPrestador.status = "em-analise";
     await novoPrestador.save();
 
+    console.log("novoPrestador", novoPrestador);
+
     // Criar ticket
     const novoTicket = new Ticket({
       titulo: `Novo Prestador: ${novoPrestador.nome}`,
@@ -31,12 +33,19 @@ exports.adicionarPrestadorECriarTicket = async (req, res) => {
     });
     await novoTicket.save();
 
-    res.status(201).json({ prestador: novoPrestador, ticket: novoTicket });
+    console.log("novoTicket", novoTicket);
+
+    res.status(201).json({
+      message: "Prestador adicionado e ticket criado com sucesso!",
+      prestador: novoPrestador,
+      ticket: novoTicket,
+    });
   } catch (error) {
-    console.log("Erro ao adicionar prestador e criar ticket", error);
-    res
-      .status(400)
-      .json({ error: "Erro ao adicionar prestador e criar ticket", detalhes: error.message });
+    console.error("Erro ao adicionar prestador e criar ticket:", error);
+    res.status(500).json({
+      message: "Erro ao adicionar prestador e criar ticket",
+      detalhes: error.message,
+    });
   }
 };
 
@@ -45,9 +54,19 @@ exports.criarPrestador = async (req, res) => {
   try {
     const prestador = new Prestador(req.body);
     await prestador.save();
-    res.status(201).json(prestador);
+
+    console.log("prestador", prestador);
+
+    res.status(201).json({
+      message: "Prestador criado com sucesso!",
+      prestador,
+    });
   } catch (error) {
-    res.status(400).json({ error: "Erro ao criar prestador", detalhes: error.message });
+    console.error("Erro ao criar prestador:", error);
+    res.status(500).json({
+      message: "Erro ao criar prestador",
+      detalhes: error.message,
+    });
   }
 };
 
