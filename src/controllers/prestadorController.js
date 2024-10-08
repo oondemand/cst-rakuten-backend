@@ -116,12 +116,19 @@ exports.atualizarPrestador = async (req, res) => {
     const prestador = await Prestador.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
     if (!prestador) {
-      return res.status(404).json({ error: "Prestador não encontrado" });
+      return res.status(404).json({ message: "Prestador não encontrado" });
     }
 
-    res.status(200).json(prestador);
+    res.status(200).json({
+      message: "Prestador atualizado com sucesso!",
+      prestador,
+    });
   } catch (error) {
-    res.status(400).json({ error: "Erro ao atualizar prestador", detalhes: error.message });
+    console.error("Erro ao atualizar prestador:", error);
+    res.status(500).json({
+      message: "Erro ao atualizar prestador",
+      detalhes: error.message,
+    });
   }
 };
 

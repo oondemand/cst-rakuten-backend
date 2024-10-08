@@ -70,3 +70,35 @@ exports.createServico = async (req, res) => {
     });
   }
 };
+
+exports.updateServico = async (req, res) => {
+  const { servicoId } = req.params;
+  const { descricao, data, valor } = req.body;
+
+  try {
+    const servico = await Servico.findById(servicoId);
+
+    if (!servico) {
+      return res.status(404).json({
+        message: "Serviço não encontrado",
+      });
+    }
+
+    servico.descricao = descricao;
+    servico.data = data;
+    servico.valor = valor;
+
+    await servico.save();
+
+    res.status(200).json({
+      message: "Serviço atualizado com sucesso!",
+      servico,
+    });
+  } catch (error) {
+    console.error("Erro ao atualizar serviço:", error);
+    res.status(500).json({
+      message: "Erro ao atualizar serviço",
+      detalhes: error.message,
+    });
+  }
+};

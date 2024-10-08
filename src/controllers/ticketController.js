@@ -116,6 +116,7 @@ exports.updateTicket = async (req, res) => {
   const { titulo, observacao, etapa, status } = req.body;
 
   try {
+    // Atualiza o ticket
     const ticket = await Ticket.findByIdAndUpdate(
       req.params.id,
       { titulo, observacao, etapa, status },
@@ -126,9 +127,15 @@ exports.updateTicket = async (req, res) => {
       return res.status(404).json({ message: "Ticket não encontrado" });
     }
 
+    // Popula os campos servico e prestador
+    const ticketPopulado = await Ticket.findById(ticket._id)
+      .populate('baseOmie')
+      .populate('servico')
+      .populate('prestador');
+
     res.status(200).json({
       message: "Ticket atualizado com sucesso!",
-      ticket,
+      ticket: ticketPopulado,
     });
   } catch (error) {
     console.error("Erro ao atualizar ticket:", error);

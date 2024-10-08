@@ -4,10 +4,10 @@ const express = require("express");
 const baseOmieController = require("../controllers/baseOmieController");
 const router = express.Router();
 
-router.post("/",  baseOmieController.registrarEmpresa);
-router.get("/",  baseOmieController.listarEmpresas);
-router.get("/:id",  baseOmieController.obterEmpresa);
-router.put("/:id",  baseOmieController.atualizarEmpresa);
-router.delete("/:id",  baseOmieController.excluirEmpresa);
+router.post("/",  baseOmieController.registrarBaseOmie);
+router.get("/",  baseOmieController.listarBaseOmies);
+router.get("/:id",  baseOmieController.obterBaseOmie);
+router.put("/:id",  baseOmieController.atualizarBaseOmie);
+router.delete("/:id",  baseOmieController.excluirBaseOmie);
 
 module.exports = router;
