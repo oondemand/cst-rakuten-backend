@@ -11,7 +11,7 @@ router.get("/usuario/:idUsuario", prestadorController.obterPrestadorPorIdUsuario
 router.get("/", prestadorController.listarPrestadores);
 router.get("/:id", prestadorController.obterPrestador);
 
-router.put("/:id", prestadorController.atualizarPrestador);
+router.patch("/:id", prestadorController.atualizarPrestador);
 
 router.delete("/:id", prestadorController.excluirPrestador);
 

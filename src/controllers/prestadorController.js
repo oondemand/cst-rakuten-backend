@@ -113,11 +113,18 @@ exports.atualizarPrestador = async (req, res) => {
     // Verificar se o tipo de usuário é "prestador"
     if (usuario.tipo === "prestador") req.body.status = "em-analise";
 
-    const prestador = await Prestador.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const prestador = await Prestador.findById(req.params.id);
 
     if (!prestador) {
       return res.status(404).json({ message: "Prestador não encontrado" });
     }
+
+    // Atualiza apenas os campos fornecidos no corpo da requisição
+    Object.keys(req.body).forEach(key => {
+      prestador[key] = req.body[key];
+    });
+
+    await prestador.save();
 
     res.status(200).json({
       message: "Prestador atualizado com sucesso!",

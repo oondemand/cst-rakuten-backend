@@ -2,6 +2,28 @@
 const Servico = require("../models/Servico");
 const Ticket = require("../models/Ticket");
 
+exports.getServicoById = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const servico = await Servico.findById(id);
+
+    if (!servico) {
+      return res.status(404).json({
+        message: "Serviço não encontrado",
+      });
+    }
+
+    res.status(200).json(servico);
+  } catch (error) {
+    console.error("Erro ao obter serviço:", error);
+    res.status(500).json({
+      message: "Erro ao obter serviço",
+      detalhes: error.message,
+    });
+  }
+};
+
 exports.createServicoETicket = async (req, res) => {
   const { descricao, data, valor, prestador } = req.body;
 
@@ -72,11 +94,11 @@ exports.createServico = async (req, res) => {
 };
 
 exports.updateServico = async (req, res) => {
-  const { servicoId } = req.params;
+  const { id } = req.params;
   const { descricao, data, valor } = req.body;
 
   try {
-    const servico = await Servico.findById(servicoId);
+    const servico = await Servico.findById(id);
 
     if (!servico) {
       return res.status(404).json({
@@ -84,15 +106,19 @@ exports.updateServico = async (req, res) => {
       });
     }
 
-    servico.descricao = descricao;
-    servico.data = data;
-    servico.valor = valor;
+    // Atualiza apenas os campos fornecidos no corpo da requisição
+    if (descricao !== undefined) servico.descricao = descricao;
+    if (data !== undefined) servico.data = data;
+    if (valor !== undefined) servico.valor = valor;
 
     await servico.save();
 
+    // Popula os campos necessários (se houver referências)
+    const servicoPopulado = await Servico.findById(servico._id);
+
     res.status(200).json({
       message: "Serviço atualizado com sucesso!",
-      servico,
+      servico: servicoPopulado,
     });
   } catch (error) {
     console.error("Erro ao atualizar serviço:", error);

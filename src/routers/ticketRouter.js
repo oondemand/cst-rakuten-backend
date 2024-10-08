@@ -10,8 +10,8 @@ router.get('/prestador/:prestadorId', ticketController.getTicketsByPrestadorId);
 router.get("/:id", ticketController.getTicketById);
 router.get("/:id/arquivos", ticketController.listarArquivosDoTicket);
 
-router.put("/:id", ticketController.updateTicket);
-router.put("/:id/status", ticketController.updateStatusTicket);
+router.patch("/:id", ticketController.updateTicket);
+router.patch("/:id/status", ticketController.updateStatusTicket);
 
 router.delete("/:id", ticketController.deleteTicket);
 
