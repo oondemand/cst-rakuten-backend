@@ -2,23 +2,31 @@ const Ticket = require("../models/Ticket");
 
 // Cria um novo ticket
 exports.createTicket = async (req, res) => {
-  const { baseOmie, titulo, observacao } = req.body;
+  const { baseOmieId, titulo, observacao, servicoId, prestadorId } = req.body;
 
   try {
     // Cria o novo ticket
     const ticket = new Ticket({
-      baseOmie,
+      baseOmie: baseOmieId,
       titulo,
       observacao,
+      servico: servicoId,
+      prestador: prestadorId,
       etapa: "requisicao",
       status: "aguardando-inicio",
     });
 
     await ticket.save();
 
+    // Popula os campos servico e prestador
+    const ticketPopulado = await Ticket.findById(ticket._id)
+      .populate('baseOmie')
+      .populate('servico')
+      .populate('prestador');
+
     res.status(201).json({
       message: "Ticket criado com sucesso!",
-      ticket,
+      ticket: ticketPopulado,
     });
   } catch (error) {
     console.error("Erro ao criar ticket:", error);
