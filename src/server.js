@@ -6,7 +6,9 @@ const SERVICE_NAME = process.env.SERVICE_NAME || "CST Rakuten";
 
 const startServer = async () => {
   try {
+    console.log("Testando conexão com o Banco de Dados...")
     await connectDB();
+
     app.listen(PORT, () => {
       console.log("****************************************************************");
       console.log(`${SERVICE_NAME} rodando na porta ${PORT} e conectado ao MongoDB`);
