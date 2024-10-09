@@ -56,8 +56,11 @@ exports.getAllByBaseOmie = async (req, res) => {
 // Obtém todos os tickets
 exports.getAllTickets = async (req, res) => {
   try {
-    // Busca todos os tickets sem filtro inicialmente
-    const tickets = await Ticket.find({});
+    // Extrai os filtros dos parâmetros de consulta
+    const filtros = req.query;
+
+    // Busca os tickets com ou sem filtros
+    const tickets = await Ticket.find(filtros);
 
     res.status(200).json(tickets);
   } catch (error) {
