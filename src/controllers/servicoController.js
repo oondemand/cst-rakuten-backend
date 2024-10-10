@@ -66,7 +66,7 @@ exports.createServicoETicket = async (req, res) => {
 };
 
 exports.createServico = async (req, res) => {
-  const { descricao, data, valor } = req.body;
+  const { descricao, data, valor, status, comentariosRevisao } = req.body;
 
   try {
     // Cria um novo documento Servico
@@ -74,6 +74,8 @@ exports.createServico = async (req, res) => {
       descricao,
       data,
       valor,
+      status,
+      comentariosRevisao,
     });
 
     console.log("novoServico", novoServico);
@@ -95,7 +97,7 @@ exports.createServico = async (req, res) => {
 
 exports.updateServico = async (req, res) => {
   const { id } = req.params;
-  const { descricao, data, valor } = req.body;
+  const { descricao, data, valor, status, comentariosRevisao } = req.body;
 
   try {
     const servico = await Servico.findById(id);
@@ -110,6 +112,8 @@ exports.updateServico = async (req, res) => {
     if (descricao !== undefined) servico.descricao = descricao;
     if (data !== undefined) servico.data = data;
     if (valor !== undefined) servico.valor = valor;
+    if (status !== undefined) servico.status = status;
+    if (comentariosRevisao !== undefined) servico.comentariosRevisao = comentariosRevisao;
 
     await servico.save();
 

@@ -20,9 +20,9 @@ exports.createTicket = async (req, res) => {
 
     // Popula os campos servico e prestador
     const ticketPopulado = await Ticket.findById(ticket._id)
-      .populate('baseOmie')
-      .populate('servico')
-      .populate('prestador');
+      .populate("baseOmie")
+      .populate("servico")
+      .populate("prestador");
 
     res.status(201).json({
       message: "Ticket criado com sucesso!",
@@ -32,6 +32,41 @@ exports.createTicket = async (req, res) => {
     console.error("Erro ao criar ticket:", error);
     res.status(500).json({
       message: "Erro ao criar ticket",
+      detalhes: error.message,
+    });
+  }
+};
+
+// Atualiza um ticket existente
+exports.updateTicket = async (req, res) => {
+  const { baseOmieId, titulo, observacao, etapa, status, servicoId, prestadorId } = req.body;
+
+  try {
+    // Atualiza o ticket
+    const ticket = await Ticket.findByIdAndUpdate(
+      req.params.id,
+      { baseOmie: baseOmieId, titulo, observacao, etapa, status, servico: servicoId, prestador: prestadorId },
+      { new: true, runValidators: true }
+    );
+
+    if (!ticket) {
+      return res.status(404).json({ message: "Ticket não encontrado" });
+    }
+
+    // Popula os campos servico e prestador
+    const ticketPopulado = await Ticket.findById(ticket._id)
+      .populate("baseOmie")
+      .populate("servico")
+      .populate("prestador");
+
+    res.status(200).json({
+      message: "Ticket atualizado com sucesso!",
+      ticket: ticketPopulado,
+    });
+  } catch (error) {
+    console.error("Erro ao atualizar ticket:", error);
+    res.status(500).json({
+      message: "Erro ao atualizar ticket",
       detalhes: error.message,
     });
   }
@@ -111,41 +146,6 @@ exports.getTicketById = async (req, res) => {
   } catch (error) {
     console.error("Erro ao buscar ticket:", error);
     res.status(500).json({ message: "Erro ao buscar ticket", detalhes: error.message });
-  }
-};
-
-// Atualiza um ticket existente
-exports.updateTicket = async (req, res) => {
-  const { titulo, observacao, etapa, status } = req.body;
-
-  try {
-    // Atualiza o ticket
-    const ticket = await Ticket.findByIdAndUpdate(
-      req.params.id,
-      { titulo, observacao, etapa, status },
-      { new: true, runValidators: true }
-    );
-
-    if (!ticket) {
-      return res.status(404).json({ message: "Ticket não encontrado" });
-    }
-
-    // Popula os campos servico e prestador
-    const ticketPopulado = await Ticket.findById(ticket._id)
-      .populate('baseOmie')
-      .populate('servico')
-      .populate('prestador');
-
-    res.status(200).json({
-      message: "Ticket atualizado com sucesso!",
-      ticket: ticketPopulado,
-    });
-  } catch (error) {
-    console.error("Erro ao atualizar ticket:", error);
-    res.status(500).json({
-      message: "Erro ao atualizar ticket",
-      detalhes: error.message,
-    });
   }
 };
 
