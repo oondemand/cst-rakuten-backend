@@ -5,8 +5,8 @@ const router = express.Router();
 
 // Rota para criar um novo serviço e ticket
 router.get('/:id', servicoController.getServicoById);
-router.post('/criar-ticket', servicoController.createServicoETicket);
 router.post('/', servicoController.createServico);
+router.post('/adicionar-e-criar-ticket', servicoController.createServicoETicket);
 router.patch('/:id', servicoController.updateServico);
 
 module.exports = router;
