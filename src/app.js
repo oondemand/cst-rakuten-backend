@@ -48,6 +48,7 @@ app.use("/etapas", require("./routers/etapaRouter"));
 app.use("/logs", require("./routers/logRouter"));
 app.use("/prestadores", require("./routers/prestadorRouter"));
 app.use("/servicos", require("./routers/servicoRouter"));
+app.use("/acoes-etapas", require("./routers/acaoEtapaRouter"));
 
 // Middleware de erro (opcional)
 app.use((err, req, res, next) => {

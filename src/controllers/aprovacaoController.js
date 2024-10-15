@@ -1,8 +1,9 @@
 const Ticket = require("../models/Ticket");
 const Etapa = require("../models/Etapa");
-const Empresa = require("../models/BaseOmie");
+const BaseOmie = require("../models/BaseOmie");
 const contaPagarService = require("../services/omie/contaPagarService");
 const clienteService = require("../services/omie/clienteService");
+const { formatarDataOmie } = require("../utils/dateUtils");
 
 // Função para aprovar um ticket
 const aprovar = async (req, res) => {
@@ -10,7 +11,7 @@ const aprovar = async (req, res) => {
     const { ticketId } = req.params;
 
     // Buscar o ticket pelo ID
-    const ticket = await Ticket.findById(ticketId);
+    const ticket = await Ticket.findById(ticketId).populate("servico").populate("prestador");
     if (!ticket) {
       return res.status(404).send({ success: false, message: "Ticket não encontrado." });
     }
@@ -25,7 +26,7 @@ const aprovar = async (req, res) => {
 
     // Se estiver na última etapa antes de "conta-pagar", mover para "conta-pagar" e gerar a conta
     if (currentEtapaIndex === etapas.length - 1) {
-      ticket.etapa = "conta-pagar";
+      ticket.etapa = "integracao-omie";
       ticket.status = "aguardando-inicio";
 
       // Gerar conta a pagar
@@ -96,68 +97,68 @@ const recusar = async (req, res) => {
 
 // Função para gerar a conta a pagar
 const gerarContaPagar = async (ticket) => {
-  throw "Função não implementada.";
-  // const empresa = await Empresa.findOne({ cnpj: ticket.nfse.infoNfse.tomador.documento });
-  // if (!empresa)
-  //   throw `Empresa não encontrada para o CNPJ do tomador: ${ticket.nfse.infoNfse.tomador.documento}`;
+  const baseOmie = await BaseOmie.findOne({ status: "ativo" });
 
-  // const codigoFornecedor = await obterOuCadastrarFornecedor(
-  //   empresa.appKeyOmie,
-  //   empresa.appSecretOmie,
-  //   ticket.nfse.infoNfse.prestador.documento,
-  //   ticket.nfse.infoNfse.prestador.nome
-  // );
+  if (!baseOmie) throw `BaseOmie não encontrada`;
 
-  // const conta = await cadastrarContaAPagar(
-  //   empresa.appKeyOmie,
-  //   empresa.appSecretOmie,
-  //   codigoFornecedor,
-  //   ticket.nfse
-  // );
+  const codigoFornecedor = await obterOuCadastrarFornecedor(
+    baseOmie.appKey,
+    baseOmie.appSecret,
+    ticket.prestador.documento,
+    ticket.prestador.nome
+  );
 
-  // return conta;
+  const conta = await cadastrarContaAPagar(
+    baseOmie.appKey,
+    baseOmie.appSecret,
+    codigoFornecedor,
+    ticket
+  );
+
+  return conta;
 };
 
 const obterOuCadastrarFornecedor = async (appKey, appSecret, cnpj, nome) => {
-  throw "Função não implementada.";
-  // try {
-  //   let fornecedor = await clienteService.pesquisarPorCNPJ(appKey, appSecret, cnpj);
-  //   let codigoFornecedor = fornecedor ? fornecedor.codigo_cliente_omie : null;
+  try {
+    let fornecedor = await clienteService.pesquisarPorCNPJ(appKey, appSecret, cnpj);
+    let codigoFornecedor = fornecedor ? fornecedor.codigo_cliente_omie : null;
 
-  //   if (!codigoFornecedor) {
-  //     const novoFornecedor = clienteService.criarFornecedor(cnpj, nome);
-  //     const fornecedorCadastrado = await clienteService.incluir(appKey, appSecret, novoFornecedor);
-  //     codigoFornecedor = fornecedorCadastrado.codigo_cliente_omie;
-  //   }
+    if (!codigoFornecedor) {
+      const novoFornecedor = clienteService.criarFornecedor(cnpj, nome);
+      const fornecedorCadastrado = await clienteService.incluir(appKey, appSecret, novoFornecedor);
+      codigoFornecedor = fornecedorCadastrado.codigo_cliente_omie;
+    }
 
-  //   return codigoFornecedor;
-  // } catch (error) {
-  //   throw `Erro ao obter ou cadastrar fornecedor: ${error}`;
-  // }
+    return codigoFornecedor;
+  } catch (error) {
+    throw `Erro ao obter ou cadastrar fornecedor: ${error}`;
+  }
 };
 
-const cadastrarContaAPagar = async (appKey, appSecret, codigoFornecedor, nfse) => {
-  throw "Função não implementada.";
-  // try {
-  //   const conta = contaPagarService.criarConta(
-  //     nfse.infoNfse.numero,
-  //     nfse.infoNfse.numero,
-  //     codigoFornecedor,
-  //     nfse.infoNfse.dataEmissao,
-  //     nfse.infoNfse.dataEmissao,
-  //     nfse.infoNfse.declaracaoPrestacaoServico.servico.discriminacao,
-  //     nfse.infoNfse.declaracaoPrestacaoServico.servico.valores.valorServicos
-  //   );
+const cadastrarContaAPagar = async (appKey, appSecret, codigoFornecedor, ticket) => {
+  try {
+    console.log("Gerando conta a pagar para o ticket:", ticket);
+    const conta = contaPagarService.criarConta(
+      1,
+      1,
+      codigoFornecedor,
+      formatarDataOmie(ticket.servico.data),
+      formatarDataOmie(ticket.servico.data),
+      ticket.servico.descricao,
+      ticket.servico.valor
+    );
 
-  //   if (nfse.infoNfse.declaracaoPrestacaoServico.servico.valores.valorServicos == 0) {
-  //     console.error("Valor da NFSe é zero. Não será gerada conta a pagar.");
-  //     return;
-  //   }
+    console.log("Conta a pagar:", conta);
 
-  //   return await contaPagarService.incluir(appKey, appSecret, conta);
-  // } catch (error) {
-  //   throw `Erro ao cadastrar conta a pagar: ${error}`;
-  // }
+    if (ticket.servico.valor == 0) {
+      console.error("Valor do serviço é zero. Não será gerada conta a pagar.");
+      return;
+    }
+
+    return await contaPagarService.incluir(appKey, appSecret, conta);
+  } catch (error) {
+    throw `Erro ao cadastrar conta a pagar: ${error}`;
+  }
 };
 
 module.exports = { aprovar, recusar };
