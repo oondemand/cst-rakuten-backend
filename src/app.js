@@ -9,7 +9,7 @@ const path = require("path");
 // Carregar variáveis de ambiente
 dotenv.config();
 
-const authMiddleware = require("./middlewares/authMiddleware"); // Supondo que já existe
+const authMiddleware = require("./middlewares/authMiddleware");
 const rastreabilidadeMiddleware = require("./middlewares/rastreabilidadeMiddleware");
 
 const app = express();
@@ -23,14 +23,14 @@ app.use(express.static(path.join(__dirname, "public")));
 if (process.env.NODE_ENV === "development") app.use(morgan("dev"));
 
 // **Rotas públicas** - Não requerem autenticação
-app.use("/", require("./routers/statusRouter")); // Rota de status
+app.use("/", require("./routers/statusRouter"));
 
 app.use("/open-api", (req, res) => {
   const schemaOpenAPI = YAML.load("./schemaOpenAPI.yaml");
   res.json(schemaOpenAPI);
 });
 
-app.use("/auth", require("./routers/authRouter")); // Rotas de autenticação (login, etc.)
+app.use("/auth", require("./routers/authRouter"));
 
 // **Middleware de autenticação** - Aplica-se apenas às rotas que necessitam de proteção
 app.use(authMiddleware);
@@ -50,7 +50,7 @@ app.use("/prestadores", require("./routers/prestadorRouter"));
 app.use("/servicos", require("./routers/servicoRouter"));
 app.use("/acoes-etapas", require("./routers/acaoEtapaRouter"));
 
-// Middleware de erro (opcional)
+// Middleware de erro
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send("Algo deu errado!");

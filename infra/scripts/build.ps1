@@ -1,5 +1,5 @@
 # Definir a versão da imagem, nome da imagem e o URL do registro de container
-$VERSION = "0.0.2"
+$VERSION = "0.2.0"
 $IMAGE_NAME = "cst-rakuten-backend"
 
 # Verificar se $IMAGE_NAME está em minúsculas, já que Docker exige isso

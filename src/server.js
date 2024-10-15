@@ -2,7 +2,7 @@ const app = require('./App');
 const connectDB = require("./config/db");
 
 const PORT = process.env.PORT || 4000;
-const SERVICE_NAME = process.env.SERVICE_NAME || "CST Rakuten";
+const SERVICE_NAME = process.env.SERVICE_NAME;
 
 const startServer = async () => {
   try {
