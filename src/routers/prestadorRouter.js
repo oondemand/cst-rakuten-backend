@@ -8,6 +8,7 @@ router.post("/adicionar-e-criar-ticket", prestadorController.adicionarPrestadorE
 router.post("/", prestadorController.criarPrestador);
 
 router.get("/usuario/:idUsuario", prestadorController.obterPrestadorPorIdUsuario);
+router.get("/sid/:sid", prestadorController.obterPrestadorPorSid);
 router.get("/", prestadorController.listarPrestadores);
 router.get("/:id", prestadorController.obterPrestador);
 

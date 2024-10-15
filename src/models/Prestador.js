@@ -3,12 +3,12 @@ const mongoose = require("mongoose");
 
 // Esquema de Endereço
 const enderecoSchema = new mongoose.Schema({
+  cep: { type: String, match: /^\d{8}$/ },
   rua: String,
   numero: String,
   complemento: String,
   cidade: String,
   estado: String,
-  cep: { type: String, match: /^\d{8}$/ },
 });
 
 // Esquema de Dados Bancários
@@ -24,11 +24,13 @@ const prestadorSchema = new mongoose.Schema(
   {
     usuario: { type: mongoose.Schema.Types.ObjectId, ref: "Usuario" },
     nome: { type: String, required: true },
+    sid: { type: String, required: true, unique: true },
     tipo: { type: String, enum: ["pj", "pf"], required: true },
     documento: { type: String, match: /^\d{11}$|^\d{14}$/, required: true },
     dadosBancarios: dadosBancariosSchema,
     email: {
       type: String,
+      unique: true,
       required: true,
       lowercase: true,
       validate: {
@@ -40,20 +42,13 @@ const prestadorSchema = new mongoose.Schema(
     },
     endereco: enderecoSchema,
     pessoaFisica: {
-      dataNascimento: {
-        type: Date,
-      },
+      dataNascimento: Date,
       pis: String,
-      nomeMae: {
-        type: String,
+      nomeMae: String,
+      rg: {
+        numero: String,
+        orgaoEmissor: String,
       },
-    },
-    pessoaJuridica: {
-      nomeEmpresa: String,
-      codCNAE: String,
-      nomeCNAE: String,
-      codServicoNacional: String,
-      regimeTributario: String,
     },
     comentariosRevisao: String,
     status: {

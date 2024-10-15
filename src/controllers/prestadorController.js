@@ -13,6 +13,20 @@ exports.obterPrestadorPorIdUsuario = async (req, res) => {
   }
 };
 
+// obter prestador pelo sid
+exports.obterPrestadorPorSid = async (req, res) => {
+  try {
+    const prestador = await Prestador.findOne({ sid: req.params.sid });
+    if (!prestador) return res.status(404).json({ error: "Prestador não encontrado" });
+    res.status(200).json(prestador);
+  } catch (error) {
+    res.status(500).json({
+      message: "Erro ao obter prestador",
+      detalhes: error.message,
+    });
+  }
+};
+
 exports.adicionarPrestadorECriarTicket = async (req, res) => {
   console.log("adicionarPrestadorECriarTicket", req.body);
 
@@ -70,20 +84,6 @@ exports.criarPrestador = async (req, res) => {
   }
 };
 
-// Pesquisar Prestador por tipo e documento
-exports.pesquisarPrestador = async (req, res) => {
-  try {
-    const prestador = await Prestador.findOne({
-      tipo: req.body.tipo,
-      documento: req.body.documento,
-    });
-    if (!prestador) return res.status(404).json({ error: "Prestador não encontrado" });
-    res.status(200).json(prestador);
-  } catch (error) {
-    res.status(400).json({ error: "Erro ao pesquisar prestador" });
-  }
-};
-
 // Listar todos os Prestadores
 exports.listarPrestadores = async (req, res) => {
   try {
@@ -120,7 +120,7 @@ exports.atualizarPrestador = async (req, res) => {
     }
 
     // Atualiza apenas os campos fornecidos no corpo da requisição
-    Object.keys(req.body).forEach(key => {
+    Object.keys(req.body).forEach((key) => {
       prestador[key] = req.body[key];
     });
 
