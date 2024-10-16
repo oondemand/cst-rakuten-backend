@@ -24,14 +24,17 @@ const prestadorSchema = new mongoose.Schema(
   {
     usuario: { type: mongoose.Schema.Types.ObjectId, ref: "Usuario" },
     nome: { type: String, required: true },
-    sid: { type: String, required: true, unique: true },
-    tipo: { type: String, enum: ["pj", "pf"], required: true },
-    documento: { type: String, match: /^\d{11}$|^\d{14}$/, required: true },
+    sid: {
+      type: Number,
+      required: true,
+      unique: true,
+      match: [/^\d{7}$/, "O SID deve ter exatamente 7 dígitos."],
+    },
+    tipo: { type: String, enum: ["pj", "pf"] },
+    documento: { type: String, match: /^\d{11}$|^\d{14}$/ },
     dadosBancarios: dadosBancariosSchema,
     email: {
       type: String,
-      unique: true,
-      required: true,
       lowercase: true,
       validate: {
         validator: function (v) {
@@ -39,6 +42,7 @@ const prestadorSchema = new mongoose.Schema(
         },
         message: (props) => `${props.value} não é um e-mail válido!`,
       },
+      required: false,
     },
     endereco: enderecoSchema,
     pessoaFisica: {

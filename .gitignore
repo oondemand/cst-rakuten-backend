@@ -1,6 +1,7 @@
 **/node_modules/
 **/logs/
 **/build/
+**/uploads/
 
 **/.env
 **/.env.prod

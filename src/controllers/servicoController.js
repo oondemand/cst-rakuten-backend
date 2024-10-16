@@ -66,20 +66,12 @@ exports.createServicoETicket = async (req, res) => {
 };
 
 exports.createServico = async (req, res) => {
-  const { descricao, data, valor, status, comentariosRevisao } = req.body;
-
   try {
-    // Cria um novo documento Servico
-    const novoServico = new Servico({
-      descricao,
-      data,
-      valor,
-      status,
-      comentariosRevisao,
-    });
+    const filteredBody = Object.fromEntries(
+      Object.entries(req.body).filter(([_, value]) => value !== "")
+    );
 
-    console.log("novoServico", novoServico);
-
+    const novoServico = new Servico(filteredBody);
     await novoServico.save();
 
     res.status(201).json({
@@ -97,10 +89,10 @@ exports.createServico = async (req, res) => {
 
 exports.updateServico = async (req, res) => {
   const { id } = req.params;
-  const { descricao, data, valor, status, comentariosRevisao } = req.body;
+  const updateData = req.body;
 
   try {
-    const servico = await Servico.findById(id);
+    const servico = await Servico.findByIdAndUpdate(id, updateData, { new: true });
 
     if (!servico) {
       return res.status(404).json({
@@ -108,21 +100,9 @@ exports.updateServico = async (req, res) => {
       });
     }
 
-    // Atualiza apenas os campos fornecidos no corpo da requisição
-    if (descricao !== undefined) servico.descricao = descricao;
-    if (data !== undefined) servico.data = data;
-    if (valor !== undefined) servico.valor = valor;
-    if (status !== undefined) servico.status = status;
-    if (comentariosRevisao !== undefined) servico.comentariosRevisao = comentariosRevisao;
-
-    await servico.save();
-
-    // Popula os campos necessários (se houver referências)
-    const servicoPopulado = await Servico.findById(servico._id);
-
     res.status(200).json({
       message: "Serviço atualizado com sucesso!",
-      servico: servicoPopulado,
+      servico: servico,
     });
   } catch (error) {
     console.error("Erro ao atualizar serviço:", error);
