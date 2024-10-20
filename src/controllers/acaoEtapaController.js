@@ -6,10 +6,15 @@ const Prestador = require("../models/Prestador");
 const Ticket = require("../models/Ticket");
 
 exports.importarComissoes = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const arquivo = req.file;
 
     if (!arquivo) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(400).json({ message: "Nenhum arquivo enviado." });
     }
 
@@ -25,34 +30,33 @@ exports.importarComissoes = async (req, res) => {
         if (index === 0) return null; // Ignorar cabeçalho, se existir
 
         return {
-          sid: row[0] !== undefined ? row[0] : "",
-          nomePrestador: row[1] !== undefined ? row[1] : "",
-          mesCompetencia: row[2] !== undefined ? row[2] : "",
-          anoCompetencia: row[3] !== undefined ? row[3] : "",
-          valorPrincipal: row[4] !== undefined ? row[4] : 0,
-          valorBonus: row[5] !== undefined ? row[5] : 0,
-          valorAjusteComercial: row[6] !== undefined ? row[6] : 0,
-          valorHospedagemAnuncio: row[7] !== undefined ? row[7] : 0,
-          valorTotal: row[8] !== undefined ? row[8] : 0,
+          sid: row[0] || "",
+          nomePrestador: row[1] || "",
+          mesCompetencia: row[2] || "",
+          anoCompetencia: row[3] || "",
+          valorPrincipal: row[4] || 0,
+          valorBonus: row[5] || 0,
+          valorAjusteComercial: row[6] || 0,
+          valorHospedagemAnuncio: row[7] || 0,
+          valorTotal: row[8] || 0,
         };
       })
-      .filter((row) => row !== null); // Remove linhas nulas
+      .filter((row) => row !== null && row.sid && row.nomePrestador); // Filtra linhas inválidas
 
     // Percorrer os dados e salvar no banco
     for (const row of processedData) {
-      if (row.sid && row.nomePrestador) {
-        //pesquisar prestador pelo sid; se não existir, criar um novo
-        let prestador = await Prestador.findOne({ sid: row.sid });
+      try {
+        let prestador = await Prestador.findOne({ sid: row.sid }).session(session);
         if (!prestador) {
-          const novoPrestador = new Prestador({
+          prestador = new Prestador({
             sid: row.sid,
             nome: row.nomePrestador,
             status: "pendente-de-revisao",
           });
-          prestador = await novoPrestador.save();
+          await prestador.save({ session });
         }
 
-        const novoServico = new Servico({
+        const servico = new Servico({
           prestador: prestador._id,
           mesCompetencia: row.mesCompetencia,
           anoCompetencia: row.anoCompetencia,
@@ -61,37 +65,43 @@ exports.importarComissoes = async (req, res) => {
           valorAjusteComercial: row.valorAjusteComercial,
           valorHospedagemAnuncio: row.valorHospedagemAnuncio,
           valorTotal: row.valorTotal,
-          correcao: row.correcao,
-          status: "ativo", // Ou outro valor padrão
+          correcao: row.correcao || false,
+          status: "ativo",
         });
+        await servico.save({ session });
 
-        const servico = await novoServico.save();
-
-        // cria um novo ticket para o servico e prestador
-        const novoTicket = new Ticket({
-          servico: servico._id,
+        const ticket = new Ticket({
+          servicos: [servico._id],
           prestador: prestador._id,
           titulo: `Comissão ${prestador.nome}: ${servico.mesCompetencia}/${servico.anoCompetencia}`,
           status: "aguardando-inicio",
           etapa: "requisicao",
         });
+        await ticket.save({ session });
 
-        await novoTicket.save();
-
-        console.log("ticket criado:", novoTicket.titulo);
-      } else {
-        console.log("Linha inválida:", row);
-        // Opcional: registrar ou retornar informações sobre linhas inválidas
+        console.log("Ticket criado:", ticket.titulo);
+      } catch (err) {
+        console.error(`Erro ao processar linha: ${JSON.stringify(row)} - ${err}`);
+        await session.abortTransaction();
+        session.endSession();
+        return res
+          .status(500)
+          .json({ message: "Erro ao importar comissões.", detalhes: err.message });
       }
     }
 
     // Remover o arquivo após o processamento
     fs.unlinkSync(arquivo.path);
 
+    await session.commitTransaction();
+    session.endSession();
+
     res.status(201).json({ message: "Comissões importadas com sucesso." });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     console.error("Erro ao importar comissões:", error);
-    res.status(500).json({ message: "Erro interno do servidor." });
+    res.status(500).json({ message: "Erro interno do servidor.", detalhes: error.message });
   }
 };
 

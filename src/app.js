@@ -52,8 +52,14 @@ app.use("/acoes-etapas", require("./routers/acaoEtapaRouter"));
 
 // Middleware de erro
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send("Algo deu errado!");
+  if (err instanceof multer.MulterError) {
+    // Erro do Multer
+    return res.status(400).json({ message: err.message });
+  } else if (err) {
+    // Outros erros
+    return res.status(500).json({ message: err.message });
+  }
+  next();
 });
 
 module.exports = app;

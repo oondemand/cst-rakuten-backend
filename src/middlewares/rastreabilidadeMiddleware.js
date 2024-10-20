@@ -1,21 +1,17 @@
 const Log = require("../models/Log");
 
 const rastreabilidadeMiddleware = async (req, res, next) => {
-  // Verifica se o método da requisição é GET
   if (req.method === "GET") {
-    return next(); // Ignora a requisição e passa para o próximo middleware
+    return next();
   }
 
-  const inicio = Date.now(); // Marca o início da requisição
-
-  // Extrair informações da requisição
+  const inicio = Date.now();
   const usuarioId = req.usuario ? req.usuario.id : null;
-  const endpoint = req.originalUrl; // A URL completa
-  const metodo = req.method; // O método HTTP (GET, POST, etc.)
-  const ip = req.ip || req.headers["x-forwarded-for"] || req.connection.remoteAddress; // IP do cliente
-  const dadosRequisicao = req.body; // O corpo da requisição
+  const endpoint = req.originalUrl;
+  const metodo = req.method;
+  const ip = req.ip || req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+  const dadosRequisicao = req.body;
 
-  // Capturar as informações da resposta usando `res.on()`
   const log = new Log({
     usuario: usuarioId,
     endpoint: endpoint,
@@ -24,25 +20,16 @@ const rastreabilidadeMiddleware = async (req, res, next) => {
     dadosRequisicao: dadosRequisicao,
   });
 
-  // Interceptar o status e o corpo da resposta
-  const originalSend = res.send; // Armazena o método original `res.send`
-
-  res.send = function (body) {
-    // Captura o status e o corpo da resposta
+  res.on("finish", () => {
     log.statusResposta = res.statusCode;
-    log.dadosResposta = body;
+    log.dadosResposta = res.locals.body || null; // Capturar o corpo se armazenado anteriormente
 
-    // Salva o log no banco de dados
     log
       .save()
       .then(() => console.log("Log de rastreabilidade salvo com sucesso"))
       .catch((error) => console.error("Erro ao salvar log de rastreabilidade:", error));
+  });
 
-    // Retorna a resposta original
-    originalSend.apply(res, arguments);
-  };
-
-  // Continua para o próximo middleware ou controlador
   next();
 };
 

@@ -1,16 +1,14 @@
 const Ticket = require("../models/Ticket");
 
-// Cria um novo ticket
 exports.createTicket = async (req, res) => {
-  const { baseOmieId, titulo, observacao, servicoId, prestadorId } = req.body;
+  const { baseOmieId, titulo, observacao, servicosIds, prestadorId } = req.body;
 
   try {
-    // Cria o novo ticket
     const ticket = new Ticket({
       baseOmie: baseOmieId,
       titulo,
       observacao,
-      servico: servicoId,
+      servicos: servicosIds,
       prestador: prestadorId,
       etapa: "requisicao",
       status: "aguardando-inicio",
@@ -18,10 +16,9 @@ exports.createTicket = async (req, res) => {
 
     await ticket.save();
 
-    // Popula os campos servico e prestador
     const ticketPopulado = await Ticket.findById(ticket._id)
       .populate("baseOmie")
-      .populate("servico")
+      .populate("servicos")
       .populate("prestador");
 
     res.status(201).json({
@@ -37,15 +34,21 @@ exports.createTicket = async (req, res) => {
   }
 };
 
-// Atualiza um ticket existente
 exports.updateTicket = async (req, res) => {
-  const { baseOmieId, titulo, observacao, etapa, status, servicoId, prestadorId } = req.body;
+  const { baseOmieId, titulo, observacao, etapa, status, servicosIds, prestadorId } = req.body;
 
   try {
-    // Atualiza o ticket
     const ticket = await Ticket.findByIdAndUpdate(
       req.params.id,
-      { baseOmie: baseOmieId, titulo, observacao, etapa, status, servico: servicoId, prestador: prestadorId },
+      {
+        baseOmie: baseOmieId,
+        titulo,
+        observacao,
+        etapa,
+        status,
+        servicos: servicosIds,
+        prestador: prestadorId,
+      },
       { new: true, runValidators: true }
     );
 
@@ -53,10 +56,9 @@ exports.updateTicket = async (req, res) => {
       return res.status(404).json({ message: "Ticket não encontrado" });
     }
 
-    // Popula os campos servico e prestador
     const ticketPopulado = await Ticket.findById(ticket._id)
       .populate("baseOmie")
-      .populate("servico")
+      .populate("servicos")
       .populate("prestador");
 
     res.status(200).json({
@@ -72,7 +74,6 @@ exports.updateTicket = async (req, res) => {
   }
 };
 
-// Obtém todos os tickets
 exports.getAllByBaseOmie = async (req, res) => {
   try {
     const { baseOmieId } = req.params;
@@ -88,13 +89,9 @@ exports.getAllByBaseOmie = async (req, res) => {
   }
 };
 
-// Obtém todos os tickets
 exports.getAllTickets = async (req, res) => {
   try {
-    // Extrai os filtros dos parâmetros de consulta
     const filtros = req.query;
-
-    // Busca os tickets com ou sem filtros
     const tickets = await Ticket.find(filtros);
 
     res.status(200).json(tickets);
@@ -107,13 +104,10 @@ exports.getAllTickets = async (req, res) => {
   }
 };
 
-// Obtém todos os tickets pelo idUsuario
 exports.getTicketsByPrestadorId = async (req, res) => {
   const { prestadorId } = req.params;
-  console.log("prestadorId", prestadorId);
 
   try {
-    // Busca todos os tickets pelo idUsuario
     const tickets = await Ticket.find({ prestador: prestadorId });
 
     if (tickets.length === 0) {
@@ -130,13 +124,12 @@ exports.getTicketsByPrestadorId = async (req, res) => {
   }
 };
 
-// Obtém um ticket específico pelo ID
 exports.getTicketById = async (req, res) => {
   try {
     const ticket = await Ticket.findById(req.params.id)
       .populate("baseOmie")
       .populate("prestador")
-      .populate("servico");
+      .populate("servicos");
 
     if (!ticket) {
       return res.status(404).json({ message: "Ticket não encontrado" });
@@ -149,7 +142,6 @@ exports.getTicketById = async (req, res) => {
   }
 };
 
-// Remove um ticket
 exports.deleteTicket = async (req, res) => {
   try {
     const ticket = await Ticket.findByIdAndDelete(req.params.id);
@@ -198,45 +190,66 @@ exports.updateStatusTicket = async (req, res) => {
   }
 };
 
-// Função para associar um arquivo ao ticket
-exports.associarArquivoAoTicket = async (req, res) => {
-  try {
-    const { id, arquivoId } = req.params;
-
-    // Verificar se o ticket existe
-    const ticket = await Ticket.findById(id);
-    if (!ticket) {
-      return res.status(404).json({ message: "Ticket não encontrado" });
-    }
-
-    // Verificar se o arquivo existe
-    const arquivo = await Arquivo.findById(arquivoId);
-    if (!arquivo) {
-      return res.status(404).json({ message: "Arquivo não encontrado" });
-    }
-
-    // Associar o arquivo ao ticket
-    ticket.arquivos.push(arquivo._id);
-    await ticket.save();
-
-    res.status(200).json({ message: "Arquivo associado ao ticket com sucesso", ticket });
-  } catch (error) {
-    res.status(500).json({ message: "Erro ao associar arquivo ao ticket", error: error.message });
-  }
-};
-
-// Função para listar arquivos de um ticket
 exports.listarArquivosDoTicket = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const ticket = await Ticket.findById(id).populate("arquivos");
+    const arquivos = await Arquivo.find({ ticket: id });
+
+    res.status(200).json(arquivos);
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao listar arquivos do ticket", error: error.message });
+  }
+};
+
+exports.uploadArquivos = async (req, res) => {
+  const ticketId = req.params.id;
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const ticket = await Ticket.findById(ticketId).session(session);
     if (!ticket) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(404).json({ message: "Ticket não encontrado" });
     }
 
-    res.status(200).json(ticket.arquivos);
+    if (!req.files || req.files.length === 0) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ message: "Nenhum arquivo enviado." });
+    }
+
+    const arquivosSalvos = await Promise.all(
+      req.files.map(async (file) => {
+        const arquivo = new Arquivo({
+          nome: file.filename,
+          nomeOriginal: file.originalname,
+          path: file.path,
+          mimetype: file.mimetype,
+          size: file.size,
+          ticket: ticket._id,
+        });
+        await arquivo.save({ session });
+        return arquivo;
+      })
+    );
+
+    ticket.arquivos.push(...arquivosSalvos.map((a) => a._id));
+    await ticket.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(201).json({
+      message: "Arquivos carregados e associados ao ticket com sucesso!",
+      arquivos: arquivosSalvos,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Erro ao listar arquivos do ticket", error: error.message });
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Erro ao fazer upload de arquivos:", error);
+    res.status(500).json({ message: "Erro ao fazer upload de arquivos.", detalhes: error.message });
   }
 };
