@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: cst-rakuten-backend-container
-          image: registry.digitalocean.com/oondemand/cst-rakuten-backend:0.2.0
+          image: registry.digitalocean.com/oondemand/cst-rakuten-backend:0.2.1
           ports:
             - containerPort: 4000
           resources:

@@ -14,6 +14,7 @@ COPY src ./src
 COPY .env.prod .env
 COPY schemaOpenAPI.yaml schemaOpenAPI.yaml
 
+
 # Estágio 2: Produção
 FROM node:18-alpine
 
@@ -21,6 +22,9 @@ WORKDIR /app
 
 # Copiar os arquivos do estágio de build
 COPY --from=builder /app .
+
+# Criar o diretório uploads/tickets
+RUN mkdir -p uploads/tickets
 
 # Expor a porta em que a aplicação será executada
 EXPOSE 4000
