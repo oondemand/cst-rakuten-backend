@@ -54,6 +54,16 @@ const prestadorSchema = new mongoose.Schema(
         orgaoEmissor: String,
       },
     },
+    pessoaJuridica: {
+      razaoSocial: String,
+      nomeFantasia: String,
+      codigoCNAE: String,
+      codigoServicoNacional: String,
+      regimeTributario: {
+        type: String,
+        enum: ["MEI", "Simples Nacional", "Lucro Presumido", "Lucro Real"],
+      },
+    },
     comentariosRevisao: String,
     status: {
       type: String,
