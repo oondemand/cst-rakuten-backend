@@ -11,7 +11,7 @@ const aprovar = async (req, res) => {
     const { ticketId } = req.params;
 
     // Buscar o ticket pelo ID
-    const ticket = await Ticket.findById(ticketId).populate("servico").populate("prestador");
+    const ticket = await Ticket.findById(ticketId);
     if (!ticket) {
       return res.status(404).send({ success: false, message: "Ticket não encontrado." });
     }
@@ -138,24 +138,24 @@ const obterOuCadastrarFornecedor = async (appKey, appSecret, cnpj, nome) => {
 const cadastrarContaAPagar = async (appKey, appSecret, codigoFornecedor, ticket) => {
   try {
     console.log("Gerando conta a pagar para o ticket:", ticket);
-    const conta = contaPagarService.criarConta(
-      1,
-      1,
-      codigoFornecedor,
-      formatarDataOmie(ticket.servico.data),
-      formatarDataOmie(ticket.servico.data),
-      ticket.servico.descricao,
-      ticket.servico.valor
-    );
+    // const conta = contaPagarService.criarConta(
+    //   1,
+    //   1,
+    //   codigoFornecedor,
+    //   formatarDataOmie(ticket.servico.data),
+    //   formatarDataOmie(ticket.servico.data),
+    //   ticket.servico.descricao,
+    //   ticket.servico.valor
+    // );
 
     console.log("Conta a pagar:", conta);
 
-    if (ticket.servico.valor == 0) {
-      console.error("Valor do serviço é zero. Não será gerada conta a pagar.");
-      return;
-    }
+    // if (ticket.servico.valor == 0) {
+    //   console.error("Valor do serviço é zero. Não será gerada conta a pagar.");
+    //   return;
+    // }
 
-    return await contaPagarService.incluir(appKey, appSecret, conta);
+    // return await contaPagarService.incluir(appKey, appSecret, conta);
   } catch (error) {
     throw `Erro ao cadastrar conta a pagar: ${error}`;
   }
