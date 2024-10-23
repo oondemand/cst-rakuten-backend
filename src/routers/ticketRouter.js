@@ -30,7 +30,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }, // Limite de 10MB por arquivo
+  limits: { fileSize: 1 * 1024 * 1024 }, // Limite de 1MB por arquivo
 });
 
 router.post("/:id/upload", upload.array('arquivos', 10), ticketController.uploadArquivos); 
