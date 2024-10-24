@@ -33,7 +33,7 @@ const aprovar = async (req, res) => {
       const conta = await gerarContaPagar(ticket);
       ticket.contaPagarOmie = conta.codigo_lancamento_omie;
 
-      await ticket.save();
+      // await ticket.save();
       return res.send({
         success: true,
         message: `Ticket movido para a etapa "conta-pagar" e conta gerada.`,

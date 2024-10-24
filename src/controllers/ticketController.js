@@ -204,20 +204,14 @@ exports.listarArquivosDoTicket = async (req, res) => {
 
 exports.uploadArquivos = async (req, res) => {
   const ticketId = req.params.id;
-  const session = await mongoose.startSession();
-  session.startTransaction();
 
   try {
-    const ticket = await Ticket.findById(ticketId).session(session);
+    const ticket = await Ticket.findById(ticketId);
     if (!ticket) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(404).json({ message: "Ticket não encontrado" });
     }
 
     if (!req.files || req.files.length === 0) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(400).json({ message: "Nenhum arquivo enviado." });
     }
 
@@ -231,24 +225,19 @@ exports.uploadArquivos = async (req, res) => {
           size: file.size,
           ticket: ticket._id,
         });
-        await arquivo.save({ session });
+        await arquivo.save();
         return arquivo;
       })
     );
 
     ticket.arquivos.push(...arquivosSalvos.map((a) => a._id));
-    await ticket.save({ session });
-
-    await session.commitTransaction();
-    session.endSession();
+    await ticket.save();
 
     res.status(201).json({
       message: "Arquivos carregados e associados ao ticket com sucesso!",
       arquivos: arquivosSalvos,
     });
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
     console.error("Erro ao fazer upload de arquivos:", error);
     res.status(500).json({ message: "Erro ao fazer upload de arquivos.", detalhes: error.message });
   }
