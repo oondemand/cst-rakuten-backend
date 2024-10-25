@@ -4,7 +4,8 @@ const dotenv = require("dotenv");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const YAML = require("yamljs");
-const path = require("path");
+const path = require("node:path");
+const multer = require("multer");
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -26,8 +27,8 @@ if (process.env.NODE_ENV === "development") app.use(morgan("dev"));
 app.use("/", require("./routers/statusRouter"));
 
 app.use("/open-api", (req, res) => {
-  const schemaOpenAPI = YAML.load("./schemaOpenAPI.yaml");
-  res.json(schemaOpenAPI);
+	const schemaOpenAPI = YAML.load("./schemaOpenAPI.yaml");
+	res.json(schemaOpenAPI);
 });
 
 app.use("/auth", require("./routers/authRouter"));
@@ -52,14 +53,19 @@ app.use("/acoes-etapas", require("./routers/acaoEtapaRouter"));
 
 // Middleware de erro
 app.use((err, req, res, next) => {
-  if (err instanceof multer.MulterError) {
-    // Erro do Multer
-    return res.status(400).json({ message: err.message });
-  } else if (err) {
-    // Outros erros
-    return res.status(500).json({ message: err.message });
-  }
-  next();
+	if (err instanceof multer.MulterError) {
+		if (err.code === "LIMIT_FILE_SIZE") {
+			return res.status(413).json({
+				message: err.message,
+			});
+		}
+
+		return res.status(400).json({ message: err.message });
+	} else if (err) {
+		// Outros erros
+		return res.status(500).json({ message: err.message });
+	}
+	next();
 });
 
 module.exports = app;
