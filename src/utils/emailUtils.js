@@ -1,5 +1,5 @@
-const sgMail = require('@sendgrid/mail');
-const Usuario = require('../models/Usuario'); // Certifique-se de que o modelo de usuário está corretamente importado
+const sgMail = require("@sendgrid/mail");
+const Usuario = require("../models/Usuario"); // Certifique-se de que o modelo de usuário está corretamente importado
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 

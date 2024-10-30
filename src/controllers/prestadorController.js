@@ -5,11 +5,16 @@ const Ticket = require("../models/Ticket");
 // Método para obter prestador pelo idUsuario
 exports.obterPrestadorPorIdUsuario = async (req, res) => {
   try {
-    const prestador = await Prestador.findOne({ usuario: req.params.idUsuario });
-    if (!prestador) return res.status(404).json({ error: "Prestador não encontrado" });
+    const prestador = await Prestador.findOne({
+      usuario: req.params.idUsuario,
+    });
+    if (!prestador)
+      return res.status(404).json({ error: "Prestador não encontrado" });
     res.status(200).json(prestador);
   } catch (error) {
-    res.status(400).json({ error: "Erro ao obter prestador", detalhes: error.message });
+    res
+      .status(400)
+      .json({ error: "Erro ao obter prestador", detalhes: error.message });
   }
 };
 
@@ -17,7 +22,8 @@ exports.obterPrestadorPorIdUsuario = async (req, res) => {
 exports.obterPrestadorPorSid = async (req, res) => {
   try {
     const prestador = await Prestador.findOne({ sid: req.params.sid });
-    if (!prestador) return res.status(404).json({ error: "Prestador não encontrado" });
+    if (!prestador)
+      return res.status(404).json({ error: "Prestador não encontrado" });
     res.status(200).json(prestador);
   } catch (error) {
     res.status(500).json({
@@ -98,7 +104,8 @@ exports.listarPrestadores = async (req, res) => {
 exports.obterPrestador = async (req, res) => {
   try {
     const prestador = await Prestador.findById(req.params.id);
-    if (!prestador) return res.status(404).json({ error: "Prestador não encontrado" });
+    if (!prestador)
+      return res.status(404).json({ error: "Prestador não encontrado" });
     res.status(200).json(prestador);
   } catch (error) {
     res.status(400).json({ error: "Erro ao obter prestador" });
@@ -143,7 +150,8 @@ exports.atualizarPrestador = async (req, res) => {
 exports.excluirPrestador = async (req, res) => {
   try {
     const prestador = await Prestador.findByIdAndDelete(req.params.id);
-    if (!prestador) return res.status(404).json({ error: "Prestador não encontrado" });
+    if (!prestador)
+      return res.status(404).json({ error: "Prestador não encontrado" });
     res.status(204).send();
   } catch (error) {
     res.status(400).json({ error: "Erro ao excluir prestador" });

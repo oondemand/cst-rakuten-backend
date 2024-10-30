@@ -1,4 +1,5 @@
 const Ticket = require("../models/Ticket");
+const Arquivo = require("../models/Arquivo");
 
 exports.createTicket = async (req, res) => {
   const { baseOmieId, titulo, observacao, servicosIds, prestadorId } = req.body;
@@ -35,7 +36,15 @@ exports.createTicket = async (req, res) => {
 };
 
 exports.updateTicket = async (req, res) => {
-  const { baseOmieId, titulo, observacao, etapa, status, servicosIds, prestadorId } = req.body;
+  const {
+    baseOmieId,
+    titulo,
+    observacao,
+    etapa,
+    status,
+    servicosIds,
+    prestadorId,
+  } = req.body;
 
   try {
     const ticket = await Ticket.findByIdAndUpdate(
@@ -49,7 +58,7 @@ exports.updateTicket = async (req, res) => {
         servicos: servicosIds,
         prestador: prestadorId,
       },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!ticket) {
@@ -138,7 +147,9 @@ exports.getTicketById = async (req, res) => {
     res.status(200).json(ticket);
   } catch (error) {
     console.error("Erro ao buscar ticket:", error);
-    res.status(500).json({ message: "Erro ao buscar ticket", detalhes: error.message });
+    res
+      .status(500)
+      .json({ message: "Erro ao buscar ticket", detalhes: error.message });
   }
 };
 
@@ -170,7 +181,7 @@ exports.updateStatusTicket = async (req, res) => {
     const ticket = await Ticket.findByIdAndUpdate(
       req.params.id,
       { status },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!ticket) {
@@ -198,7 +209,10 @@ exports.listarArquivosDoTicket = async (req, res) => {
 
     res.status(200).json(arquivos);
   } catch (error) {
-    res.status(500).json({ message: "Erro ao listar arquivos do ticket", error: error.message });
+    res.status(500).json({
+      message: "Erro ao listar arquivos do ticket",
+      error: error.message,
+    });
   }
 };
 
@@ -227,7 +241,7 @@ exports.uploadArquivos = async (req, res) => {
         });
         await arquivo.save();
         return arquivo;
-      })
+      }),
     );
 
     ticket.arquivos.push(...arquivosSalvos.map((a) => a._id));
@@ -239,6 +253,9 @@ exports.uploadArquivos = async (req, res) => {
     });
   } catch (error) {
     console.error("Erro ao fazer upload de arquivos:", error);
-    res.status(500).json({ message: "Erro ao fazer upload de arquivos.", detalhes: error.message });
+    res.status(500).json({
+      message: "Erro ao fazer upload de arquivos.",
+      detalhes: error.message,
+    });
   }
 };

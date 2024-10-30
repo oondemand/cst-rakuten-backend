@@ -68,7 +68,7 @@ exports.createServicoETicket = async (req, res) => {
 exports.createServico = async (req, res) => {
   try {
     const filteredBody = Object.fromEntries(
-      Object.entries(req.body).filter(([_, value]) => value !== "")
+      Object.entries(req.body).filter(([_, value]) => value !== ""),
     );
 
     const novoServico = new Servico(filteredBody);
@@ -92,7 +92,9 @@ exports.updateServico = async (req, res) => {
   const updateData = req.body;
 
   try {
-    const servico = await Servico.findByIdAndUpdate(id, updateData, { new: true });
+    const servico = await Servico.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
 
     if (!servico) {
       return res.status(404).json({

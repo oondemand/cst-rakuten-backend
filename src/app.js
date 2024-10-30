@@ -5,7 +5,7 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const YAML = require("yamljs");
 const path = require("path");
-
+const multer = require("multer");
 // Carregar variáveis de ambiente
 dotenv.config();
 

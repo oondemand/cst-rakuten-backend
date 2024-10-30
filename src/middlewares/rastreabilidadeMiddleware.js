@@ -9,7 +9,8 @@ const rastreabilidadeMiddleware = async (req, res, next) => {
   const usuarioId = req.usuario ? req.usuario.id : null;
   const endpoint = req.originalUrl;
   const metodo = req.method;
-  const ip = req.ip || req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+  const ip =
+    req.ip || req.headers["x-forwarded-for"] || req.connection.remoteAddress;
   const dadosRequisicao = req.body;
 
   const log = new Log({
@@ -27,7 +28,9 @@ const rastreabilidadeMiddleware = async (req, res, next) => {
     log
       .save()
       .then(() => console.log("Log de rastreabilidade salvo com sucesso"))
-      .catch((error) => console.error("Erro ao salvar log de rastreabilidade:", error));
+      .catch((error) =>
+        console.error("Erro ao salvar log de rastreabilidade:", error),
+      );
   });
 
   next();

@@ -26,7 +26,7 @@ const etapaSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Criação do modelo (model) com base no esquema

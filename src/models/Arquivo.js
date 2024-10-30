@@ -7,9 +7,13 @@ const ArquivoSchema = new mongoose.Schema(
     path: { type: String, required: true },
     mimetype: { type: String, required: true },
     size: { type: Number, required: true },
-    ticket: { type: mongoose.Schema.Types.ObjectId, ref: "Ticket", required: true },
+    ticket: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Ticket",
+      required: true,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Arquivo", ArquivoSchema);

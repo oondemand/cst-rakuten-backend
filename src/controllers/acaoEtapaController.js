@@ -5,6 +5,8 @@ const Servico = require("../models/Servico");
 const Prestador = require("../models/Prestador");
 const Ticket = require("../models/Ticket");
 
+const mongoose = require("mongoose");
+
 exports.importarComissoes = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -22,7 +24,10 @@ exports.importarComissoes = async (req, res) => {
     const workbook = XLSX.readFile(arquivo.path);
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
-    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+      header: 1,
+      defval: "",
+    });
 
     // Processar os dados pela posição das colunas
     const processedData = jsonData
@@ -46,7 +51,9 @@ exports.importarComissoes = async (req, res) => {
     // Percorrer os dados e salvar no banco
     for (const row of processedData) {
       try {
-        let prestador = await Prestador.findOne({ sid: row.sid }).session(session);
+        let prestador = await Prestador.findOne({ sid: row.sid }).session(
+          session,
+        );
         if (!prestador) {
           prestador = new Prestador({
             sid: row.sid,
@@ -81,12 +88,15 @@ exports.importarComissoes = async (req, res) => {
 
         console.log("Ticket criado:", ticket.titulo);
       } catch (err) {
-        console.error(`Erro ao processar linha: ${JSON.stringify(row)} - ${err}`);
+        console.error(
+          `Erro ao processar linha: ${JSON.stringify(row)} - ${err}`,
+        );
         await session.abortTransaction();
         session.endSession();
-        return res
-          .status(500)
-          .json({ message: "Erro ao importar comissões.", detalhes: err.message });
+        return res.status(500).json({
+          message: "Erro ao importar comissões.",
+          detalhes: err.message,
+        });
       }
     }
 
@@ -101,7 +111,9 @@ exports.importarComissoes = async (req, res) => {
     await session.abortTransaction();
     session.endSession();
     console.error("Erro ao importar comissões:", error);
-    res.status(500).json({ message: "Erro interno do servidor.", detalhes: error.message });
+    res
+      .status(500)
+      .json({ message: "Erro interno do servidor.", detalhes: error.message });
   }
 };
 

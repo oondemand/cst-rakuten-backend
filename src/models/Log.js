@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const logSchema = new mongoose.Schema(
   {
@@ -31,9 +31,9 @@ const logSchema = new mongoose.Schema(
   },
   {
     timestamps: true, // Adiciona campos de createdAt e updatedAt automaticamente
-  }
+  },
 );
 
-const Log = mongoose.model('Log', logSchema);
+const Log = mongoose.model("Log", logSchema);
 
 module.exports = Log;

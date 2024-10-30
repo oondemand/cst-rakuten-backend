@@ -18,7 +18,7 @@ const servicoSchema = new mongoose.Schema(
       default: "ativo",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Servico", servicoSchema);

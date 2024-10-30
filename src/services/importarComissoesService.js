@@ -8,7 +8,10 @@ const processarData = async (data) => {
 
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
-    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+      header: 1,
+      defval: "",
+    });
 
     // Processar os dados pela posição das colunas
     const processedData = jsonData.map((row) => {
