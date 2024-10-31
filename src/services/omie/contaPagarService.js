@@ -9,7 +9,7 @@ const criarConta = (
   dataEmissao,
   dataVencimento,
   observacoes,
-  valor
+  valor,
 ) => {
   const conta = {
     codigo_lancamento_integracao: crypto.randomUUID(),
@@ -71,13 +71,21 @@ const incluir = async (appKey, appSecret, conta) => {
     // console.log(response.data);
     return response.data;
   } catch (error) {
-    if (error.response?.data?.faultstring?.includes("Consumo redundante detectado"))
+    if (
+      error.response?.data?.faultstring?.includes(
+        "Consumo redundante detectado",
+      )
+    )
       await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
 
     if (error.response?.data?.faultstring)
-      throw "Erro ao incluir financas/contapaga: " + error.response.data.faultstring;
-    if (error.response?.data) throw "Erro ao incluir financas/contapaga: " + error.response.data;
-    if (error.response) throw "Erro ao incluir financas/contapaga: " + error.response;
+      throw (
+        "Erro ao incluir financas/contapaga: " + error.response.data.faultstring
+      );
+    if (error.response?.data)
+      throw "Erro ao incluir financas/contapaga: " + error.response.data;
+    if (error.response)
+      throw "Erro ao incluir financas/contapaga: " + error.response;
     throw "Erro ao incluir financas/contapaga: " + error;
   }
 };
@@ -93,7 +101,8 @@ const processQueue = async () => {
   }
 
   isProcessing = true;
-  const { appKey, appSecret, codigoLancamento, resolve, reject } = queue.shift();
+  const { appKey, appSecret, codigoLancamento, resolve, reject } =
+    queue.shift();
 
   try {
     const result = await consultarInterno(appKey, appSecret, codigoLancamento);
@@ -148,13 +157,22 @@ const consultarInterno = async (appKey, appSecret, codigoLancamento) => {
 
     return response.data;
   } catch (error) {
-    if (error.response?.data?.faultstring?.includes("Consumo redundante detectado"))
+    if (
+      error.response?.data?.faultstring?.includes(
+        "Consumo redundante detectado",
+      )
+    )
       await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
 
     if (error.response?.data?.faultstring)
-      throw "Erro ao consultar financas/contapaga: " + error.response.data.faultstring;
-    if (error.response?.data) throw "Erro ao consultar financas/contapaga: " + error.response.data;
-    if (error.response) throw "Erro ao consultar financas/contapaga: " + error.response;
+      throw (
+        "Erro ao consultar financas/contapaga: " +
+        error.response.data.faultstring
+      );
+    if (error.response?.data)
+      throw "Erro ao consultar financas/contapaga: " + error.response.data;
+    if (error.response)
+      throw "Erro ao consultar financas/contapaga: " + error.response;
     throw "Erro ao consultar financas/contapaga: " + error;
   }
 };

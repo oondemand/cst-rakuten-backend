@@ -20,7 +20,7 @@ const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|pdf|xml|txt/;
   const mimetype = allowedTypes.test(file.mimetype);
   const extname = allowedTypes.test(
-    path.extname(file.originalname).toLowerCase()
+    path.extname(file.originalname).toLowerCase(),
   );
 
   if (mimetype && extname) {
@@ -40,8 +40,10 @@ router.post(
   upload.array("arquivos", 10),
   ticketController.uploadFiles
 );
+
 router.get("/:id/arquivos", ticketController.listFilesFromTicket);
 router.delete("/arquivo/:id", ticketController.deleteFileFromTicket);
+
 
 router.post("/", ticketController.createTicket);
 

@@ -46,12 +46,17 @@ const consultar = async (appKey, appSecret, codCliente) => {
 
     return data;
   } catch (error) {
-    if (error.response?.data?.faultstring?.includes("Consumo redundante detectado"))
+    if (
+      error.response?.data?.faultstring?.includes(
+        "Consumo redundante detectado",
+      )
+    )
       await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
 
     if (error.response?.data?.faultstring)
       throw "Erro ao consultar cliente: " + error.response.data.faultstring;
-    if (error.response?.data) throw "Erro ao consultar cliente: " + error.response.data;
+    if (error.response?.data)
+      throw "Erro ao consultar cliente: " + error.response.data;
     if (error.response) throw "Erro ao consultar cliente: " + error.response;
     throw "Erro ao consultar cliente: " + error;
   }
@@ -70,12 +75,17 @@ const incluir = async (appKey, appSecret, cliente) => {
     const response = await apiOmie.post("geral/clientes/", body);
     return response.data;
   } catch (error) {
-    if (error.response?.data?.faultstring?.includes("Consumo redundante detectado"))
+    if (
+      error.response?.data?.faultstring?.includes(
+        "Consumo redundante detectado",
+      )
+    )
       await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
 
     if (error.response?.data?.faultstring)
       throw "Erro ao incluir cliente: " + error.response.data.faultstring;
-    if (error.response?.data) throw "Erro ao incluir cliente: " + error.response.data;
+    if (error.response?.data)
+      throw "Erro ao incluir cliente: " + error.response.data;
     if (error.response) throw "Erro ao incluir cliente: " + error.response;
     throw error;
   }
@@ -87,7 +97,10 @@ const pesquisarPorCNPJ = async (appKey, appSecret, cnpj) => {
   const now = Date.now();
 
   // Verificar se o CNPJ está no cache e se ainda é válido (10 minuto)
-  if (cachePesquisaPorCNPJ[cacheKey] && now - cachePesquisaPorCNPJ[cacheKey].timestamp < 60 * 1000) {
+  if (
+    cachePesquisaPorCNPJ[cacheKey] &&
+    now - cachePesquisaPorCNPJ[cacheKey].timestamp < 60 * 1000
+  ) {
     console.log(`Retornando do cache para o CNPJ: ${cnpj}`);
     return cachePesquisaPorCNPJ[cacheKey].data;
   }
@@ -120,16 +133,28 @@ const pesquisarPorCNPJ = async (appKey, appSecret, cnpj) => {
 
     return data;
   } catch (error) {
-    if (error.response?.data?.faultstring?.includes("Não existem registros para a página"))
+    if (
+      error.response?.data?.faultstring?.includes(
+        "Não existem registros para a página",
+      )
+    )
       return null;
 
-    if (error.response?.data?.faultstring?.includes("Consumo redundante detectado"))
+    if (
+      error.response?.data?.faultstring?.includes(
+        "Consumo redundante detectado",
+      )
+    )
       await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
 
     if (error.response?.data?.faultstring)
-      throw "Erro ao pesquisar cliente por CNPJ: " + error.response.data.faultstring;
-    if (error.response?.data) throw "Erro ao pesquisar cliente por CNPJ:" + error.response.data;
-    if (error.response) throw "Erro ao pesquisar cliente por CNPJ: " + error.response;
+      throw (
+        "Erro ao pesquisar cliente por CNPJ: " + error.response.data.faultstring
+      );
+    if (error.response?.data)
+      throw "Erro ao pesquisar cliente por CNPJ:" + error.response.data;
+    if (error.response)
+      throw "Erro ao pesquisar cliente por CNPJ: " + error.response;
     throw error;
   }
 };

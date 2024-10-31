@@ -58,7 +58,7 @@ exports.updateTicket = async (req, res) => {
         servicos: servicosIds,
         prestador: prestadorId,
       },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!ticket) {
@@ -181,7 +181,7 @@ exports.updateStatusTicket = async (req, res) => {
     const ticket = await Ticket.findByIdAndUpdate(
       req.params.id,
       { status },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!ticket) {
@@ -252,7 +252,7 @@ exports.uploadFiles = async (req, res) => {
         });
         await arquivo.save();
         return arquivo;
-      })
+      }),
     );
 
     ticket.arquivos.push(...arquivosSalvos.map((a) => a._id));

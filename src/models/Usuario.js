@@ -5,7 +5,11 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const UsuarioSchema = new mongoose.Schema({
-  tipo: { type: String, enum: ["prestador", "central", "admin"], default: "prestador" },
+  tipo: {
+    type: String,
+    enum: ["prestador", "central", "admin"],
+    default: "prestador",
+  },
   nome: { type: String, required: true },
   email: {
     type: String,
@@ -36,7 +40,9 @@ UsuarioSchema.pre("save", async function (next) {
 });
 
 UsuarioSchema.methods.gerarToken = function () {
-  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, { expiresIn: "24h" }); // Token expira em 24 horas
+  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
+    expiresIn: "24h",
+  }); // Token expira em 24 horas
 };
 
 module.exports = mongoose.model("Usuario", UsuarioSchema);

@@ -67,11 +67,17 @@ const prestadorSchema = new mongoose.Schema(
     comentariosRevisao: String,
     status: {
       type: String,
-      enum: ["ativo", "em-analise", "pendente-de-revisao", "inativo", "arquivado"],
+      enum: [
+        "ativo",
+        "em-analise",
+        "pendente-de-revisao",
+        "inativo",
+        "arquivado",
+      ],
       default: "ativo",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Prestador", prestadorSchema);

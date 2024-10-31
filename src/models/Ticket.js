@@ -18,7 +18,7 @@ const TicketSchema = new mongoose.Schema(
       default: "aguardando-inicio",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Ticket", TicketSchema);

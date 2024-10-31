@@ -1,4 +1,4 @@
-const BaseOmie = require('../models/BaseOmie');
+const BaseOmie = require("../models/BaseOmie");
 
 exports.registrarBaseOmie = async (req, res) => {
   const { nome, cnpj, appKey, appSecret, status } = req.body;
@@ -32,22 +32,23 @@ exports.registrarBaseOmie = async (req, res) => {
 };
 
 exports.listarBaseOmies = async (req, res) => {
-    try {
-        const baseOmies = await BaseOmie.find();
-        res.json(baseOmies);
-    } catch (error) {
-        res.status(400).json({ error: 'Erro ao listar baseOmies' });
-    }
+  try {
+    const baseOmies = await BaseOmie.find();
+    res.json(baseOmies);
+  } catch (error) {
+    res.status(400).json({ error: "Erro ao listar baseOmies" });
+  }
 };
 
 exports.obterBaseOmie = async (req, res) => {
-    try {
-        const baseOmie = await BaseOmie.findById(req.params.id);
-        if (!baseOmie) return res.status(404).json({ error: 'BaseOmie não encontrada' });
-        res.json(baseOmie);
-    } catch (error) {
-        res.status(400).json({ error: 'Erro ao obter baseOmie' });
-    }
+  try {
+    const baseOmie = await BaseOmie.findById(req.params.id);
+    if (!baseOmie)
+      return res.status(404).json({ error: "BaseOmie não encontrada" });
+    res.json(baseOmie);
+  } catch (error) {
+    res.status(400).json({ error: "Erro ao obter baseOmie" });
+  }
 };
 
 exports.atualizarBaseOmie = async (req, res) => {
@@ -58,7 +59,7 @@ exports.atualizarBaseOmie = async (req, res) => {
     const baseOmie = await BaseOmie.findByIdAndUpdate(
       req.params.id,
       { nome, cnpj, appKey, appSecret, status },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!baseOmie) {
@@ -82,11 +83,12 @@ exports.atualizarBaseOmie = async (req, res) => {
 };
 
 exports.excluirBaseOmie = async (req, res) => {
-    try {
-        const baseOmie = await BaseOmie.findByIdAndDelete(req.params.id);
-        if (!baseOmie) return res.status(404).json({ error: 'BaseOmie não encontrada' });
-        res.status(204).send();
-    } catch (error) {
-        res.status(400).json({ error: 'Erro ao excluir baseOmie' });
-    }
+  try {
+    const baseOmie = await BaseOmie.findByIdAndDelete(req.params.id);
+    if (!baseOmie)
+      return res.status(404).json({ error: "BaseOmie não encontrada" });
+    res.status(204).send();
+  } catch (error) {
+    res.status(400).json({ error: "Erro ao excluir baseOmie" });
+  }
 };

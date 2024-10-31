@@ -12,7 +12,9 @@ exports.seedUsuario = async (req, res) => {
     const usuarioAtivo = await Usuario.findOne({ status: "ativo" });
 
     if (usuarioAtivo) {
-      return res.status(400).json({ error: "Já existe um usuário ativo no sistema" });
+      return res
+        .status(400)
+        .json({ error: "Já existe um usuário ativo no sistema" });
     }
 
     // Cria um novo usuário se não houver nenhum usuário ativo
@@ -68,7 +70,8 @@ exports.loginUsuario = async (req, res) => {
   const { email, senha } = req.body;
   try {
     const usuario = await Usuario.findOne({ email });
-    if (!usuario) return res.status(404).json({ mensagem: "Usuário não encontrado" });
+    if (!usuario)
+      return res.status(404).json({ mensagem: "Usuário não encontrado" });
 
     if (usuario.status === "arquivado")
       return res.status(404).json({ mensagem: "Usuário não encontrado" });
@@ -87,13 +90,20 @@ exports.loginUsuario = async (req, res) => {
         },
       });
     } else if (usuario.status === "email-nao-confirmado") {
-      res.status(401).json({ mensagem: "E-mail não confirmado", status: usuario.status });
+      res
+        .status(401)
+        .json({ mensagem: "E-mail não confirmado", status: usuario.status });
     } else {
-      const msg = { mensagem: "O usuário não está ativo", status: usuario.status };
+      const msg = {
+        mensagem: "O usuário não está ativo",
+        status: usuario.status,
+      };
       res.status(401).json(msg);
     }
   } catch (error) {
-    res.status(400).json({ mensagem: "Erro ao fazer login", detalhes: error.message });
+    res
+      .status(400)
+      .json({ mensagem: "Erro ao fazer login", detalhes: error.message });
   }
 };
 
@@ -110,7 +120,8 @@ exports.obterUsuario = async (req, res) => {
   console.log(req.params.id);
   try {
     const usuario = await Usuario.findById(req.params.id);
-    if (!usuario) return res.status(404).json({ error: "Usuário não encontrado" });
+    if (!usuario)
+      return res.status(404).json({ error: "Usuário não encontrado" });
     res.json(usuario);
   } catch (error) {
     console.log(error);
@@ -124,9 +135,10 @@ exports.atualizarUsuario = async (req, res) => {
     const usuario = await Usuario.findByIdAndUpdate(
       req.params.id,
       { nome, email, status, permissoes },
-      { new: true }
+      { new: true },
     );
-    if (!usuario) return res.status(404).json({ error: "Usuário não encontrado" });
+    if (!usuario)
+      return res.status(404).json({ error: "Usuário não encontrado" });
     res.json(usuario);
   } catch (error) {
     res.status(400).json({ error: "Erro ao atualizar usuário" });
@@ -136,7 +148,8 @@ exports.atualizarUsuario = async (req, res) => {
 exports.excluirUsuario = async (req, res) => {
   try {
     const usuario = await Usuario.findByIdAndDelete(req.params.id);
-    if (!usuario) return res.status(404).json({ error: "Usuário não encontrado" });
+    if (!usuario)
+      return res.status(404).json({ error: "Usuário não encontrado" });
     res.status(204).send();
   } catch (error) {
     res.status(400).json({ error: "Erro ao excluir usuário" });
@@ -157,7 +170,10 @@ exports.validarToken = async (req, res) => {
 exports.confirmarEmail = async (req, res) => {
   const { token } = req.body; // Espera-se que o token seja enviado no corpo da requisição
 
-  if (!token) return res.status(400).json({ error: "Token de confirmação é obrigatório." });
+  if (!token)
+    return res
+      .status(400)
+      .json({ error: "Token de confirmação é obrigatório." });
 
   try {
     // Decodificar o token
@@ -166,10 +182,13 @@ exports.confirmarEmail = async (req, res) => {
     // Encontrar o usuário pelo ID decodificado
     const usuario = await Usuario.findById(decoded.id);
 
-    if (!usuario) return res.status(404).json({ error: "Usuário não encontrado." });
+    if (!usuario)
+      return res.status(404).json({ error: "Usuário não encontrado." });
 
     if (usuario.status !== "email-nao-confirmado")
-      return res.status(400).json({ error: "E-mail já confirmado ou status inválido." });
+      return res
+        .status(400)
+        .json({ error: "E-mail já confirmado ou status inválido." });
 
     // Atualizar o status do usuário para "ativo"
     usuario.status = "ativo";
