@@ -209,9 +209,8 @@ exports.esqueciMinhaSenha = async (req, res) => {
   const {email} = req.body
 
   if(!email){
-    res.status(404).json({error: "Não foi encontrado um usuário com esse email"})
+   return res.status(404).json({error: "Não foi encontrado um usuário com esse email"})
   }
-
 
   try {
     const usuario = await Usuario.findOne({email})
@@ -230,7 +229,9 @@ exports.esqueciMinhaSenha = async (req, res) => {
       //mostra url para não ter que verificar no email
       console.log("URL", url.toString())
 
-      // await emailUtils.emailEsqueciMinhaSenha({usuario, url: url.toString()})
+      if(process.env.NODE_ENV !== "development"){
+        await emailUtils.emailEsqueciMinhaSenha({usuario, url: url.toString()})
+      }
 
       res.status(200).json({message: "Email enviado"})
     }
