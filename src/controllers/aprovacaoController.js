@@ -5,6 +5,11 @@ const contaPagarService = require("../services/omie/contaPagarService");
 const clienteService = require("../services/omie/clienteService");
 const { formatarDataOmie } = require("../utils/dateUtils");
 
+const Prestador = require("../models/Prestador");
+const Servico = require("../models/Servico");
+
+const { add } = require("date-fns");
+
 // Função para aprovar um ticket
 const aprovar = async (req, res) => {
   try {
@@ -115,14 +120,15 @@ const recusar = async (req, res) => {
 // Função para gerar a conta a pagar
 const gerarContaPagar = async (ticket) => {
   const baseOmie = await BaseOmie.findOne({ status: "ativo" });
+  const prestador = await Prestador.findById(ticket.prestador);
 
   if (!baseOmie) throw `BaseOmie não encontrada`;
 
   const codigoFornecedor = await obterOuCadastrarFornecedor(
     baseOmie.appKey,
     baseOmie.appSecret,
-    ticket.prestador.documento,
-    ticket.prestador.nome,
+    prestador.documento,
+    prestador.nome,
   );
 
   const conta = await cadastrarContaAPagar(
@@ -142,6 +148,7 @@ const obterOuCadastrarFornecedor = async (appKey, appSecret, cnpj, nome) => {
       appSecret,
       cnpj,
     );
+
     let codigoFornecedor = fornecedor ? fornecedor.codigo_cliente_omie : null;
 
     if (!codigoFornecedor) {
@@ -167,25 +174,31 @@ const cadastrarContaAPagar = async (
   ticket,
 ) => {
   try {
-    console.log("Gerando conta a pagar para o ticket:", ticket);
-    // const conta = contaPagarService.criarConta(
-    //   1,
-    //   1,
-    //   codigoFornecedor,
-    //   formatarDataOmie(ticket.servico.data),
-    //   formatarDataOmie(ticket.servico.data),
-    //   ticket.servico.descricao,
-    //   ticket.servico.valor
-    // );
+    let valorTotalDaNota = 0;
 
-    // console.log("Conta a pagar:", conta);
+    for (const id of ticket.servicos) {
+      const { valorTotal } = await Servico.findById(id);
+      valorTotalDaNota += valorTotal;
+    }
 
-    // if (ticket.servico.valor == 0) {
-    //   console.error("Valor do serviço é zero. Não será gerada conta a pagar.");
-    //   return;
-    // }
+    if (valorTotalDaNota === 0) {
+      console.error("Valor do serviço é zero. Não será gerada conta a pagar.");
+      return;
+    }
 
-    // return await contaPagarService.incluir(appKey, appSecret, conta);
+    const dataDaEmissão = new Date();
+
+    const conta = contaPagarService.criarConta({
+      numeroDocumento: 1,
+      numeroDocumentoFiscal: 1,
+      codigoFornecedor: codigoFornecedor,
+      dataEmissao: dataDaEmissão,
+      dataVencimento: add(dataDaEmissão, { hours: 24 }), // 24 horas a mais
+      descrição: "Serviços prestados",
+      valor: valorTotalDaNota,
+    });
+
+    return await contaPagarService.incluir(appKey, appSecret, conta);
   } catch (error) {
     throw `Erro ao cadastrar conta a pagar: ${error}`;
   }
