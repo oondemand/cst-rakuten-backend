@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const ticketController = require("../controllers/ticketController");
 const multer = require("multer");
-const path = require("path");
+const path = require("node:path");
 const Arquivo = require("../models/Arquivo");
 
 const storage = multer.diskStorage({
@@ -38,8 +38,12 @@ const upload = multer({
 router.post(
   "/:id/upload",
   upload.array("arquivos", 10),
-  ticketController.uploadArquivos,
+  ticketController.uploadFiles
 );
+
+router.get("/:id/arquivos", ticketController.listFilesFromTicket);
+router.delete("/arquivo/:id", ticketController.deleteFileFromTicket);
+
 
 router.post("/", ticketController.createTicket);
 
@@ -47,7 +51,6 @@ router.get("/", ticketController.getAllTickets);
 router.get("/base-omie/:baseOmieId", ticketController.getAllByBaseOmie);
 router.get("/prestador/:prestadorId", ticketController.getTicketsByPrestadorId);
 router.get("/:id", ticketController.getTicketById);
-router.get("/:id/arquivos", ticketController.listarArquivosDoTicket);
 
 router.patch("/:id", ticketController.updateTicket);
 router.patch("/:id/status", ticketController.updateStatusTicket);

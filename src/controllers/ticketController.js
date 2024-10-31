@@ -201,12 +201,10 @@ exports.updateStatusTicket = async (req, res) => {
   }
 };
 
-exports.listarArquivosDoTicket = async (req, res) => {
+exports.listFilesFromTicket = async (req, res) => {
   try {
     const { id } = req.params;
-
     const arquivos = await Arquivo.find({ ticket: id });
-
     res.status(200).json(arquivos);
   } catch (error) {
     res.status(500).json({
@@ -216,9 +214,22 @@ exports.listarArquivosDoTicket = async (req, res) => {
   }
 };
 
-exports.uploadArquivos = async (req, res) => {
-  const ticketId = req.params.id;
+exports.deleteFileFromTicket = async (req, res) => {
+  try {
+    const { id } = req.params;
 
+    const arquivos = await Arquivo.findByIdAndDelete(id);
+    res.status(200).json(arquivos);
+  } catch (error) {
+    res.status(500).json({
+      message: "Erro ao deletar arquivo do ticket",
+      error: error.message,
+    });
+  }
+};
+
+exports.uploadFiles = async (req, res) => {
+  const ticketId = req.params.id;
   try {
     const ticket = await Ticket.findById(ticketId);
     if (!ticket) {
