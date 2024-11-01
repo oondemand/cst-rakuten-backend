@@ -79,4 +79,30 @@ const confirmacaoEmailPrestador = async (usuarioId) => {
   }
 };
 
-module.exports = { confirmacaoEmailPrestador };
+const emailEsqueciMinhaSenha = async ({ usuario, url }) => {
+  try {
+    const emailFrom = {
+      email: "fabio@oondemand.com.br",
+      nome: "OonDemand",
+    };
+
+    const emailTo = {
+      email: usuario.email,
+      nome: usuario.nome,
+    };
+
+    const assunto = "Recuperação de senha";
+
+    // Template do corpo do e-mail com o link para recuperação de senha
+    const corpo = `<h1>Olá, ${usuario.nome}!</h1>
+    <p>Clique no link abaixo darmos inicio ao processo de recuperação de senha:</p>
+    <a href="${url}">Recuperar minha senha</a>`;
+
+    await enviarEmail(emailFrom, emailTo, assunto, corpo);
+  } catch (error) {
+    console.error("Erro ao enviar e-mail para recuperação de senha:", error);
+    throw new Error("Erro ao enviar e-mail para recuperação de senha");
+  }
+};
+
+module.exports = { confirmacaoEmailPrestador, emailEsqueciMinhaSenha };
