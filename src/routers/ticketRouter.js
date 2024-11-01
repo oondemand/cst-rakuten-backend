@@ -38,12 +38,11 @@ const upload = multer({
 router.post(
   "/:id/upload",
   upload.array("arquivos", 10),
-  ticketController.uploadFiles
+  ticketController.uploadFiles,
 );
 
 router.get("/:id/arquivos", ticketController.listFilesFromTicket);
 router.delete("/arquivo/:id", ticketController.deleteFileFromTicket);
-
 
 router.post("/", ticketController.createTicket);
 

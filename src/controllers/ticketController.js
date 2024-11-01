@@ -218,8 +218,12 @@ exports.deleteFileFromTicket = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const arquivos = await Arquivo.findByIdAndDelete(id);
-    res.status(200).json(arquivos);
+    const arquivo = await Arquivo.findByIdAndDelete(id);
+    const ticket = await Ticket.findByIdAndUpdate(arquivo.ticket, {
+      $pull: { arquivos: id },
+    });
+
+    res.status(200).json(arquivo);
   } catch (error) {
     res.status(500).json({
       message: "Erro ao deletar arquivo do ticket",
