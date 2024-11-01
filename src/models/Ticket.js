@@ -14,7 +14,7 @@ const TicketSchema = new mongoose.Schema(
     arquivos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Arquivo" }],
     status: {
       type: String,
-      enum: ["aguardando-inicio", "trabalhando", "revisao", "arquivado"],
+      enum: ["aguardando-inicio", "trabalhando", "revisao", "arquivado", "concluido"],
       default: "aguardando-inicio",
     },
   },
