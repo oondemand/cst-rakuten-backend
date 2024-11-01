@@ -3,7 +3,11 @@ const Etapa = require("../models/Etapa");
 const BaseOmie = require("../models/BaseOmie");
 const contaPagarService = require("../services/omie/contaPagarService");
 const clienteService = require("../services/omie/clienteService");
-const { formatarDataOmie } = require("../utils/dateUtils");
+const Arquivo = require("../models/Arquivo");
+
+const fs = require("fs");
+
+const anexoService = require("../services/omie/anexosService");
 
 const Prestador = require("../models/Prestador");
 const Servico = require("../models/Servico");
@@ -43,6 +47,9 @@ const aprovar = async (req, res) => {
       // Gerar conta a pagar
       const conta = await gerarContaPagar(ticket);
       ticket.contaPagarOmie = conta.codigo_lancamento_omie;
+
+      // Fazer upload dos arquivos
+      const arquivo = await uploadDeArquivosOmie(ticket, ticket.contaPagarOmie);
 
       // await ticket.save();
       return res.send({
@@ -201,6 +208,37 @@ const cadastrarContaAPagar = async (
     return await contaPagarService.incluir(appKey, appSecret, conta);
   } catch (error) {
     throw `Erro ao cadastrar conta a pagar: ${error}`;
+  }
+};
+
+const uploadDeArquivosOmie = async (ticket, nId) => {
+  const baseOmie = await BaseOmie.findOne({ status: "ativo" });
+
+  const uploadFile = async (id) => {
+    const arquivo = await Arquivo.findById(id);
+
+    if (arquivo) {
+      const buffer = fs.readFileSync(arquivo.path);
+
+      await anexoService.incluir({
+        appKey: baseOmie.appKey,
+        appSecret: baseOmie.appSecret,
+        tabela: "conta-pagar",
+        nId,
+        nomeArquivo: arquivo.nomeOriginal,
+        tipoArquivo: arquivo.mimetype,
+        arquivo: buffer,
+      });
+    }
+  };
+
+  try {
+    const results = await Promise.all(
+      ticket.arquivos.map((id) => uploadFile(id)),
+    );
+  } catch (error) {
+    console.log("Erro ao anexar arquivo: ", error);
+    throw `Erro ao anexar arquivo ${error}`;
   }
 };
 
