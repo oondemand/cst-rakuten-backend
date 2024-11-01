@@ -157,3 +157,52 @@ exports.excluirPrestador = async (req, res) => {
     res.status(400).json({ error: "Erro ao excluir prestador" });
   }
 };
+
+exports.obterPrestadorPorDocumento = async (req, res) => {
+  try {
+    const prestador = await Prestador.findOne({
+      documento: req.params.documento,
+    });
+    if (!prestador)
+      return res.status(404).json({ error: "Prestador não encontrado" });
+    res.status(200).json(prestador);
+  } catch (error) {
+    res.status(500).json({
+      message: "Erro ao obter prestador",
+      detalhes: error.message,
+    });
+  }
+};
+
+exports.obterPrestadorPorEmail = async (req, res) => {
+  try {
+    const prestador = await Prestador.findOne({
+      email: req.params.email,
+    });
+    if (!prestador)
+      return res.status(404).json({ error: "Prestador não encontrado" });
+    res.status(200).json(prestador);
+  } catch (error) {
+    res.status(500).json({
+      message: "Erro ao obter prestador",
+      detalhes: error.message,
+    });
+  }
+};
+
+exports.obterPrestadorPorPis = async (req, res) => {
+  try {
+    const prestador = await Prestador.findOne({
+      pis: req.params.pis,
+    });
+
+    if (!prestador)
+      return res.status(404).json({ error: "Prestador não encontrado" });
+    res.status(200).json(prestador);
+  } catch (error) {
+    res.status(500).json({
+      message: "Erro ao obter prestador",
+      detalhes: error.message,
+    });
+  }
+};
