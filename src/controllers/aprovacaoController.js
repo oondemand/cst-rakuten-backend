@@ -171,6 +171,7 @@ const cadastrarContaAPagar = async (appKey, appSecret, codigoFornecedor, ticket)
       dataVencimento: add(dataDaEmissão, { hours: 24 }), // 24 horas a mais
       descrição: "Serviços prestados",
       valor: valorTotalDaNota,
+      id_conta_corrente: 4809215570 //TODO: Deixar dinâmico
     });
 
     return await contaPagarService.incluir(appKey, appSecret, conta);
