@@ -1,16 +1,17 @@
 const crypto = require("crypto");
 const apiOmie = require("../../config/apiOmie");
+
 const { formatarDataOmie } = require("../../utils/dateUtils");
 
-const criarConta = (
+const criarConta = ({
   numeroDocumento,
   numeroDocumentoFiscal,
   codigoFornecedor,
   dataEmissao,
   dataVencimento,
-  observacoes,
+  descrição,
   valor,
-) => {
+}) => {
   const conta = {
     codigo_lancamento_integracao: crypto.randomUUID(),
     numero_documento: "oon-" + numeroDocumento,
@@ -20,7 +21,7 @@ const criarConta = (
     data_emissao: formatarDataOmie(dataEmissao),
     data_vencimento: formatarDataOmie(dataVencimento),
     data_previsao: formatarDataOmie(dataVencimento),
-    observacao: observacoes,
+    observacao: descrição,
   };
 
   // if (dadosNFSe.pis && dadosNFSe.pis > 0) {
@@ -65,7 +66,6 @@ const incluir = async (appKey, appSecret, conta) => {
       param: [conta],
     };
 
-    // console.log(JSON.stringify(body));
     const response = await apiOmie.post("financas/contapagar/", body);
     // console.log("conta a pagar adicionada com sucesso");
     // console.log(response.data);

@@ -5,6 +5,7 @@ const bcrypt = require("bcryptjs");
 const emailUtils = require("../utils/emailUtils");
 const jwt = require("jsonwebtoken");
 
+
 exports.seedUsuario = async (req, res) => {
   const { nome, email, senha, status, permissoes } = req.body;
   try {
@@ -203,3 +204,70 @@ exports.confirmarEmail = async (req, res) => {
     res.status(400).json({ error: "Token de confirmação inválido." });
   }
 };
+
+exports.esqueciMinhaSenha = async (req, res) => {
+  const {email} = req.body
+
+  if(!email){
+   return res.status(404).json({error: "Não foi encontrado um usuário com esse email"})
+  }
+
+  try {
+    const usuario = await Usuario.findOne({email})
+
+    if (!usuario) return res.status(404).json({ message: "Usuário não encontrado" });
+
+    if (usuario.status === "arquivado")
+      return res.status(404).json({ message: "Usuário não encontrado" });
+
+    if(usuario.status === "ativo"){
+      const token = usuario.gerarToken()
+
+      const url = new URL("/update-password", process.env.CLIENT_BASE_URL)
+      url.searchParams.append("code", token)
+
+      //mostra url para não ter que verificar no email
+      console.log("URL", url.toString())
+
+      if(process.env.NODE_ENV !== "development"){
+        await emailUtils.emailEsqueciMinhaSenha({usuario, url: url.toString()})
+      }
+
+      res.status(200).json({message: "Email enviado"})
+    }
+  } catch (error) {
+    console.log(error);
+    
+    res.status(404).json({error: "Usuário não encontrado"})
+  }
+}
+
+exports.alterarSenha = async (req, res) => {
+  const {code} = req.query
+
+  const token = req.headers.authorization?.split(' ')[1];
+   const {senhaAntiga, senhaNova} = req.body
+
+  if (!token && !code) {
+    return res.status(401).json({ error: 'Token inválido' });
+  }
+
+  if(code){
+    if(!senhaNova){
+      return res.status(404).json({ error: 'Nova senha é um campo obrigatório' });
+    }
+    try {
+      const decoded = jwt.verify(code, process.env.JWT_SECRET);
+      const usuario = await Usuario.findById(decoded.id).select('-senha');
+      usuario.senha = senhaNova
+      await usuario.save()
+      return res.status(200).json({ message: 'Senha atualizada com sucesso.' });
+    } catch (error) {
+      return res.status(401).json({ error: 'Token inválido.' });
+    }
+  }
+
+  return res.status(200).json({ message: 'Não configurado ainda' });
+
+}
+

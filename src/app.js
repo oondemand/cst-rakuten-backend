@@ -28,8 +28,8 @@ if (process.env.NODE_ENV === "development") app.use(morgan("dev"));
 app.use("/", require("./routers/statusRouter"));
 
 app.use("/open-api", (req, res) => {
-	const schemaOpenAPI = YAML.load("./schemaOpenAPI.yaml");
-	res.json(schemaOpenAPI);
+  const schemaOpenAPI = YAML.load("./schemaOpenAPI.yaml");
+  res.json(schemaOpenAPI);
 });
 
 app.use("/auth", require("./routers/authRouter"));
@@ -54,19 +54,19 @@ app.use("/acoes-etapas", require("./routers/acaoEtapaRouter"));
 
 // Middleware de erro
 app.use((err, req, res, next) => {
-	if (err instanceof multer.MulterError) {
-		if (err.code === "LIMIT_FILE_SIZE") {
-			return res.status(413).json({
-				message: err.message,
-			});
-		}
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({
+        message: err.message,
+      });
+    }
 
-		return res.status(400).json({ message: err.message });
-	} else if (err) {
-		// Outros erros
-		return res.status(500).json({ message: err.message });
-	}
-	next();
+    return res.status(400).json({ message: err.message });
+  } else if (err) {
+    // Outros erros
+    return res.status(500).json({ message: err.message });
+  }
+  next();
 });
 
 module.exports = app;

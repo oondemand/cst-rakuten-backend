@@ -6,3 +6,5 @@
 **/.env
 **/.env.prod
 **/package-lock.json
+
+.vscode

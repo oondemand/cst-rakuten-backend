@@ -71,7 +71,6 @@ const incluir = async (appKey, appSecret, cliente) => {
       param: [cliente],
     };
 
-    // console.log(JSON.stringify(body));
     const response = await apiOmie.post("geral/clientes/", body);
     return response.data;
   } catch (error) {

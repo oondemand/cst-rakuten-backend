@@ -8,4 +8,8 @@ router.post("/registrar-usuario", usuarioController.registrarUsuarioPrestador);
 router.post("/confirmar-email", usuarioController.confirmarEmail);
 router.get("/validar-token", usuarioController.validarToken);
 
+router.post("/esqueci-minha-senha", usuarioController.esqueciMinhaSenha)
+router.post("/alterar-senha", usuarioController.alterarSenha)
+
+
 module.exports = router;
