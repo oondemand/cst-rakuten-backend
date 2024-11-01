@@ -8,13 +8,24 @@ router.post(
   "/adicionar-e-criar-ticket",
   prestadorController.adicionarPrestadorECriarTicket,
 );
+
 router.post("/", prestadorController.criarPrestador);
 
 router.get(
   "/usuario/:idUsuario",
   prestadorController.obterPrestadorPorIdUsuario,
 );
+
 router.get("/sid/:sid", prestadorController.obterPrestadorPorSid);
+
+router.get(
+  "/documento/:documento",
+  prestadorController.obterPrestadorPorDocumento,
+);
+
+router.get("/email/:email", prestadorController.obterPrestadorPorEmail);
+router.get("/pis/:pis", prestadorController.obterPrestadorPorPis);
+
 router.get("/", prestadorController.listarPrestadores);
 router.get("/:id", prestadorController.obterPrestador);
 
