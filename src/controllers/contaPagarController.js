@@ -1,48 +1,28 @@
 const Ticket = require("../models/Ticket");
-const Empresa = require("../models/BaseOmie");
+const BaseOmie = require("../models/BaseOmie");
 const { consultar } = require("../services/omie/contaPagarService");
 
 const obterContaPagarOmie = async (req, res) => {
   try {
     const { codigoLancamento } = req.params;
+    console.log("Obtendo conta a pagar Omie:", codigoLancamento);
 
-    // Buscar o ticket pelo codigoLancamento no campo contaPagarOmie
-    const ticket = await Ticket.findOne({
-      contaPagarOmie: codigoLancamento,
-    }).populate("nfse");
+    const ticket = await Ticket.findOne({ contaPagarOmie: codigoLancamento });
     if (!ticket) {
-      return res
-        .status(404)
-        .json({ mensagem: "Ticket com a conta a pagar não encontrado." });
+      return res.status(404).json({ mensagem: "Ticket com a conta a pagar não encontrado." });
     }
+    console.log("Ticket encontrado:", ticket);
 
-    const cnpjTomador = ticket.nfse.infoNfse.tomador.documento.replace(
-      /[^\d]/g,
-      "",
-    );
+    const baseOmie = await BaseOmie.findOne();
+    console.log("Base Omie encontrada:", baseOmie);
 
-    // Buscar a empresa no banco de dados pelo CNPJ
-    const empresa = await Empresa.findOne({ cnpj: cnpjTomador });
-    if (!empresa) {
-      return res
-        .status(404)
-        .json({ mensagem: "Empresa associada ao CNPJ não encontrada." });
-    }
-
-    // Verificar se a empresa tem as credenciais Omie
-    const { appKeyOmie, appSecretOmie } = empresa;
-    if (!appKeyOmie || !appSecretOmie) {
-      return res
-        .status(400)
-        .json({ mensagem: "Credenciais Omie da empresa não encontradas." });
-    }
+    const { appKey, appSecret } = baseOmie;
+    if (!appKey || !appSecret)
+      return res.status(400).json({ mensagem: "Credenciais Base Omie não encontradas." });
 
     // Consultar a conta a pagar na Omie usando o serviço de consulta
-    const contaPagarOmie = await consultar(
-      appKeyOmie,
-      appSecretOmie,
-      codigoLancamento,
-    );
+    const contaPagarOmie = await consultar(appKey, appSecret, codigoLancamento);
+    console.log("Conta a pagar Omie encontrada:", contaPagarOmie);
 
     // Verificar se o status do título é "PAGO"
     if (contaPagarOmie.status_titulo === "PAGO") {
