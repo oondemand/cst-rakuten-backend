@@ -4,8 +4,44 @@ const fs = require("fs");
 const Servico = require("../models/Servico");
 const Prestador = require("../models/Prestador");
 const Ticket = require("../models/Ticket");
+const Arquivo = require("../models/Arquivo");
 
 const mongoose = require("mongoose");
+
+const {
+  criarPrestadorParaExportacao,
+} = require("../services/integracaoRPAs/exportarPrestadores");
+const {
+  criarServicoParaExportacao,
+} = require("../services/integracaoRPAs/exportarServicos");
+
+const { format } = require("date-fns");
+const { ptBR } = require("date-fns/locale");
+
+const verificarDuplicidadeDeTicketsNaEtapaDeIntegração = async (baseOmieId) => {
+  return await Ticket.aggregate([
+    {
+      $match: {
+        // baseOmie: baseOmieId,
+        etapa: "integracao-unico",
+      },
+    },
+    {
+      $group: {
+        _id: "$prestador", // Agrupando pelo campo 'prestador'
+        count: { $sum: 1 }, // Contando tickets para cada 'prestador'
+      },
+    },
+    {
+      $match: {
+        count: { $gt: 1 }, // Filtra apenas prestadores com mais de um ticket
+      },
+    },
+    {
+      $limit: 1, // Limita o resultado a um registro para verificar apenas a existência
+    },
+  ]);
+};
 
 exports.importarComissoes = async (req, res) => {
   const session = await mongoose.startSession();
@@ -118,13 +154,101 @@ exports.importarComissoes = async (req, res) => {
 };
 
 exports.exportarServicos = async (req, res) => {
-  console.log("Exportar serviços");
-  res.send("Exportar serviços");
+  try {
+    const ticketsComMesmoPrestador =
+      await verificarDuplicidadeDeTicketsNaEtapaDeIntegração();
+
+    if (ticketsComMesmoPrestador.length > 0) {
+      return res.status(409).json({ message: "Erro ao exportar serviços" });
+    }
+
+    const tickets = await Ticket.find({
+      etapa: "integracao-unico",
+      status: { $ne: "arquivado" },
+    })
+      .populate("servicos")
+      .populate("prestador");
+
+    let txt = "";
+
+    for (const ticket of tickets) {
+      for (const servico of ticket.servicos) {
+        txt += criarServicoParaExportacao({
+          codEmpresa: 101009,
+          codAutonomo: ticket.prestador.sciUnico,
+          tipoDeDocumento: 2,
+          dataDeRealizacao: format(servico.createdAt, "ddMMyyyy", {
+            locale: ptBR,
+          }),
+          valor: servico.valorTotal,
+          codCentroDeCustos: 17,
+        }).concat("\n\n");
+      }
+
+      ticket.status = "trabalhando";
+      ticket.save();
+    }
+
+    res.setHeader("Content-Disposition", "attachment; filename=servicos.txt");
+    res.setHeader("Content-Type", "text/plain");
+
+    return res.send(txt);
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao exportar serviços" });
+  }
 };
 
 exports.exportarPrestadores = async (req, res) => {
-  console.log("Exportar prestadores");
-  res.send("Exportar prestadores");
+  try {
+    const ticketsComMesmoPrestador =
+      await verificarDuplicidadeDeTicketsNaEtapaDeIntegração();
+
+    if (ticketsComMesmoPrestador.length > 0) {
+      return res.status(409).json({ message: "Erro ao exportar prestadores" });
+    }
+
+    const tickets = await Ticket.find({
+      etapa: "integracao-unico",
+      status: { $ne: "arquivado" },
+    });
+
+    let prestadoresTxt = "";
+
+    for (const ticket of tickets) {
+      const prestador = await Prestador.findById(ticket.prestador);
+
+      if (!prestador.sciUnico) {
+        const ultimoPrestador = await Prestador.findOne()
+          .sort({ sciUnico: -1 })
+          .exec();
+        const novoSciUnico = ultimoPrestador.sciUnico
+          ? ultimoPrestador.sciUnico + 1
+          : 60000;
+
+        prestador.sciUnico = novoSciUnico;
+        prestador.save();
+      }
+
+      prestadoresTxt += criarPrestadorParaExportacao({
+        codSCI: prestador.sciUnico,
+        documento: prestador.documento,
+        bairro: prestador.bairro,
+        email: prestador.email,
+        nome: prestador.nome,
+        cep: prestador.endereco.cep,
+      }).concat("\n\n");
+    }
+
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=prestadores.txt",
+    );
+    res.setHeader("Content-Type", "text/plain");
+
+    return res.send(prestadoresTxt);
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao exportar prestadores" });
+  }
 };
 
 exports.importarPrestadores = async (req, res) => {
@@ -133,6 +257,40 @@ exports.importarPrestadores = async (req, res) => {
 };
 
 exports.importarRPAs = async (req, res) => {
-  console.log("Importar RPA");
-  res.send("Importar RPA");
+  try {
+    if (!req.file || req.file.length === 0) {
+      return res.status(400).json({ message: "Nenhum arquivo enviado." });
+    }
+
+    const sciUnico = req.file.originalname.replace(".pdf", "").split("-")[2];
+
+    const prestador = await Prestador.find({ sciUnico: sciUnico });
+
+    const ticket = await Ticket.findOne({
+      etapa: "integracao-unico",
+      prestador,
+    });
+
+    const arquivo = new Arquivo({
+      nome: req.file.filename,
+      nomeOriginal: req.file.originalname,
+      path: req.file.path,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      ticket: ticket._id,
+    });
+
+    await arquivo.save();
+
+    ticket.arquivos.push(arquivo._id);
+    await ticket.save();
+
+    res.status(201).json({ message: "batendo aqui" });
+  } catch (error) {
+    console.error("Erro ao fazer upload de arquivos:", error);
+    res.status(500).json({
+      message: "Erro ao fazer upload de arquivos.",
+      detalhes: error.message,
+    });
+  }
 };
