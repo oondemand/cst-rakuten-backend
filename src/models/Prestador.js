@@ -22,6 +22,7 @@ const dadosBancariosSchema = new mongoose.Schema({
 // Esquema Principal do Prestador
 const prestadorSchema = new mongoose.Schema(
   {
+    sciUnico: { type: Number, match: /^\d{5,}$/ },
     usuario: { type: mongoose.Schema.Types.ObjectId, ref: "Usuario" },
     nome: { type: String, required: true },
     sid: {
