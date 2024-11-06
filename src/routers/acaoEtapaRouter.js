@@ -17,12 +17,14 @@ const storage = multer.diskStorage({
 
 // Filtrando arquivos (opcional)
 const fileFilter = (req, file, cb) => {
+  const tiposPermitidos = [
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-excel",
+    "application/vnd.ms-excel.sheet.binary.macroenabled.12",
+  ];
+
   // Aceitar apenas arquivos Excel
-  if (
-    file.mimetype ===
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
-    file.mimetype === "application/vnd.ms-excel"
-  ) {
+  if (tiposPermitidos.includes(file.mimetype)) {
     cb(null, true);
   } else {
     cb(new Error("Tipo de arquivo não suportado"), false);
@@ -45,10 +47,7 @@ router.post(
 // Filtrando arquivos (opcional)
 const rpasFileFilter = (req, file, cb) => {
   // Aceitar apenas arquivos pdf
-  if (
-    file.mimetype ===
-      "application/pdf" 
-  ) {
+  if (file.mimetype === "application/pdf") {
     cb(null, true);
   } else {
     cb(new Error("Tipo de arquivo não suportado"), false);

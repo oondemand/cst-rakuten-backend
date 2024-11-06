@@ -6,6 +6,8 @@ const Prestador = require("../models/Prestador");
 const Ticket = require("../models/Ticket");
 const Arquivo = require("../models/Arquivo");
 
+const emailUtils = require("../utils/emailUtils");
+
 const mongoose = require("mongoose");
 
 const {
@@ -15,7 +17,9 @@ const {
   criarServicoParaExportacao,
 } = require("../services/integracaoRPAs/exportarServicos");
 
-const { format } = require("date-fns");
+const { converterNumeroSerieParaData } = require("../utils/dateUtils");
+
+const { format, getMonth, getYear } = require("date-fns");
 const { ptBR } = require("date-fns/locale");
 
 const verificarDuplicidadeDeTicketsNaEtapaDeIntegração = async (baseOmieId) => {
@@ -44,15 +48,12 @@ const verificarDuplicidadeDeTicketsNaEtapaDeIntegração = async (baseOmieId) =>
 };
 
 exports.importarComissoes = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  console.log("[PROCESSANDO COMISSÕES]...");
 
   try {
     const arquivo = req.file;
 
     if (!arquivo) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(400).json({ message: "Nenhum arquivo enviado." });
     }
 
@@ -68,41 +69,53 @@ exports.importarComissoes = async (req, res) => {
     // Processar os dados pela posição das colunas
     const processedData = jsonData
       .map((row, index) => {
-        if (index === 0) return null; // Ignorar cabeçalho, se existir
+        if (index <= 5) return null; // Ignorar cabeçalho, (equivalente ao modelo de exemplo )
 
         return {
-          sid: row[0] || "",
-          nomePrestador: row[1] || "",
-          mesCompetencia: row[2] || "",
-          anoCompetencia: row[3] || "",
-          valorPrincipal: row[4] || 0,
-          valorBonus: row[5] || 0,
-          valorAjusteComercial: row[6] || 0,
-          valorHospedagemAnuncio: row[7] || 0,
-          valorTotal: row[8] || 0,
+          sid: row[3] || "",
+          nomePrestador: row[2] || "",
+          mesCompetencia: row[5] || "",
+          anoCompetencia: row[5] || "",
+          valorPrincipal: row[6] || 0,
+          valorBonus: row[7] || 0,
+          valorAjusteComercial: row[8] || 0,
+          valorHospedagemAnuncio: row[9] || 0,
+          valorTotal: row[10] || 0,
         };
       })
       .filter((row) => row !== null && row.sid && row.nomePrestador); // Filtra linhas inválidas
 
+    let detalhes = {
+      linhasEncontradas: processedData.length,
+      linhasLidasComErro: 0,
+      totalDeNovosPrestadores: 0,
+      valorTotalLido: 0,
+      totalDeNovosTickets: 0,
+      erros: "",
+    };
+
     // Percorrer os dados e salvar no banco
     for (const row of processedData) {
       try {
-        let prestador = await Prestador.findOne({ sid: row.sid }).session(
-          session,
-        );
+        let prestador = await Prestador.findOne({ sid: row.sid });
+
         if (!prestador) {
           prestador = new Prestador({
             sid: row.sid,
             nome: row.nomePrestador,
             status: "pendente-de-revisao",
           });
-          await prestador.save({ session });
+          await prestador.save();
+          detalhes.totalDeNovosPrestadores += 1;
         }
-
+        
         const servico = new Servico({
           prestador: prestador._id,
-          mesCompetencia: row.mesCompetencia,
-          anoCompetencia: row.anoCompetencia,
+          mesCompetencia:
+            getMonth(converterNumeroSerieParaData(row.mesCompetencia)) + 1, // Meses no date-fns começam a partir do 0
+          anoCompetencia: getYear(
+            converterNumeroSerieParaData(row.anoCompetencia),
+          ),
           valorPrincipal: row.valorPrincipal,
           valorBonus: row.valorBonus,
           valorAjusteComercial: row.valorAjusteComercial,
@@ -111,41 +124,61 @@ exports.importarComissoes = async (req, res) => {
           correcao: row.correcao || false,
           status: "ativo",
         });
-        await servico.save({ session });
 
-        const ticket = new Ticket({
-          servicos: [servico._id],
-          prestador: prestador._id,
-          titulo: `Comissão ${prestador.nome}: ${servico.mesCompetencia}/${servico.anoCompetencia}`,
-          status: "aguardando-inicio",
-          etapa: "requisicao",
+        await servico.save();
+
+        const ticket = await Ticket.findOne({
+          prestador,
+          etapa: {
+            $in: [
+              "requisicao",
+              "verificacao",
+              "aprovacao-tributaria",
+              "aprovacao-cadastro",
+            ],
+          },
         });
-        await ticket.save({ session });
 
-        console.log("Ticket criado:", ticket.titulo);
+        if (ticket) {
+          ticket.servicos.push(servico._id);
+          await ticket.save();
+        }
+
+        if (!ticket) {
+          const novoTicket = new Ticket({
+            servicos: [servico._id],
+            prestador: prestador._id,
+            titulo: `Comissão ${prestador.nome}: ${servico.mesCompetencia}/${servico.anoCompetencia}`,
+            status: "aguardando-inicio",
+            etapa: "requisicao",
+          });
+          await novoTicket.save();
+          detalhes.totalDeNovosTickets += 1;
+        }
+
+        detalhes.valorTotalLido += row.valorTotal;
       } catch (err) {
+        detalhes.linhasLidasComErro += 1;
+        detalhes.erros += `Erro ao processar linha: ${JSON.stringify(row)} - ${err} \n\n`;
+        
         console.error(
           `Erro ao processar linha: ${JSON.stringify(row)} - ${err}`,
         );
-        await session.abortTransaction();
-        session.endSession();
-        return res.status(500).json({
-          message: "Erro ao importar comissões.",
-          detalhes: err.message,
-        });
       }
     }
+
+    await emailUtils.importarComissõesDetalhes({
+      detalhes,
+      usuario: req.usuario,
+    });
 
     // Remover o arquivo após o processamento
     fs.unlinkSync(arquivo.path);
 
-    await session.commitTransaction();
-    session.endSession();
-
-    res.status(201).json({ message: "Comissões importadas com sucesso." });
+    res.status(200).json({
+      message: "Comissões importadas. Verifique o relatório em seu email!",
+    });
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
     console.error("Erro ao importar comissões:", error);
     res
       .status(500)
@@ -164,7 +197,7 @@ exports.exportarServicos = async (req, res) => {
 
     const tickets = await Ticket.find({
       etapa: "integracao-unico",
-      status: { $ne: "arquivado" },
+      status: { $ne: "concluido" },
     })
       .populate("servicos")
       .populate("prestador");
@@ -209,7 +242,7 @@ exports.exportarPrestadores = async (req, res) => {
 
     const tickets = await Ticket.find({
       etapa: "integracao-unico",
-      status: { $ne: "arquivado" },
+      status: { $ne: "concluido" },
     });
 
     let prestadoresTxt = "";
@@ -228,6 +261,7 @@ exports.exportarPrestadores = async (req, res) => {
         prestador.sciUnico = novoSciUnico;
         prestador.save();
       }
+      
 
       prestadoresTxt += criarPrestadorParaExportacao({
         codSCI: prestador.sciUnico,
@@ -247,6 +281,7 @@ exports.exportarPrestadores = async (req, res) => {
 
     return res.send(prestadoresTxt);
   } catch (error) {
+    console.error(error)
     res.status(500).json({ message: "Erro ao exportar prestadores" });
   }
 };
@@ -283,6 +318,10 @@ exports.importarRPAs = async (req, res) => {
     await arquivo.save();
 
     ticket.arquivos.push(arquivo._id);
+
+    ticket.etapa = "aprovacao-pagamento";
+    ticket.status = "aguardando-inicio";
+
     await ticket.save();
 
     res.status(201).json({ message: "batendo aqui" });
