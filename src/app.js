@@ -27,6 +27,7 @@ if (process.env.NODE_ENV === "development") app.use(morgan("dev"));
 // **Rotas públicas** - Não requerem autenticação
 app.use("/", require("./routers/statusRouter"));
 
+
 app.use("/open-api", (req, res) => {
   const schemaOpenAPI = YAML.load("./schemaOpenAPI.yaml");
   res.json(schemaOpenAPI);
@@ -51,6 +52,8 @@ app.use("/logs", require("./routers/logRouter"));
 app.use("/prestadores", require("./routers/prestadorRouter"));
 app.use("/servicos", require("./routers/servicoRouter"));
 app.use("/acoes-etapas", require("./routers/acaoEtapaRouter"));
+
+app.use('/uploads', express.static(path.join(__dirname, "..", 'uploads')));
 
 // Middleware de erro
 app.use((err, req, res, next) => {

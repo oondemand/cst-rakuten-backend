@@ -105,4 +105,59 @@ const emailEsqueciMinhaSenha = async ({ usuario, url }) => {
   }
 };
 
-module.exports = { confirmacaoEmailPrestador, emailEsqueciMinhaSenha };
+const importarComissõesDetalhes = async ({ usuario, detalhes }) => {
+  try {
+    const emailFrom = {
+      email: "fabio@oondemand.com.br",
+      nome: "OonDemand",
+    };
+
+    const emailTo = {
+      email: usuario.email,
+      nome: usuario.nome,
+    };
+
+    const assunto = "Detalhes de importação de comissões";
+
+    // Template do corpo do e-mail com o link para recuperação de senha
+    const corpo = `<h1>Olá, ${usuario.nome}!</h1>
+    <p>Segue o relatório sobre a importação de comissões:</p>
+    <p>Linhas lidas: ${detalhes.linhasEncontradas}</p>
+    <p>Linhas com erro: ${detalhes.linhasLidasComErro}</p>
+    <p>Linhas com sucesso: ${detalhes.linhasEncontradas - detalhes.linhasLidasComErro}</p>
+    <p>Total de serviços criados: ${detalhes.linhasEncontradas - detalhes.linhasLidasComErro}</p>
+    <p>Total novos prestadores criados: ${detalhes.totalDeNovosPrestadores}</p>
+    <p>Total de novos tickets criados: ${detalhes.totalDeNovosTickets}</p>
+    <p>Valor total lido: ${detalhes.valorTotalLido.toFixed(2).replace(".", ",")}</p>`;
+
+    console.log(corpo);
+
+    const arquivoDeErros = Buffer.from(detalhes.erros).toString("base64");
+    const anexos = [
+      {
+        content: arquivoDeErros,
+        filename: "arquivo.txt",
+        type: "text/plain",
+        disposition: "attachment",
+      },
+    ];
+
+    if (process.env.NODE_ENV !== "development") {
+      await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
+    }
+  } catch (error) {
+    console.error(
+      "Erro ao enviar e-mail para detalhes de importação de comissões:",
+      error,
+    );
+    throw new Error(
+      "Erro ao enviar e-mail para detalhes de importação de comissões",
+    );
+  }
+};
+
+module.exports = {
+  confirmacaoEmailPrestador,
+  emailEsqueciMinhaSenha,
+  importarComissõesDetalhes,
+};
