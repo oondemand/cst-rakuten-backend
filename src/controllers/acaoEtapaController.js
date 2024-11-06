@@ -235,7 +235,7 @@ exports.exportarPrestadores = async (req, res) => {
         bairro: prestador.bairro,
         email: prestador.email,
         nome: prestador.nome,
-        cep: prestador.endereco.cep,
+        cep: prestador.endereco ? prestador.endereco.cep : "",
       }).concat("\n\n");
     }
 
