@@ -11,6 +11,8 @@ const {
   criarPrestadorParaExportacao,
 } = require("../services/integracaoRPAs/exportarPrestadores");
 
+const emailUtils = require("../utils/emailUtils");
+
 exports.importarComissoes = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -166,7 +168,7 @@ exports.exportarPrestadores = async (req, res) => {
     }
   }
 
-  console.log(documento);
+  emailUtils.emailPrestadoresExportados({ documento, usuario: req.usuario });
 };
 
 exports.importarPrestadores = async (req, res) => {

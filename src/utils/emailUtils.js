@@ -1,5 +1,6 @@
 const sgMail = require("@sendgrid/mail");
 const Usuario = require("../models/Usuario"); // Certifique-se de que o modelo de usuário está corretamente importado
+const { format } = require("date-fns");
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
@@ -105,4 +106,41 @@ const emailEsqueciMinhaSenha = async ({ usuario, url }) => {
   }
 };
 
-module.exports = { confirmacaoEmailPrestador, emailEsqueciMinhaSenha };
+const emailPrestadoresExportados = async ({ usuario, documento }) => {
+  try {
+    const emailFrom = {
+      email: "suporte@oondemand.com.br",
+      nome: "OonDemand",
+    };
+
+    const emailTo = {
+      email: usuario.email,
+      nome: usuario.nome,
+    };
+
+    const assunto = "Confirme seu e-mail";
+
+    // Template do corpo do e-mail com o link de confirmação
+    const corpo = `<h1>Olá, ${usuario.nome}!</h1>
+    <p>Segue em anexo o arquivo com prestadores exportados!</p>`;
+
+    const arquivoDeErros = Buffer.from(documento).toString("base64");
+    const anexos = [
+      {
+        filename: `prestadores-${format(new Date(), "dd-MM-yyy")}.txt`,
+        fileBuffer: arquivoDeErros,
+      },
+    ];
+
+    return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
+  } catch (error) {
+    console.error("Erro ao enviar e-mail de confirmação:", error);
+    throw new Error("Erro ao enviar e-mail de confirmação");
+  }
+};
+
+module.exports = {
+  confirmacaoEmailPrestador,
+  emailEsqueciMinhaSenha,
+  emailPrestadoresExportados,
+};
