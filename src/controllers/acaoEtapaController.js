@@ -199,16 +199,21 @@ exports.exportarServicos = async (req, res) => {
 };
 
 exports.exportarPrestadores = async (req, res) => {
-  console.log("Exportando prestadores");
-  res
-    .status(200)
-    .json({ mensagem: "Prestadores sendo processados e exportados" });
-
   try {
     const tickets = await Ticket.find({
       etapa: "integracao-unico",
       status: { $ne: "concluido" },
     }).populate("prestador");
+
+    if (!tickets) {
+      return res.status(400).json({
+        mensagem: "Não foram encontrados tickets para serem exportados ",
+      });
+    }
+
+    res
+      .status(200)
+      .json({ mensagem: "Prestadores sendo processados e exportados" });
 
     const prestadoresExportados = [];
     let documento = "";
