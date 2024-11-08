@@ -7,6 +7,10 @@ const Ticket = require("../models/Ticket");
 
 const mongoose = require("mongoose");
 
+const {
+  criarPrestadorParaExportacao,
+} = require("../services/integracaoRPAs/exportarPrestadores");
+
 exports.importarComissoes = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -123,8 +127,46 @@ exports.exportarServicos = async (req, res) => {
 };
 
 exports.exportarPrestadores = async (req, res) => {
-  console.log("Exportar prestadores");
-  res.send("Exportar prestadores");
+  console.log("Exportando prestadores");
+  res
+    .status(200)
+    .json({ mensagem: "Prestadores sendo processados e exportados" });
+
+  const tickets = await Ticket.find({
+    etapa: "integracao-unico",
+    status: { $ne: "concluido" },
+  }).populate("prestador");
+
+  const prestadoresExportados = [];
+  let documento = "";
+
+  for (const { prestador } of tickets) {
+    if (!prestador.sciUnico && !prestadoresExportados.includes(prestador._id)) {
+      documento += criarPrestadorParaExportacao({
+        documento: prestador.documento,
+        bairro: prestador.bairro,
+        email: prestador.email,
+        nome: prestador.nome,
+        cep: prestador.endereco ? prestador.endereco.cep : "",
+        nomeMae: prestador.pessoaFisica ? prestador.pessoaFisica.nomeMae : "",
+        pisNis: prestador.pessoaFisica ? prestador.pessoaFisica.pis : "",
+        rg: prestador.pessoaFisica ? prestador.pessoaFisica.rg.numero : "",
+        orgaoEmissorRG: prestador.pessoaFisica
+          ? prestador.pessoaFisica.rg.orgaoEmissor
+          : "",
+        dataNascimento: prestador.pessoaFisica
+          ? prestador.pessoaFisica.dataNascimento
+          : "",
+      }).concat("\n\n");
+
+      prestador.status = "aguardando-codigo-sci";
+      prestador.dataExportacao = new Date();
+      await prestador.save();
+      prestadoresExportados.push(prestador._id);
+    }
+  }
+
+  console.log(documento);
 };
 
 exports.importarPrestadores = async (req, res) => {
