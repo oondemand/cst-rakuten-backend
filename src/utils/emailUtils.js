@@ -147,7 +147,7 @@ const emailServicosExportados = async ({ usuario, documento }) => {
     };
 
     const emailTo = {
-      email: "maikonalexandre574@gmail.com",
+      email: usuario.email,
       nome: usuario.nome,
     };
 
