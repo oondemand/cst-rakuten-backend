@@ -134,8 +134,41 @@ const emailPrestadoresExportados = async ({ usuario, documento }) => {
 
     return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
   } catch (error) {
-    console.error("Erro ao enviar e-mail de confirmação:", error);
-    throw new Error("Erro ao enviar e-mail de confirmação");
+    console.error("Erro ao enviar e-mail de prestadores exportados:", error);
+    throw new Error("Erro ao enviar e-mail de prestadores exportados:");
+  }
+};
+
+const emailServicosExportados = async ({ usuario, documento }) => {
+  try {
+    const emailFrom = {
+      email: "suporte@oondemand.com.br",
+      nome: "OonDemand",
+    };
+
+    const emailTo = {
+      email: "maikonalexandre574@gmail.com",
+      nome: usuario.nome,
+    };
+
+    const assunto = "Serviços exportados";
+
+    // Template do corpo do e-mail com o link de confirmação
+    const corpo = `<h1>Olá, ${usuario.nome}!</h1>
+    <p>Segue em anexo o arquivo com serviços exportados!</p>`;
+
+    const arquivoDeErros = Buffer.from(documento).toString("base64");
+    const anexos = [
+      {
+        filename: `servicos-${format(new Date(), "dd-MM-yyy")}.txt`,
+        fileBuffer: arquivoDeErros,
+      },
+    ];
+
+    return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
+  } catch (error) {
+    console.error("Erro ao enviar e-mail de serviços exportados:", error);
+    throw new Error("Erro ao enviar e-mail de serviços exportados:");
   }
 };
 
@@ -143,4 +176,5 @@ module.exports = {
   confirmacaoEmailPrestador,
   emailEsqueciMinhaSenha,
   emailPrestadoresExportados,
+  emailServicosExportados,
 };

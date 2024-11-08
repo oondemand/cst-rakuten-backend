@@ -6,10 +6,15 @@ const Prestador = require("../models/Prestador");
 const Ticket = require("../models/Ticket");
 
 const mongoose = require("mongoose");
+const { max, addDays, format } = require("date-fns");
 
 const {
   criarPrestadorParaExportacao,
 } = require("../services/integracaoRPAs/exportarPrestadores");
+
+const {
+  criarServicoParaExportacao,
+} = require("../services/integracaoRPAs/exportarServicos");
 
 const emailUtils = require("../utils/emailUtils");
 
@@ -125,7 +130,65 @@ exports.importarComissoes = async (req, res) => {
 
 exports.exportarServicos = async (req, res) => {
   console.log("Exportar serviços");
-  res.send("Exportar serviços");
+  res.status(200).json({ mensagem: "Serviços sendo processados e exportados" });
+
+  try {
+    const tickets = await Ticket.find({
+      etapa: "integracao-unico",
+      status: { $ne: "concluido" },
+    })
+      .populate("servicos")
+      .populate("prestador");
+
+    let documento = "";
+    const prestadoresComTicketsExportados = [];
+
+    for (const ticket of tickets) {
+      const { prestador, servicos } = ticket;
+      if (
+        prestador.sciUnico &&
+        servicos.length > 0 &&
+        !prestadoresComTicketsExportados.includes(prestador._id)
+      ) {
+        let valorTotalDoTicket = 0;
+        const datasDeCompetencia = [];
+        for (const { valorTotal, mesCompetencia, anoCompetencia } of servicos) {
+          console.log(valorTotal);
+
+          valorTotalDoTicket += valorTotal;
+          // -1 por que para o date fns janeiro = 0
+          datasDeCompetencia.push(new Date(anoCompetencia, mesCompetencia - 1));
+        }
+
+        if (valorTotalDoTicket > 0) {
+          const dataDeCompetenciaMaisRecente = max(datasDeCompetencia);
+
+          documento += criarServicoParaExportacao({
+            codAutonomo: prestador.sciUnico,
+            codCentroDeCustos: process.env.SCI_CODIGO_CENTRO_CUSTO,
+            codEmpresa: process.env.SCI_CODIGO_EMPRESA,
+            porcentualIss: process.env.SCI_PORCENTAGEM_ISS,
+            dataDePagamento: format(
+              addDays(new Date(), Number(process.env.SCI_DIAS_PAGAMENTO)),
+              "ddMMyyyy",
+            ),
+            dataDeRealizacao: format(dataDeCompetenciaMaisRecente, "ddMMyyyy"),
+            tipoDeDocumento: 1, // numero do exemplo
+            valor: valorTotalDoTicket,
+          }).concat("\n\n");
+
+          ticket.status = "trabalhando";
+          await ticket.save();
+
+          prestadoresComTicketsExportados.push(prestador._id);
+        }
+      }
+    }
+
+    emailUtils.emailServicosExportados({ documento, usuario: req.usuario });
+  } catch (error) {
+    console.error(error);
+  }
 };
 
 exports.exportarPrestadores = async (req, res) => {
