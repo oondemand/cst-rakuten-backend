@@ -134,41 +134,48 @@ exports.exportarPrestadores = async (req, res) => {
     .status(200)
     .json({ mensagem: "Prestadores sendo processados e exportados" });
 
-  const tickets = await Ticket.find({
-    etapa: "integracao-unico",
-    status: { $ne: "concluido" },
-  }).populate("prestador");
+  try {
+    const tickets = await Ticket.find({
+      etapa: "integracao-unico",
+      status: { $ne: "concluido" },
+    }).populate("prestador");
 
-  const prestadoresExportados = [];
-  let documento = "";
+    const prestadoresExportados = [];
+    let documento = "";
 
-  for (const { prestador } of tickets) {
-    if (!prestador.sciUnico && !prestadoresExportados.includes(prestador._id)) {
-      documento += criarPrestadorParaExportacao({
-        documento: prestador.documento,
-        bairro: prestador.bairro,
-        email: prestador.email,
-        nome: prestador.nome,
-        cep: prestador.endereco ? prestador.endereco.cep : "",
-        nomeMae: prestador.pessoaFisica ? prestador.pessoaFisica.nomeMae : "",
-        pisNis: prestador.pessoaFisica ? prestador.pessoaFisica.pis : "",
-        rg: prestador.pessoaFisica ? prestador.pessoaFisica.rg.numero : "",
-        orgaoEmissorRG: prestador.pessoaFisica
-          ? prestador.pessoaFisica.rg.orgaoEmissor
-          : "",
-        dataNascimento: prestador.pessoaFisica
-          ? prestador.pessoaFisica.dataNascimento
-          : "",
-      }).concat("\n\n");
+    for (const { prestador } of tickets) {
+      if (
+        !prestador.sciUnico &&
+        !prestadoresExportados.includes(prestador._id)
+      ) {
+        documento += criarPrestadorParaExportacao({
+          documento: prestador.documento,
+          bairro: prestador.bairro,
+          email: prestador.email,
+          nome: prestador.nome,
+          cep: prestador.endereco ? prestador.endereco.cep : "",
+          nomeMae: prestador.pessoaFisica ? prestador.pessoaFisica.nomeMae : "",
+          pisNis: prestador.pessoaFisica ? prestador.pessoaFisica.pis : "",
+          rg: prestador.pessoaFisica ? prestador.pessoaFisica.rg.numero : "",
+          orgaoEmissorRG: prestador.pessoaFisica
+            ? prestador.pessoaFisica.rg.orgaoEmissor
+            : "",
+          dataNascimento: prestador.pessoaFisica
+            ? prestador.pessoaFisica.dataNascimento
+            : "",
+        }).concat("\n\n");
 
-      prestador.status = "aguardando-codigo-sci";
-      prestador.dataExportacao = new Date();
-      await prestador.save();
-      prestadoresExportados.push(prestador._id);
+        prestador.status = "aguardando-codigo-sci";
+        prestador.dataExportacao = new Date();
+        await prestador.save();
+        prestadoresExportados.push(prestador._id);
+      }
     }
-  }
 
-  emailUtils.emailPrestadoresExportados({ documento, usuario: req.usuario });
+    emailUtils.emailPrestadoresExportados({ documento, usuario: req.usuario });
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 exports.importarPrestadores = async (req, res) => {
