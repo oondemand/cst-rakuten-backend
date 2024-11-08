@@ -4,6 +4,7 @@ const fs = require("fs");
 const Servico = require("../models/Servico");
 const Prestador = require("../models/Prestador");
 const Ticket = require("../models/Ticket");
+const Arquivo = require("../models/Arquivo");
 
 const mongoose = require("mongoose");
 const { max, addDays, format } = require("date-fns");
@@ -259,6 +260,79 @@ exports.importarPrestadores = async (req, res) => {
 };
 
 exports.importarRPAs = async (req, res) => {
-  console.log("Importar RPA");
-  res.send("Importar RPA");
+  const arquivos = req.files;
+
+  if (arquivos === 0) {
+    return res.status(400).json({ message: "Nenhum arquivo enviado." });
+  }
+
+  res.status(200).json({ message: "Arquivos recebidos e sendo processados!" });
+
+  const anexarArquivoAoTicket = async (arquivo) => {
+    const detalhes = {};
+    const sciUnico = arquivo.originalname.replace(".pdf", "").split("_")[2];
+
+    if (!sciUnico) {
+      throw `Erro ao fazer upload de arquivo ${arquivo.originalname}`;
+    }
+
+    const prestador = await Prestador.findOne({ sciUnico: sciUnico });
+
+    if (!prestador) {
+      throw `Erro ao fazer upload de arquivo ${arquivo.originalname} - Não foi encontrado um prestador com sciUnico: ${sciUnico}`;
+    }
+
+    const ticket = await Ticket.findOne({
+      etapa: "integracao-unico",
+      prestador,
+      status: "trabalhando",
+    });
+
+    if (!ticket) {
+      throw `Erro ao fazer upload de arquivo ${arquivo.originalname} - Não foi encontrado um ticket aberto e com status trabalhando referente ao prestador ${prestador.name} - sciUnico: ${prestador.sciUnico}`;
+    }
+
+    const novoArquivoDoTicket = new Arquivo({
+      nome: arquivo.filename,
+      nomeOriginal: arquivo.originalname,
+      path: arquivo.path,
+      mimetype: arquivo.mimetype,
+      size: arquivo.size,
+      ticket: ticket._id,
+    });
+    await novoArquivoDoTicket.save();
+
+    ticket.arquivos.push(novoArquivoDoTicket._id);
+
+    ticket.etapa = "aprovacao-pagamento";
+    ticket.status = "aguardando-inicio";
+
+    await ticket.save();
+
+    return ticket;
+  };
+
+  try {
+    let detalhes = {
+      erros: { quantidade: 0, logs: "" },
+      sucesso: 0,
+    };
+
+    for (const arquivo of arquivos) {
+      try {
+        const ticket = await anexarArquivoAoTicket(arquivo);
+        if (ticket) {
+          detalhes.sucesso += 1;
+        }
+      } catch (error) {
+        detalhes.erros.quantidade += 1;
+        detalhes.erros.logs += error.concat("\n\n");
+        console.error(error);
+      }
+    }
+
+    await emailUtils.emailImportarRpas({ detalhes, usuario: req.usuario });
+  } catch (error) {
+    console.error(error);
+  }
 };

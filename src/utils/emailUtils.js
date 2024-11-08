@@ -172,9 +172,52 @@ const emailServicosExportados = async ({ usuario, documento }) => {
   }
 };
 
+const emailImportarRpas = async ({ usuario, detalhes }) => {
+  try {
+    const emailFrom = {
+      email: "suporte@oondemand.com.br",
+      nome: "OonDemand",
+    };
+
+    const emailTo = {
+      email: "maikonalexandre574@gmail.com",
+      nome: usuario.nome,
+    };
+
+    const assunto = "RPAs importadas";
+
+    // Template do corpo do e-mail com o link de confirmação
+    const corpo = `<h1>Olá, ${usuario.nome}!</h1>
+    <p>Foram importados ${detalhes.sucesso} arquivos.</p>
+    <p>Arquivos com erro ${detalhes.erros.quantidade} arquivos.</p>
+    ${detalhes.erros.quantidade > 0 ? "<p>Segue em anexo o log de erros</p>" : ""}
+    `;
+
+    if (detalhes.erros.quantidade > 0) {
+      const arquivoDeErros = Buffer.from(detalhes.erros.logs).toString(
+        "base64",
+      );
+      const anexos = [
+        {
+          filename: `logs-de-erro-raps-${format(new Date(), "dd-MM-yyy")}.txt`,
+          fileBuffer: arquivoDeErros,
+        },
+      ];
+
+      return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
+    }
+
+    return await enviarEmail(emailFrom, emailTo, assunto, corpo);
+  } catch (error) {
+    console.error("Erro ao enviar e-mail de serviços exportados:", error);
+    throw new Error("Erro ao enviar e-mail de serviços exportados:");
+  }
+};
+
 module.exports = {
   confirmacaoEmailPrestador,
   emailEsqueciMinhaSenha,
   emailPrestadoresExportados,
   emailServicosExportados,
+  emailImportarRpas,
 };
