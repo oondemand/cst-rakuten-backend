@@ -118,7 +118,7 @@ const emailPrestadoresExportados = async ({ usuario, documento }) => {
       nome: usuario.nome,
     };
 
-    const assunto = "Confirme seu e-mail";
+    const assunto = "Prestadores exportados";
 
     // Template do corpo do e-mail com o link de confirmação
     const corpo = `<h1>Olá, ${usuario.nome}!</h1>

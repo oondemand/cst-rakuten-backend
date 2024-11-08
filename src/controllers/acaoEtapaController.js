@@ -161,7 +161,7 @@ exports.exportarPrestadores = async (req, res) => {
             ? prestador.pessoaFisica.rg.orgaoEmissor
             : "",
           dataNascimento: prestador.pessoaFisica
-            ? prestador.pessoaFisica.dataNascimento
+            ? format(prestador.pessoaFisica.dataNascimento, "ddMMyyyy")
             : "",
         }).concat("\n\n");
 
@@ -174,7 +174,7 @@ exports.exportarPrestadores = async (req, res) => {
 
     emailUtils.emailPrestadoresExportados({ documento, usuario: req.usuario });
   } catch (error) {
-    console.log(error);
+    console.error(error);
   }
 };
 
