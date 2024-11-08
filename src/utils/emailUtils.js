@@ -124,11 +124,11 @@ const emailPrestadoresExportados = async ({ usuario, documento }) => {
     const corpo = `<h1>Olá, ${usuario.nome}!</h1>
     <p>Segue em anexo o arquivo com prestadores exportados!</p>`;
 
-    const arquivoDeErros = Buffer.from(documento).toString("base64");
+    const arquivoExportado = Buffer.from(documento).toString("base64");
     const anexos = [
       {
         filename: `prestadores-${format(new Date(), "dd-MM-yyy")}.txt`,
-        fileBuffer: arquivoDeErros,
+        fileBuffer: arquivoExportado,
       },
     ];
 
@@ -157,11 +157,11 @@ const emailServicosExportados = async ({ usuario, documento }) => {
     const corpo = `<h1>Olá, ${usuario.nome}!</h1>
     <p>Segue em anexo o arquivo com serviços exportados!</p>`;
 
-    const arquivoDeErros = Buffer.from(documento).toString("base64");
+    const arquivoExportado = Buffer.from(documento).toString("base64");
     const anexos = [
       {
         filename: `servicos-${format(new Date(), "dd-MM-yyy")}.txt`,
-        fileBuffer: arquivoDeErros,
+        fileBuffer: arquivoExportado,
       },
     ];
 
