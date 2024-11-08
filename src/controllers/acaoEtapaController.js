@@ -129,9 +129,6 @@ exports.importarComissoes = async (req, res) => {
 };
 
 exports.exportarServicos = async (req, res) => {
-  console.log("Exportar serviços");
-  res.status(200).json({ mensagem: "Serviços sendo processados e exportados" });
-
   try {
     const tickets = await Ticket.find({
       etapa: "integracao-unico",
@@ -139,6 +136,16 @@ exports.exportarServicos = async (req, res) => {
     })
       .populate("servicos")
       .populate("prestador");
+
+    if (!tickets) {
+      return res.status(400).json({
+        mensagem: "Não foram encontrados tickets a serem exportados",
+      });
+    }
+
+    res
+      .status(200)
+      .json({ mensagem: "Serviços sendo processados e exportados" });
 
     let documento = "";
     const prestadoresComTicketsExportados = [];
