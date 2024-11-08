@@ -74,11 +74,11 @@ const prestadorSchema = new mongoose.Schema(
         "pendente-de-revisao",
         "inativo",
         "arquivado",
-        "aguardando-codigo-sci"
+        "aguardando-codigo-sci",
       ],
       default: "ativo",
     },
-    dataExportacao: {type: Date, default: null}
+    dataExportacao: { type: Date, default: null },
   },
   { timestamps: true },
 );
