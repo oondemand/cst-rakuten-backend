@@ -105,4 +105,33 @@ const emailEsqueciMinhaSenha = async ({ usuario, url }) => {
   }
 };
 
-module.exports = { confirmacaoEmailPrestador, emailEsqueciMinhaSenha };
+const emailErroIntegracaoOmie = async ({ usuario, error }) => {
+  try {
+    const emailFrom = {
+      email: "fabio@oondemand.com.br",
+      nome: "OonDemand",
+    };
+
+    const emailTo = {
+      email: "maikonalexandre574@gmail.com",
+      nome: usuario.nome,
+    };
+
+    const assunto = "Erro integração com omie";
+
+    const corpo = `<h1>Olá, ${usuario.nome}!</h1>
+    <p>Ouve um erro na integração com o omie.</p>
+    <p>Detalhes do erro: ${error}</p>`;
+
+    await enviarEmail(emailFrom, emailTo, assunto, corpo);
+  } catch (error) {
+    console.error("Erro ao enviar e-mail para erro integração omie:", error);
+    throw new Error("Erro ao enviar e-mail para erro integração omie");
+  }
+};
+
+module.exports = {
+  confirmacaoEmailPrestador,
+  emailEsqueciMinhaSenha,
+  emailErroIntegracaoOmie,
+};
