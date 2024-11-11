@@ -52,6 +52,8 @@ app.use("/prestadores", require("./routers/prestadorRouter"));
 app.use("/servicos", require("./routers/servicoRouter"));
 app.use("/acoes-etapas", require("./routers/acaoEtapaRouter"));
 
+app.use('/uploads', express.static(path.join(__dirname, "..", 'uploads')));
+
 // Middleware de erro
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
