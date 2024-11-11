@@ -137,12 +137,14 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
 
     // Caso ticket nã tenha serviços adiciona anexo ao prestador
     if (ticket.servicos.length === 0) {
-      // preciso de um nId para anexar arquivos ao usuario, mas não é retornado um
-      return;
-      // return await uploadDeArquivosOmie({
-      //   ticket,
-      //   nId: fornecedor.codigo_cliente_omie,
-      // });
+      await uploadDeArquivosOmie({
+        ticket,
+        nId: fornecedor.codigo_cliente_omie,
+        tabela: "cliente",
+      });
+
+      ticket.status = "concluido";
+      return await ticket.save();
     }
 
     // caso ticket tenha serviço tenta criar uma conta
@@ -159,6 +161,7 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
         await uploadDeArquivosOmie({
           ticket,
           nId: conta.codigo_lancamento_omie,
+          tabela: "conta-pagar",
         });
       } catch (error) {
         // caso tenha algum erro no upload de arquivos, tenta remover a conta
@@ -185,7 +188,8 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
     ticket.status = "concluido";
     await ticket.save();
   } catch (error) {
-    // se ocorrer qualquer erro, volta ticket para etapa de aprovação e atualiza o status
+    // se ocorrer qualquer erro, volta ticket para etapa de aprovação, criar obs e atualiza o status
+    ticket.observacao += `\n ${error} - ${format(new Date(), "dd/MM/yyyy")}`;
     ticket.etapa = "aprovacao-pagamento";
     ticket.status = "revisao";
     await ticket.save();
@@ -307,7 +311,7 @@ const cadastrarContaAPagar = async (
   }
 };
 
-const uploadDeArquivosOmie = async ({ ticket, nId }) => {
+const uploadDeArquivosOmie = async ({ ticket, nId, tabela }) => {
   if (ticket.arquivos.length === 0) return;
 
   const baseOmie = await BaseOmie.findOne({ status: "ativo" });
@@ -319,7 +323,7 @@ const uploadDeArquivosOmie = async ({ ticket, nId }) => {
       await anexoService.incluir({
         appKey: baseOmie.appKey,
         appSecret: baseOmie.appSecret,
-        tabela: "conta-pagar",
+        tabela,
         nId,
         nomeArquivo: arquivo.nomeOriginal,
         tipoArquivo: arquivo.mimetype,
@@ -327,8 +331,6 @@ const uploadDeArquivosOmie = async ({ ticket, nId }) => {
       });
     }
   } catch (error) {
-    ticket.observacao += `\n ${error} - ${format(new Date(), "dd/MM/yyyy")}`;
-    await ticket.save();
     console.log("Erro ao anexar arquivo:", error);
     throw error;
   }
