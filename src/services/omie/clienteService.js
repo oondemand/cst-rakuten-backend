@@ -1,14 +1,68 @@
-const crypto = require("crypto");
 const apiOmie = require("../../config/apiOmie");
 // const { logger } = require("../../config/msLogger");
 
-const criarFornecedor = (cnpj, nome) => {
+const criarFornecedor = ({
+  codigo_cliente_integracao,
+  documento,
+  nome,
+  sid,
+  tipo,
+  email,
+  banco,
+  agencia,
+  conta,
+  tipoConta,
+  cep,
+  rua,
+  numeroDoEndereco,
+  complemento,
+  cidade,
+  estado,
+  pessoaFisica,
+  dataNascimento,
+  pis,
+  nomeMae,
+  numeroRg,
+  orgaoEmissorRg,
+  razaoSocial,
+  nomeFantasia,
+  codigoCNAE,
+  codigoServicoNacional,
+  regimeTributario,
+  observacao,
+}) => {
   const cliente = {
-    codigo_cliente_integracao: crypto.randomUUID(),
-    cnpj_cpf: cnpj,
+    codigo_cliente_integracao,
+    cnpj_cpf: documento,
     razao_social: nome.substring(0, 60),
     tags: ["Fornecedor"],
+    nome_fantasia: razaoSocial ? razaoSocial.substring(0, 60) : "",
+    endereco: rua ? rua : "",
+    endereco_numero: numeroDoEndereco ? numeroDoEndereco : "",
+    complemento: complemento ? complemento : "",
+    estado: estado ? estado : "",
+    cidade: cidade ? cidade : "",
+    cep: cep ? cep : "",
+    email: email ? email : "",
+    observacao: observacao ? observacao : "",
+    pessoa_fisica: tipo == "pf" ? "S" : "N",
+    importado_api: "S",
   };
+
+  cliente.dadosBancarios = {
+    codigo_banco: banco ? banco.toString() : "",
+    agencia: agencia ? agencia : "",
+    conta_corrente: conta ? conta : "",
+    doc_titular: documento ? documento : "",
+    nome_titular: nome ? nome : "",
+  };
+
+  if (tipoConta == "poupanca") {
+    observacao
+      ? (cliente.observacao += "\n\n conta poupança")
+      : (cliente.observacao = "conta poupança");
+  }
+
   return cliente;
 };
 
@@ -62,32 +116,68 @@ const consultar = async (appKey, appSecret, codCliente) => {
   }
 };
 
-const incluir = async (appKey, appSecret, cliente) => {
-  try {
-    const body = {
-      call: "IncluirCliente",
-      app_key: appKey,
-      app_secret: appSecret,
-      param: [cliente],
-    };
+const incluir = async (appKey, appSecret, cliente, maxTentativas = 3) => {
+  let tentativas = 0;
+  while (tentativas < maxTentativas) {
+    try {
+      const body = {
+        call: "IncluirCliente",
+        app_key: appKey,
+        app_secret: appSecret,
+        param: [cliente],
+      };
 
-    const response = await apiOmie.post("geral/clientes/", body);
-    return response.data;
-  } catch (error) {
-    if (
-      error.response?.data?.faultstring?.includes(
-        "Consumo redundante detectado",
-      )
-    )
-      await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+      const response = await apiOmie.post("geral/clientes/", body);
+      return response.data;
+    } catch (error) {
+      tentativas++;
+      if (
+        error.response?.data?.faultstring?.includes(
+          "Consumo redundante detectado",
+        )
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+      }
 
-    if (error.response?.data?.faultstring)
-      throw "Erro ao incluir cliente: " + error.response.data.faultstring;
-    if (error.response?.data)
-      throw "Erro ao incluir cliente: " + error.response.data;
-    if (error.response) throw "Erro ao incluir cliente: " + error.response;
-    throw error;
+      console.error(
+        `Falha ao criar cliente: ${error.response?.data?.faultstring || error.response?.data || error.response || error}`,
+      );
+    }
   }
+
+  throw `Falha ao criar cliente após ${maxTentativas} tentativas.`;
+};
+
+const update = async (appKey, appSecret, cliente, maxTentativas = 3) => {
+  let tentativas = 0;
+  while (tentativas < maxTentativas) {
+    try {
+      const body = {
+        call: "AlterarCliente",
+        app_key: appKey,
+        app_secret: appSecret,
+        param: [cliente],
+      };
+
+      const response = await apiOmie.post("geral/clientes/", body);
+      return response.data;
+    } catch (error) {
+      tentativas++;
+      if (
+        error.response?.data?.faultstring?.includes(
+          "Consumo redundante detectado",
+        )
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+      }
+
+      console.error(
+        `Falha ao atualizar cliente: ${error.response?.data?.faultstring || error.response?.data || error.response || error}`,
+      );
+    }
+  }
+
+  throw `Falha ao cadastrar cliente após ${maxTentativas} tentativas.`;
 };
 
 const cachePesquisaPorCNPJ = {};
@@ -158,4 +248,10 @@ const pesquisarPorCNPJ = async (appKey, appSecret, cnpj) => {
   }
 };
 
-module.exports = { criarFornecedor, incluir, pesquisarPorCNPJ, consultar };
+module.exports = {
+  criarFornecedor,
+  incluir,
+  pesquisarPorCNPJ,
+  consultar,
+  update,
+};
