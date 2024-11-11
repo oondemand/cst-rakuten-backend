@@ -297,6 +297,8 @@ exports.exportarPrestadores = async (req, res) => {
         !prestador.sciUnico &&
         !prestadoresExportados.includes(prestador._id)
       ) {
+        const dataNascimento = prestador.pessoaFisica?.dataNascimento
+
         documento += criarPrestadorParaExportacao({
           documento: prestador.documento,
           bairro: prestador.bairro,
@@ -309,8 +311,8 @@ exports.exportarPrestadores = async (req, res) => {
           orgaoEmissorRG: prestador.pessoaFisica
             ? prestador.pessoaFisica.rg.orgaoEmissor
             : "",
-          dataNascimento: prestador.pessoaFisica
-            ? format(prestador.pessoaFisica.dataNascimento, "ddMMyyyy")
+          dataNascimento: dataNascimento == dataNascimento instanceof Date && !isNaN(dataNascimento)
+            ? format(dataNascimento, "ddMMyyyy")
             : "",
         }).concat("\n\n");
 
