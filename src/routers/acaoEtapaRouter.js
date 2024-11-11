@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require("multer");
 const acaoEtapaController = require("../controllers/acaoEtapaController");
 
-const path = require("path");
+const path = require("node:path");
 
 // Configuração do armazenamento (aqui, salvando no disco)
 const storage = multer.diskStorage({
@@ -17,12 +17,14 @@ const storage = multer.diskStorage({
 
 // Filtrando arquivos (opcional)
 const fileFilter = (req, file, cb) => {
+  const tiposPermitidos = [
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-excel",
+    "application/vnd.ms-excel.sheet.binary.macroenabled.12",
+  ];
+
   // Aceitar apenas arquivos Excel
-  if (
-    file.mimetype ===
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
-    file.mimetype === "application/vnd.ms-excel"
-  ) {
+  if (tiposPermitidos.includes(file.mimetype)) {
     cb(null, true);
   } else {
     cb(new Error("Tipo de arquivo não suportado"), false);

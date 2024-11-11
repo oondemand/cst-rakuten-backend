@@ -56,38 +56,78 @@ const criarConta = ({
   return conta;
 };
 
-const incluir = async (appKey, appSecret, conta) => {
-  try {
-    console.log("Incluindo financas/contapaga");
-    const body = {
-      call: "IncluirContaPagar",
-      app_key: appKey,
-      app_secret: appSecret,
-      param: [conta],
-    };
+const incluir = async (appKey, appSecret, conta, maxTentativas = 3) => {
+  let tentativas = 0;
+  while (tentativas < maxTentativas) {
+    console.log(
+      `[CONTA A PAGAR]: Criando conta a pagar tentativa ${tentativas + 1}`,
+    );
+    try {
+      const body = {
+        call: "IncluirContaPagar",
+        app_key: appKey,
+        app_secret: appSecret,
+        param: [conta],
+      };
 
-    const response = await apiOmie.post("financas/contapagar/", body);
-    // console.log("conta a pagar adicionada com sucesso");
-    // console.log(response.data);
-    return response.data;
-  } catch (error) {
-    if (
-      error.response?.data?.faultstring?.includes(
-        "Consumo redundante detectado",
-      )
-    )
-      await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+      const response = await apiOmie.post("financas/contapagar/", body);
+      return response.data;
+    } catch (error) {
+      tentativas++;
+      if (
+        error.response?.data?.faultstring?.includes(
+          "Consumo redundante detectado",
+        )
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+      }
 
-    if (error.response?.data?.faultstring)
-      throw (
-        "Erro ao incluir financas/contapaga: " + error.response.data.faultstring
+      console.log(
+        `Falha ao criar conta a pagar: ${error.response?.data?.faultstring || error.response?.data || error.response || error}`,
       );
-    if (error.response?.data)
-      throw "Erro ao incluir financas/contapaga: " + error.response.data;
-    if (error.response)
-      throw "Erro ao incluir financas/contapaga: " + error.response;
-    throw "Erro ao incluir financas/contapaga: " + error;
+    }
   }
+
+  throw `Falha ao criar conta a pagar após ${maxTentativas} tentativas.`;
+};
+
+const remover = async (
+  { appKey, appSecret, codigo_lancamento_omie, codigo_lancamento_integracao },
+  maxTentativas = 5,
+) => {
+  let tentativas = 0;
+  while (tentativas < maxTentativas) {
+    try {
+      console.log(
+        `[CONTA A PAGAR/REMOVER CONTA]: Tentando remover conta, ${tentativas + 1} tentativa`,
+      );
+
+      const body = {
+        call: "ExcluirContaPagar",
+        app_key: appKey,
+        app_secret: appSecret,
+        param: [{ codigo_lancamento_integracao, codigo_lancamento_omie }],
+      };
+
+      const response = await apiOmie.post("financas/contapagar/", body);
+      return response.data;
+    } catch (error) {
+      tentativas++;
+      if (
+        error.response?.data?.faultstring?.includes(
+          "Consumo redundante detectado",
+        )
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+      }
+
+      console.log(
+        `Erro ao remover conta a pagar: ${error.response?.data?.faultstring || error.response?.data || error.response || error}`,
+      );
+    }
+  }
+
+  throw `Erro ao remover conta a pagar após ${maxTentativas} tentativas.`;
 };
 
 const cache = {};
@@ -177,4 +217,4 @@ const consultarInterno = async (appKey, appSecret, codigoLancamento) => {
   }
 };
 
-module.exports = { criarConta, incluir, consultar };
+module.exports = { criarConta, incluir, consultar, remover };

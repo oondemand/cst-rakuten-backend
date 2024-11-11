@@ -37,9 +37,12 @@ const enviarEmail = async (emailFrom, emailTo, assunto, corpo, anexos = []) => {
   console.log("message", JSON.stringify(message, null, 2));
 
   try {
-    const retorno = await sgMail.send(message);
-    console.log("retorno", retorno);
-    return retorno;
+    if (process.env.NODE_ENV !== "development") {
+      console.log("message", JSON.stringify(message, null, 2));
+      const retorno = await sgMail.send(message);
+      console.log("retorno", retorno);
+      return retorno;
+    }
   } catch (error) {
     console.error("Erro ao enviar e-mail:", error);
     throw new Error("Erro ao enviar e-mail");
@@ -57,7 +60,7 @@ const confirmacaoEmailPrestador = async (usuarioId) => {
     const token = usuario.gerarToken();
 
     const emailFrom = {
-      email: "fabio@oondemand.com.br",
+      email: "suporte@oondemand.com.br",
       nome: "OonDemand",
     };
 
@@ -83,7 +86,7 @@ const confirmacaoEmailPrestador = async (usuarioId) => {
 const emailEsqueciMinhaSenha = async ({ usuario, url }) => {
   try {
     const emailFrom = {
-      email: "fabio@oondemand.com.br",
+      email: "suporte@oondemand.com.br",
       nome: "OonDemand",
     };
 
@@ -180,7 +183,7 @@ const emailImportarRpas = async ({ usuario, detalhes }) => {
     };
 
     const emailTo = {
-      email: "maikonalexandre574@gmail.com",
+      email: usuario.email,
       nome: usuario.nome,
     };
 
@@ -214,10 +217,86 @@ const emailImportarRpas = async ({ usuario, detalhes }) => {
   }
 };
 
+const importarComissõesDetalhes = async ({ usuario, detalhes }) => {
+  try {
+    const emailFrom = {
+      email: "suporte@oondemand.com.br",
+      nome: "OonDemand",
+    };
+
+    const emailTo = {
+      email: usuario.email,
+      nome: usuario.nome,
+    };
+
+    const assunto = "Detalhes de importação de comissões";
+
+    // Template do corpo do e-mail com o link para recuperação de senha
+    const corpo = `<h1>Olá, ${usuario.nome}!</h1>
+    <p>Segue o relatório sobre a importação de comissões:</p>
+    <p>Competência processada: <b>${detalhes.competenciaProscessada}</b></p>
+    <p>Linhas lidas: ${detalhes.linhasEncontradas}</p>
+    <p>Linhas com erro: ${detalhes.linhasLidasComErro}</p>
+    <p>Linhas com sucesso: ${detalhes.linhasEncontradas - detalhes.linhasLidasComErro}</p>
+    <p>Total de serviços criados: ${detalhes.linhasEncontradas - detalhes.linhasLidasComErro}</p>
+    <p>Total novos prestadores criados: ${detalhes.totalDeNovosPrestadores}</p>
+    <p>Total de novos tickets criados: ${detalhes.totalDeNovosTickets}</p>
+    <p>Valor total lido: ${detalhes.valorTotalLido.toFixed(2).replace(".", ",")}</p>`;
+
+    if (process.env.NODE_ENV === "development") {
+      console.log(corpo);
+    }
+
+    if(detalhes.erros){
+      const arquivoDeErros = Buffer.from(detalhes.erros).toString("base64");
+      const anexos = [{filename: "log.txt", fileBuffer: arquivoDeErros}]
+
+      return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
+    }
+
+    return await enviarEmail(emailFrom, emailTo, assunto, corpo);
+  } catch (error) {
+    console.error(
+      "Erro ao enviar e-mail para detalhes de importação de comissões:",
+      error,
+    );
+    throw new Error(
+      "Erro ao enviar e-mail para detalhes de importação de comissões",
+    );
+  }
+};
+
+const emailErroIntegracaoOmie = async ({ usuario, error }) => {
+  try {
+    const emailFrom = {
+      email: "fabio@oondemand.com.br",
+      nome: "OonDemand",
+    };
+
+    const emailTo = {
+      email: usuario.email,
+      nome: usuario.nome,
+    };
+
+    const assunto = "Erro integração com omie";
+
+    const corpo = `<h1>Olá, ${usuario.nome}!</h1>
+    <p>Ouve um erro na integração com o omie.</p>
+    <p>Detalhes do erro: ${error}</p>`;
+
+    await enviarEmail(emailFrom, emailTo, assunto, corpo);
+  } catch (error) {
+    console.error("Erro ao enviar e-mail para erro integração omie:", error);
+    throw new Error("Erro ao enviar e-mail para erro integração omie");
+  }
+};
+
 module.exports = {
   confirmacaoEmailPrestador,
   emailEsqueciMinhaSenha,
   emailPrestadoresExportados,
   emailServicosExportados,
   emailImportarRpas,
+  importarComissõesDetalhes,
+  emailErroIntegracaoOmie
 };
