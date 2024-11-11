@@ -9,7 +9,9 @@ const obterContaPagarOmie = async (req, res) => {
 
     const ticket = await Ticket.findOne({ contaPagarOmie: codigoLancamento });
     if (!ticket) {
-      return res.status(404).json({ mensagem: "Ticket com a conta a pagar não encontrado." });
+      return res
+        .status(404)
+        .json({ mensagem: "Ticket com a conta a pagar não encontrado." });
     }
     console.log("Ticket encontrado:", ticket);
 
@@ -18,7 +20,9 @@ const obterContaPagarOmie = async (req, res) => {
 
     const { appKey, appSecret } = baseOmie;
     if (!appKey || !appSecret)
-      return res.status(400).json({ mensagem: "Credenciais Base Omie não encontradas." });
+      return res
+        .status(400)
+        .json({ mensagem: "Credenciais Base Omie não encontradas." });
 
     // Consultar a conta a pagar na Omie usando o serviço de consulta
     const contaPagarOmie = await consultar(appKey, appSecret, codigoLancamento);

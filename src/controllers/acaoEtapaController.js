@@ -4,8 +4,20 @@ const fs = require("fs");
 const Servico = require("../models/Servico");
 const Prestador = require("../models/Prestador");
 const Ticket = require("../models/Ticket");
+const Arquivo = require("../models/Arquivo");
 
 const mongoose = require("mongoose");
+const { max, addDays, format } = require("date-fns");
+
+const {
+  criarPrestadorParaExportacao,
+} = require("../services/integracaoRPAs/exportarPrestadores");
+
+const {
+  criarServicoParaExportacao,
+} = require("../services/integracaoRPAs/exportarServicos");
+
+const emailUtils = require("../utils/emailUtils");
 
 exports.importarComissoes = async (req, res) => {
   const session = await mongoose.startSession();
@@ -118,13 +130,128 @@ exports.importarComissoes = async (req, res) => {
 };
 
 exports.exportarServicos = async (req, res) => {
-  console.log("Exportar serviços");
-  res.send("Exportar serviços");
+  try {
+    const tickets = await Ticket.find({
+      etapa: "integracao-unico",
+      status: { $ne: "concluido" },
+    })
+      .populate("servicos")
+      .populate("prestador");
+
+    if (!tickets) {
+      return res.status(400).json({
+        mensagem: "Não foram encontrados tickets a serem exportados",
+      });
+    }
+
+    res
+      .status(200)
+      .json({ mensagem: "Serviços sendo processados e exportados" });
+
+    let documento = "";
+    const prestadoresComTicketsExportados = [];
+
+    for (const ticket of tickets) {
+      const { prestador, servicos } = ticket;
+      if (
+        prestador.sciUnico &&
+        servicos.length > 0 &&
+        !prestadoresComTicketsExportados.includes(prestador._id)
+      ) {
+        let valorTotalDoTicket = 0;
+        const datasDeCompetencia = [];
+        for (const { valorTotal, mesCompetencia, anoCompetencia } of servicos) {
+          console.log(valorTotal);
+
+          valorTotalDoTicket += valorTotal;
+          // -1 por que para o date fns janeiro = 0
+          datasDeCompetencia.push(new Date(anoCompetencia, mesCompetencia - 1));
+        }
+
+        if (valorTotalDoTicket > 0) {
+          const dataDeCompetenciaMaisRecente = max(datasDeCompetencia);
+
+          documento += criarServicoParaExportacao({
+            codAutonomo: prestador.sciUnico,
+            codCentroDeCustos: process.env.SCI_CODIGO_CENTRO_CUSTO,
+            codEmpresa: process.env.SCI_CODIGO_EMPRESA,
+            porcentualIss: process.env.SCI_PORCENTAGEM_ISS,
+            dataDePagamento: format(
+              addDays(new Date(), Number(process.env.SCI_DIAS_PAGAMENTO)),
+              "ddMMyyyy",
+            ),
+            dataDeRealizacao: format(dataDeCompetenciaMaisRecente, "ddMMyyyy"),
+            tipoDeDocumento: 1, // numero do exemplo
+            valor: valorTotalDoTicket,
+          }).concat("\n\n");
+
+          ticket.status = "trabalhando";
+          await ticket.save();
+
+          prestadoresComTicketsExportados.push(prestador._id);
+        }
+      }
+    }
+
+    emailUtils.emailServicosExportados({ documento, usuario: req.usuario });
+  } catch (error) {
+    console.error(error);
+  }
 };
 
 exports.exportarPrestadores = async (req, res) => {
-  console.log("Exportar prestadores");
-  res.send("Exportar prestadores");
+  try {
+    const tickets = await Ticket.find({
+      etapa: "integracao-unico",
+      status: { $ne: "concluido" },
+    }).populate("prestador");
+
+    if (!tickets) {
+      return res.status(400).json({
+        mensagem: "Não foram encontrados tickets para serem exportados ",
+      });
+    }
+
+    res
+      .status(200)
+      .json({ mensagem: "Prestadores sendo processados e exportados" });
+
+    const prestadoresExportados = [];
+    let documento = "";
+
+    for (const { prestador } of tickets) {
+      if (
+        !prestador.sciUnico &&
+        !prestadoresExportados.includes(prestador._id)
+      ) {
+        documento += criarPrestadorParaExportacao({
+          documento: prestador.documento,
+          bairro: prestador.bairro,
+          email: prestador.email,
+          nome: prestador.nome,
+          cep: prestador.endereco ? prestador.endereco.cep : "",
+          nomeMae: prestador.pessoaFisica ? prestador.pessoaFisica.nomeMae : "",
+          pisNis: prestador.pessoaFisica ? prestador.pessoaFisica.pis : "",
+          rg: prestador.pessoaFisica ? prestador.pessoaFisica.rg.numero : "",
+          orgaoEmissorRG: prestador.pessoaFisica
+            ? prestador.pessoaFisica.rg.orgaoEmissor
+            : "",
+          dataNascimento: prestador.pessoaFisica
+            ? format(prestador.pessoaFisica.dataNascimento, "ddMMyyyy")
+            : "",
+        }).concat("\n\n");
+
+        prestador.status = "aguardando-codigo-sci";
+        prestador.dataExportacao = new Date();
+        await prestador.save();
+        prestadoresExportados.push(prestador._id);
+      }
+    }
+
+    emailUtils.emailPrestadoresExportados({ documento, usuario: req.usuario });
+  } catch (error) {
+    console.error(error);
+  }
 };
 
 exports.importarPrestadores = async (req, res) => {
@@ -133,6 +260,79 @@ exports.importarPrestadores = async (req, res) => {
 };
 
 exports.importarRPAs = async (req, res) => {
-  console.log("Importar RPA");
-  res.send("Importar RPA");
+  const arquivos = req.files;
+
+  if (arquivos === 0) {
+    return res.status(400).json({ message: "Nenhum arquivo enviado." });
+  }
+
+  res.status(200).json({ message: "Arquivos recebidos e sendo processados!" });
+
+  const anexarArquivoAoTicket = async (arquivo) => {
+    const detalhes = {};
+    const sciUnico = arquivo.originalname.replace(".pdf", "").split("_")[2];
+
+    if (!sciUnico) {
+      throw `Erro ao fazer upload de arquivo ${arquivo.originalname}`;
+    }
+
+    const prestador = await Prestador.findOne({ sciUnico: sciUnico });
+
+    if (!prestador) {
+      throw `Erro ao fazer upload de arquivo ${arquivo.originalname} - Não foi encontrado um prestador com sciUnico: ${sciUnico}`;
+    }
+
+    const ticket = await Ticket.findOne({
+      etapa: "integracao-unico",
+      prestador,
+      status: "trabalhando",
+    });
+
+    if (!ticket) {
+      throw `Erro ao fazer upload de arquivo ${arquivo.originalname} - Não foi encontrado um ticket aberto e com status trabalhando referente ao prestador ${prestador.name} - sciUnico: ${prestador.sciUnico}`;
+    }
+
+    const novoArquivoDoTicket = new Arquivo({
+      nome: arquivo.filename,
+      nomeOriginal: arquivo.originalname,
+      path: arquivo.path,
+      mimetype: arquivo.mimetype,
+      size: arquivo.size,
+      ticket: ticket._id,
+    });
+    await novoArquivoDoTicket.save();
+
+    ticket.arquivos.push(novoArquivoDoTicket._id);
+
+    ticket.etapa = "aprovacao-pagamento";
+    ticket.status = "aguardando-inicio";
+
+    await ticket.save();
+
+    return ticket;
+  };
+
+  try {
+    let detalhes = {
+      erros: { quantidade: 0, logs: "" },
+      sucesso: 0,
+    };
+
+    for (const arquivo of arquivos) {
+      try {
+        const ticket = await anexarArquivoAoTicket(arquivo);
+        if (ticket) {
+          detalhes.sucesso += 1;
+        }
+      } catch (error) {
+        detalhes.erros.quantidade += 1;
+        detalhes.erros.logs += error.concat("\n\n");
+        console.error(error);
+      }
+    }
+
+    await emailUtils.emailImportarRpas({ detalhes, usuario: req.usuario });
+  } catch (error) {
+    console.error(error);
+  }
 };
