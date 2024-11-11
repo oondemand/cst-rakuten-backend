@@ -193,7 +193,7 @@ exports.obterPrestadorPorEmail = async (req, res) => {
 exports.obterPrestadorPorPis = async (req, res) => {
   try {
     const prestador = await Prestador.findOne({
-      pis: req.params.pis,
+      "pessoaFisica.pis": req.params.pis.replaceAll(".", ("")).replace("-", "")
     });
 
     if (!prestador)
