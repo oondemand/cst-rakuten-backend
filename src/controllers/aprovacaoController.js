@@ -22,15 +22,21 @@ const aprovar = async (req, res) => {
     // Buscar o ticket pelo ID
     const ticket = await Ticket.findById(ticketId);
     if (!ticket) {
-      return res.status(404).send({ success: false, message: "Ticket não encontrado." });
+      return res
+        .status(404)
+        .send({ success: false, message: "Ticket não encontrado." });
     }
 
     // Carregar as etapas do banco de dados, ordenadas pela posição
     const etapas = await Etapa.find({ status: "ativo" }).sort({ posicao: 1 });
-    const currentEtapaIndex = etapas.findIndex((etapa) => etapa.codigo === ticket.etapa);
+    const currentEtapaIndex = etapas.findIndex(
+      (etapa) => etapa.codigo === ticket.etapa,
+    );
 
     if (currentEtapaIndex < 0) {
-      return res.status(400).send({ success: false, message: "Etapa inválida." });
+      return res
+        .status(400)
+        .send({ success: false, message: "Etapa inválida." });
     }
 
     // Se estiver na última etapa antes de "conta-pagar", mover para "conta-pagar" e gerar a conta
@@ -79,19 +85,26 @@ const recusar = async (req, res) => {
     // Buscar o ticket pelo ID
     const ticket = await Ticket.findById(ticketId);
     if (!ticket) {
-      return res.status(404).send({ success: false, message: "Ticket não encontrado." });
+      return res
+        .status(404)
+        .send({ success: false, message: "Ticket não encontrado." });
     }
 
     // Carregar as etapas do banco de dados, ordenadas pela posição
     const etapas = await Etapa.find({ status: "ativo" }).sort({ posicao: 1 });
-    const currentEtapaIndex = etapas.findIndex((etapa) => etapa.codigo === ticket.etapa);
+    const currentEtapaIndex = etapas.findIndex(
+      (etapa) => etapa.codigo === ticket.etapa,
+    );
 
     if (currentEtapaIndex < 0) {
-      return res.status(400).send({ success: false, message: "Etapa inválida." });
+      return res
+        .status(400)
+        .send({ success: false, message: "Etapa inválida." });
     }
 
     // Retrocede uma etapa e muda status para 'revisao'
-    if (currentEtapaIndex > 0) ticket.etapa = etapas[currentEtapaIndex - 1].codigo;
+    if (currentEtapaIndex > 0)
+      ticket.etapa = etapas[currentEtapaIndex - 1].codigo;
     ticket.status = "revisao";
 
     await ticket.save();
@@ -116,14 +129,14 @@ const gerarContaPagar = async (ticket) => {
     baseOmie.appKey,
     baseOmie.appSecret,
     prestador.documento,
-    prestador.nome
+    prestador.nome,
   );
 
   const conta = await cadastrarContaAPagar(
     baseOmie.appKey,
     baseOmie.appSecret,
     codigoFornecedor,
-    ticket
+    ticket,
   );
 
   return conta;
@@ -131,13 +144,21 @@ const gerarContaPagar = async (ticket) => {
 
 const obterOuCadastrarFornecedor = async (appKey, appSecret, cnpj, nome) => {
   try {
-    let fornecedor = await clienteService.pesquisarPorCNPJ(appKey, appSecret, cnpj);
+    let fornecedor = await clienteService.pesquisarPorCNPJ(
+      appKey,
+      appSecret,
+      cnpj,
+    );
 
     let codigoFornecedor = fornecedor ? fornecedor.codigo_cliente_omie : null;
 
     if (!codigoFornecedor) {
       const novoFornecedor = clienteService.criarFornecedor(cnpj, nome);
-      const fornecedorCadastrado = await clienteService.incluir(appKey, appSecret, novoFornecedor);
+      const fornecedorCadastrado = await clienteService.incluir(
+        appKey,
+        appSecret,
+        novoFornecedor,
+      );
       codigoFornecedor = fornecedorCadastrado.codigo_cliente_omie;
     }
 
@@ -147,7 +168,12 @@ const obterOuCadastrarFornecedor = async (appKey, appSecret, cnpj, nome) => {
   }
 };
 
-const cadastrarContaAPagar = async (appKey, appSecret, codigoFornecedor, ticket) => {
+const cadastrarContaAPagar = async (
+  appKey,
+  appSecret,
+  codigoFornecedor,
+  ticket,
+) => {
   try {
     let valorTotalDaNota = 0;
 
@@ -171,7 +197,7 @@ const cadastrarContaAPagar = async (appKey, appSecret, codigoFornecedor, ticket)
       dataVencimento: add(dataDaEmissão, { hours: 24 }), // 24 horas a mais
       descrição: "Serviços prestados",
       valor: valorTotalDaNota,
-      id_conta_corrente: 4809215570 //TODO: Deixar dinâmico
+      id_conta_corrente: 4809215570, //TODO: Deixar dinâmico
     });
 
     return await contaPagarService.incluir(appKey, appSecret, conta);
@@ -202,7 +228,9 @@ const uploadDeArquivosOmie = async (ticket, nId) => {
   };
 
   try {
-    const results = await Promise.all(ticket.arquivos.map((id) => uploadFile(id)));
+    const results = await Promise.all(
+      ticket.arquivos.map((id) => uploadFile(id)),
+    );
   } catch (error) {
     console.log("Erro ao anexar arquivo: ", error);
     throw `Erro ao anexar arquivo ${error}`;
