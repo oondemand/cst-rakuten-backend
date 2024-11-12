@@ -5,13 +5,13 @@ exports.CNPJouCPF = (numero) => {
 
   let numeroStr = numero.toString();
 
-  if (numeroStr.length === 11) {
-    return { tipo: "pf", numero: numeroStr };
+  if (numeroStr.length <= 11) {
+    return { tipo: "pf", numero: numeroStr.padStart(11, 0) };
   }
 
-  if (numeroStr.padStart(14, "0").length <= 14) {
+  if (numeroStr.length > 11 && numero.length <= 14) {
     return { tipo: "pj", numero: numeroStr.padStart(14, "0") };
   }
 
-  return { tipo: "pj", numero: numeroStr };
+  return { tipo: "", numero: "" };
 };
