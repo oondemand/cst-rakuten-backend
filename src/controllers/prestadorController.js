@@ -144,8 +144,6 @@ exports.atualizarPrestador = async (req, res) => {
         sciUnico: req.body.sciUnico,
       });
 
-      console.log(sci, prestador);
-
       if (sci && sci._id !== prestador._id) {
         return res.status(409).json({
           message: "Já existe um prestador com esse sciUnico registrado",
