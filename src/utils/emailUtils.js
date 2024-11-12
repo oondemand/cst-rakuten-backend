@@ -37,12 +37,8 @@ const enviarEmail = async (emailFrom, emailTo, assunto, corpo, anexos = []) => {
   console.log("message", JSON.stringify(message, null, 2));
 
   try {
-    if (process.env.NODE_ENV !== "development") {
-      console.log("message", JSON.stringify(message, null, 2));
-      const retorno = await sgMail.send(message);
-      console.log("retorno", retorno);
-      return retorno;
-    }
+    const retorno = await sgMail.send(message);
+    return retorno;
   } catch (error) {
     console.error("Erro ao enviar e-mail:", error);
     throw new Error("Erro ao enviar e-mail");
@@ -247,9 +243,9 @@ const importarComissõesDetalhes = async ({ usuario, detalhes }) => {
       console.log(corpo);
     }
 
-    if(detalhes.erros){
+    if (detalhes.erros) {
       const arquivoDeErros = Buffer.from(detalhes.erros).toString("base64");
-      const anexos = [{filename: "log.txt", fileBuffer: arquivoDeErros}]
+      const anexos = [{ filename: "log.txt", fileBuffer: arquivoDeErros }];
 
       return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
     }
@@ -298,5 +294,5 @@ module.exports = {
   emailServicosExportados,
   emailImportarRpas,
   importarComissõesDetalhes,
-  emailErroIntegracaoOmie
+  emailErroIntegracaoOmie,
 };
