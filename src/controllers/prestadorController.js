@@ -75,6 +75,18 @@ exports.criarPrestador = async (req, res) => {
     const { email, ...rest } = req.body;
     const data = email === "" ? rest : req.body;
 
+    if (req.body?.sciUnico) {
+      const prestador = await Prestador.findOne({
+        sciUnico: req.body.sciUnico,
+      });
+
+      if (prestador) {
+        return res.status(409).json({
+          message: "Já existe um prestador com esse sciUnico registrado",
+        });
+      }
+    }
+
     const prestador = new Prestador(data);
     await prestador.save();
 
@@ -125,6 +137,18 @@ exports.atualizarPrestador = async (req, res) => {
 
     if (!prestador) {
       return res.status(404).json({ message: "Prestador não encontrado" });
+    }
+
+    if (req.body?.sciUnico) {
+      const sci = await Prestador.findOne({
+        sciUnico: req.body.sciUnico,
+      });
+
+      if (sci && sci._id.toString() !== prestador._id.toString()) {
+        return res.status(409).json({
+          message: "Já existe um prestador com esse sciUnico registrado",
+        });
+      }
     }
 
     // Atualiza apenas os campos fornecidos no corpo da requisição
