@@ -1,6 +1,6 @@
 exports.CNPJouCPF = (numero) => {
   if (isNaN(numero)) {
-    return { tipo: "", numero: "" };
+    return { tipo: null, numero: "" };
   }
 
   let numeroStr = numero.toString();
