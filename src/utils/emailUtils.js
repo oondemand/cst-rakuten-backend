@@ -37,12 +37,8 @@ const enviarEmail = async (emailFrom, emailTo, assunto, corpo, anexos = []) => {
   console.log("message", JSON.stringify(message, null, 2));
 
   try {
-    if (process.env.NODE_ENV !== "development") {
-      console.log("message", JSON.stringify(message, null, 2));
-      const retorno = await sgMail.send(message);
-      console.log("retorno", retorno);
-      return retorno;
-    }
+    const retorno = await sgMail.send(message);
+    return retorno;
   } catch (error) {
     console.error("Erro ao enviar e-mail:", error);
     throw new Error("Erro ao enviar e-mail");
@@ -109,7 +105,11 @@ const emailEsqueciMinhaSenha = async ({ usuario, url }) => {
   }
 };
 
-const emailPrestadoresExportados = async ({ usuario, documento }) => {
+const emailPrestadoresExportados = async ({
+  usuario,
+  documento,
+  prestadoresExportados,
+}) => {
   try {
     const emailFrom = {
       email: "suporte@oondemand.com.br",
@@ -125,6 +125,7 @@ const emailPrestadoresExportados = async ({ usuario, documento }) => {
 
     // Template do corpo do e-mail com o link de confirmação
     const corpo = `<h1>Olá, ${usuario.nome}!</h1>
+    <p>Exportação concluída foram exportados ${prestadoresExportados} novos prestadores!</p>
     <p>Segue em anexo o arquivo com prestadores exportados!</p>`;
 
     const arquivoExportado = Buffer.from(documento).toString("base64");
@@ -142,7 +143,11 @@ const emailPrestadoresExportados = async ({ usuario, documento }) => {
   }
 };
 
-const emailServicosExportados = async ({ usuario, documento }) => {
+const emailServicosExportados = async ({
+  usuario,
+  documento,
+  servicosExportados,
+}) => {
   try {
     const emailFrom = {
       email: "suporte@oondemand.com.br",
@@ -158,6 +163,7 @@ const emailServicosExportados = async ({ usuario, documento }) => {
 
     // Template do corpo do e-mail com o link de confirmação
     const corpo = `<h1>Olá, ${usuario.nome}!</h1>
+    <p>Foram exportados ${servicosExportados} serviços!</p>
     <p>Segue em anexo o arquivo com serviços exportados!</p>`;
 
     const arquivoExportado = Buffer.from(documento).toString("base64");
@@ -247,9 +253,9 @@ const importarComissõesDetalhes = async ({ usuario, detalhes }) => {
       console.log(corpo);
     }
 
-    if(detalhes.erros){
+    if (detalhes.erros) {
       const arquivoDeErros = Buffer.from(detalhes.erros).toString("base64");
-      const anexos = [{filename: "log.txt", fileBuffer: arquivoDeErros}]
+      const anexos = [{ filename: "log.txt", fileBuffer: arquivoDeErros }];
 
       return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
     }
@@ -291,6 +297,39 @@ const emailErroIntegracaoOmie = async ({ usuario, error }) => {
   }
 };
 
+const emailGeralDeErro = async ({ usuario, documento, tipoDeErro }) => {
+  try {
+    const emailFrom = {
+      email: "suporte@oondemand.com.br",
+      nome: "OonDemand",
+    };
+
+    const emailTo = {
+      email: usuario.email,
+      nome: usuario.nome,
+    };
+
+    const assunto = "Erro ao realizar ação!";
+
+    // Template do corpo do e-mail com o link de confirmação
+    const corpo = `<h1>Olá, ${usuario.nome}!</h1>
+    <p>Ouve um erro ao ${tipoDeErro}, segue o log do erro em anexo.</p>`;
+
+    const arquivoDeErro = Buffer.from(documento).toString("base64");
+    const anexos = [
+      {
+        filename: "log.txt",
+        fileBuffer: arquivoDeErro,
+      },
+    ];
+
+    return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
+  } catch (error) {
+    console.error("Erro ao enviar e-mail de serviços exportados:", error);
+    throw new Error("Erro ao enviar e-mail de serviços exportados:");
+  }
+};
+
 module.exports = {
   confirmacaoEmailPrestador,
   emailEsqueciMinhaSenha,
@@ -298,5 +337,6 @@ module.exports = {
   emailServicosExportados,
   emailImportarRpas,
   importarComissõesDetalhes,
-  emailErroIntegracaoOmie
+  emailErroIntegracaoOmie,
+  emailGeralDeErro,
 };

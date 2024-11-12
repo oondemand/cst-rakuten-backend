@@ -6,7 +6,7 @@ const Prestador = require("../models/Prestador");
 const Ticket = require("../models/Ticket");
 const Arquivo = require("../models/Arquivo");
 
-const { max, addDays, format,  getMonth, getYear} = require("date-fns");
+const { max, addDays, format, getMonth, getYear } = require("date-fns");
 
 const {
   criarPrestadorParaExportacao,
@@ -17,16 +17,17 @@ const {
 } = require("../services/integracaoRPAs/exportarServicos");
 
 const emailUtils = require("../utils/emailUtils");
-const {CNPJouCPF} = require("../utils/formatters")
+const { CNPJouCPF } = require("../utils/formatters");
 const { converterNumeroSerieParaData } = require("../utils/dateUtils");
 
 exports.importarComissoes = async (req, res) => {
-
   const mesDeCompetencia = req.query.mes;
   const anoDeCompetencia = req.query.ano;
 
-  if(!mesDeCompetencia || !anoDeCompetencia){
-    return res.status(400).json({ message: "Data de competência não enviada." });
+  if (!mesDeCompetencia || !anoDeCompetencia) {
+    return res
+      .status(400)
+      .json({ message: "Data de competência não enviada." });
   }
 
   const arquivo = req.file;
@@ -35,7 +36,7 @@ exports.importarComissoes = async (req, res) => {
     return res.status(400).json({ message: "Nenhum arquivo enviado." });
   }
 
- res.status(200).json({ message: "Arquivo recebido e sendo processado" });
+  res.status(200).json({ message: "Arquivo recebido e sendo processado" });
 
   try {
     console.log("[PROCESSANDO ARQUIVO...]");
@@ -50,43 +51,48 @@ exports.importarComissoes = async (req, res) => {
     });
 
     // Processar os dados pela posição das colunas
-      const processedData = jsonData.reduce((result, row, i) => {
+    const processedData = jsonData.reduce((result, row, i) => {
+      const data = {
+        type: row[0],
+        sid: row[3],
+        periodo: converterNumeroSerieParaData(row[5]) || "",
+        valorPrincipal: row[6] || 0,
+        valorBonus: row[7] || 0,
+        valorAjusteComercial: row[8] || 0,
+        valorHospedagemAnuncio: row[9] || 0,
+        valorTotal: row[10] || 0,
+        nomePrestador: row[20] || "",
+        documento: row[19] || "",
+      };
 
-        const data = {
-          type: row[0],
-          sid: row[3],
-          periodo: converterNumeroSerieParaData(row[5]) || '',
-          valorPrincipal: row[6] || 0,
-          valorBonus: row[7] || 0,
-          valorAjusteComercial: row[8] || 0,
-          valorHospedagemAnuncio: row[9] || 0,
-          valorTotal: row[10] || 0,
-          nomePrestador: row[20] || '',
-          documento: row[19] || ''
+      const valorTotalRevisaoDeProvisao = row[15];
+
+      if (valorTotalRevisaoDeProvisao) {
+        const revisaoDeProvisao = {
+          periodo: converterNumeroSerieParaData(row[11]) || "",
+          valorPrincipal: row[12] || 0,
+          valorBonus: row[13] || 0,
+          valorAjusteComercial: row[14] || 0,
+          valorTotal: valorTotalRevisaoDeProvisao,
         };
+        data.revisaoDeProvisao = revisaoDeProvisao;
+      }
 
-        const valorTotalRevisaoDeProvisao = row[15];
+      // Adiciona ao resultado apenas se atender aos critérios
+      // Detalhe para o tipo "RPA", isso que vai fazer com que
+      // o cabeçalho seja pulado corretamente
+      if (
+        data.sid &&
+        data.nomePrestador &&
+        data.type === "RPA" &&
+        getMonth(data.periodo) + 1 == mesDeCompetencia &&
+        getYear(data.periodo) == anoDeCompetencia
+      ) {
+        result.push(data);
+      }
 
-        if(valorTotalRevisaoDeProvisao) {
-          const revisaoDeProvisao = {
-            periodo: converterNumeroSerieParaData(row[11]) || "",
-            valorPrincipal: row[12] || 0,
-            valorBonus: row[13] || 0,
-            valorAjusteComercial: row[14] || 0,
-            valorTotal: valorTotalRevisaoDeProvisao,
-          }
-          data.revisaoDeProvisao = revisaoDeProvisao
-        }
-
-        // Adiciona ao resultado apenas se atender aos critérios
-        // Detalhe para o tipo "RPA", isso que vai fazer com que 
-        // o cabeçalho seja pulado corretamente
-        if (data.sid && data.nomePrestador && data.type === "RPA" && getMonth(data.periodo) + 1 == mesDeCompetencia && getYear(data.periodo) == anoDeCompetencia) {
-          result.push(data);
-        }
-
-        return result;
-      }, []);
+      return result;
+    }, []);
 
     let detalhes = {
       competenciaProscessada: `${mesDeCompetencia}/${anoDeCompetencia}`,
@@ -104,7 +110,7 @@ exports.importarComissoes = async (req, res) => {
         let prestador = await Prestador.findOne({ sid: row.sid });
 
         if (!prestador) {
-          const {numero, tipo} = CNPJouCPF(row.documento);
+          const { numero, tipo } = CNPJouCPF(row.documento);
 
           prestador = new Prestador({
             sid: row.sid,
@@ -130,16 +136,16 @@ exports.importarComissoes = async (req, res) => {
           },
         });
 
-        if(!ticket){
-         ticket = new Ticket({
+        if (!ticket) {
+          ticket = new Ticket({
             prestador: prestador._id,
             titulo: `Comissão ${prestador.nome}: ${getMonth(row.periodo) + 1}/${getYear(row.periodo)}`,
             status: "aguardando-inicio",
             etapa: "requisicao",
           });
 
-          await ticket.save()
-          detalhes.totalDeNovosTickets += 1
+          await ticket.save();
+          detalhes.totalDeNovosTickets += 1;
         }
 
         const servico = new Servico({
@@ -156,11 +162,10 @@ exports.importarComissoes = async (req, res) => {
         await servico.save();
         detalhes.valorTotalLido += row.valorTotal;
 
-
         ticket.servicos.push(servico._id);
         await ticket.save();
 
-        if(row.revisaoDeProvisao){
+        if (row.revisaoDeProvisao) {
           const servicoDeCorrecao = new Servico({
             prestador: prestador._id,
             mesCompetencia: getMonth(row.revisaoDeProvisao.periodo) + 1, // Meses no date-fns começam a partir do 0
@@ -168,7 +173,8 @@ exports.importarComissoes = async (req, res) => {
             valorPrincipal: row.revisaoDeProvisao.valorPrincipal,
             valorBonus: row.revisaoDeProvisao.valorBonus,
             valorAjusteComercial: row.revisaoDeProvisao.valorAjusteComercial,
-            valorHospedagemAnuncio: row.revisaoDeProvisao.valorHospedagemAnuncio,
+            valorHospedagemAnuncio:
+              row.revisaoDeProvisao.valorHospedagemAnuncio,
             valorTotal: row.revisaoDeProvisao.valorTotal,
             correcao: true,
             status: "ativo",
@@ -179,7 +185,6 @@ exports.importarComissoes = async (req, res) => {
           ticket.servicos.push(servicoDeCorrecao._id);
           await ticket.save();
         }
-
       } catch (err) {
         detalhes.linhasLidasComErro += 1;
         detalhes.erros += `Erro ao processar linha: ${JSON.stringify(row)} - ${err} \n\n`;
@@ -234,8 +239,6 @@ exports.exportarServicos = async (req, res) => {
         let valorTotalDoTicket = 0;
         const datasDeCompetencia = [];
         for (const { valorTotal, mesCompetencia, anoCompetencia } of servicos) {
-          console.log(valorTotal);
-
           valorTotalDoTicket += valorTotal;
           // -1 por que para o date fns janeiro = 0
           datasDeCompetencia.push(new Date(anoCompetencia, mesCompetencia - 1));
@@ -266,9 +269,18 @@ exports.exportarServicos = async (req, res) => {
       }
     }
 
-    emailUtils.emailServicosExportados({ documento, usuario: req.usuario });
+    emailUtils.emailServicosExportados({
+      documento,
+      usuario: req.usuario,
+      servicosExportados: prestadoresComTicketsExportados.length,
+    });
   } catch (error) {
     console.error(error);
+    emailUtils.emailGeralDeErro({
+      documento: `Ouve um erro ao exportar serviços: ${error}\n\n`,
+      usuario: req.usuario,
+      tipoDeErro: "exportar serviços",
+    });
   }
 };
 
@@ -297,7 +309,7 @@ exports.exportarPrestadores = async (req, res) => {
         !prestador.sciUnico &&
         !prestadoresExportados.includes(prestador._id)
       ) {
-        const dataNascimento = prestador.pessoaFisica?.dataNascimento
+        const dataNascimento = prestador.pessoaFisica?.dataNascimento;
 
         documento += criarPrestadorParaExportacao({
           documento: prestador.documento,
@@ -311,9 +323,11 @@ exports.exportarPrestadores = async (req, res) => {
           orgaoEmissorRG: prestador.pessoaFisica
             ? prestador.pessoaFisica.rg.orgaoEmissor
             : "",
-          dataNascimento: dataNascimento == dataNascimento instanceof Date && !isNaN(dataNascimento)
-            ? format(dataNascimento, "ddMMyyyy")
-            : "",
+          dataNascimento:
+            dataNascimento == dataNascimento instanceof Date &&
+            !isNaN(dataNascimento)
+              ? format(dataNascimento, "ddMMyyyy")
+              : "",
         }).concat("\n\n");
 
         prestador.status = "aguardando-codigo-sci";
@@ -323,9 +337,18 @@ exports.exportarPrestadores = async (req, res) => {
       }
     }
 
-    emailUtils.emailPrestadoresExportados({ documento, usuario: req.usuario });
+    emailUtils.emailPrestadoresExportados({
+      documento,
+      usuario: req.usuario,
+      prestadoresExportados: prestadoresExportados.length,
+    });
   } catch (error) {
     console.error(error);
+    emailUtils.emailGeralDeErro({
+      documento: `Ouve um erro ao exportar prestadores: ${error}\n\n`,
+      usuario: req.usuario,
+      tipoDeErro: "exportar prestadores",
+    });
   }
 };
 

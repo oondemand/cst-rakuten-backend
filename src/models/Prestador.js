@@ -39,7 +39,7 @@ const prestadorSchema = new mongoose.Schema(
       lowercase: true,
       validate: {
         validator: function (v) {
-          return /\S+@\S+\.\S+/.test(v);
+          return v === null ? true : /\S+@\S+\.\S+/.test(v);
         },
         message: (props) => `${props.value} não é um e-mail válido!`,
       },

@@ -51,7 +51,7 @@ const aprovar = async (req, res) => {
     if (currentEtapaIndex === etapas.length - 1) {
       ticket.etapa = "integracao-omie";
       ticket.status = "trabalhando";
-      // await ticket.save();
+      await ticket.save();
 
       gerarContaPagar({ ticket, usuario: req.usuario });
 
