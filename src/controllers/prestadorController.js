@@ -72,7 +72,10 @@ exports.adicionarPrestadorECriarTicket = async (req, res) => {
 // Criar um novo Prestador
 exports.criarPrestador = async (req, res) => {
   try {
-    const prestador = new Prestador(req.body);
+    const prestador = new Prestador({
+      ...req.body,
+      email: req.body.email === "" ? null : req.body.email,
+    });
     await prestador.save();
 
     console.log("prestador", prestador);
@@ -193,7 +196,7 @@ exports.obterPrestadorPorEmail = async (req, res) => {
 exports.obterPrestadorPorPis = async (req, res) => {
   try {
     const prestador = await Prestador.findOne({
-      "pessoaFisica.pis": req.params.pis.replaceAll(".", ("")).replace("-", "")
+      "pessoaFisica.pis": req.params.pis,
     });
 
     if (!prestador)
