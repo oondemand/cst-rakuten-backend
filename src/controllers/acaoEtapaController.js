@@ -229,12 +229,15 @@ exports.exportarServicos = async (req, res) => {
     let documento = "";
     const prestadoresComTicketsExportados = [];
 
+    console.log(prestadoresComTicketsExportados);
+
     for (const ticket of tickets) {
       const { prestador, servicos } = ticket;
       if (
         prestador.sciUnico &&
         servicos.length > 0 &&
-        !prestadoresComTicketsExportados.includes(prestador._id)
+        !prestadoresComTicketsExportados.includes(prestador._id) &&
+        prestador.status === "ativo"
       ) {
         let valorTotalDoTicket = 0;
         const datasDeCompetencia = [];
