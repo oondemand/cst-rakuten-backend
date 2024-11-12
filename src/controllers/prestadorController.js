@@ -72,13 +72,11 @@ exports.adicionarPrestadorECriarTicket = async (req, res) => {
 // Criar um novo Prestador
 exports.criarPrestador = async (req, res) => {
   try {
-    const prestador = new Prestador({
-      ...req.body,
-      email: req.body.email === "" ? null : req.body.email,
-    });
-    await prestador.save();
+    const { email, ...rest } = req.body;
+    const data = email === "" ? rest : req.body;
 
-    console.log("prestador", prestador);
+    const prestador = new Prestador(data);
+    await prestador.save();
 
     res.status(201).json({
       message: "Prestador criado com sucesso!",
@@ -121,7 +119,7 @@ exports.atualizarPrestador = async (req, res) => {
     const usuario = req.usuario;
 
     // Verificar se o tipo de usuário é "prestador"
-    if (usuario.tipo === "prestador") req.body.status = "em-analise";
+    // if (usuario.tipo === "prestador") req.body.status = "em-analise";
 
     const prestador = await Prestador.findById(req.params.id);
 
