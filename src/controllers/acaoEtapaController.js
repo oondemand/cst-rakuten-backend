@@ -373,8 +373,8 @@ exports.importarRPAs = async (req, res) => {
     const detalhes = {};
     const sciUnico = arquivo.originalname.replace(".pdf", "").split("_")[2];
 
-    if (!sciUnico) {
-      throw `Erro ao fazer upload de arquivo ${arquivo.originalname}`;
+    if (!sciUnico || isNaN(sciUnico)) {
+      throw `Erro ao fazer upload de arquivo ${arquivo.originalname}; sciUnico não encontrado no nome do arquivo ou não é um número válido`;
     }
 
     const prestador = await Prestador.findOne({ sciUnico: sciUnico });
@@ -427,7 +427,7 @@ exports.importarRPAs = async (req, res) => {
         }
       } catch (error) {
         detalhes.erros.quantidade += 1;
-        detalhes.erros.logs += error.concat("\n\n");
+        detalhes.erros.logs += JSON.stringify(error).concat("\n\n");
         console.error(error);
       }
     }

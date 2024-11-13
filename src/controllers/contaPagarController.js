@@ -5,7 +5,7 @@ const { consultar } = require("../services/omie/contaPagarService");
 const obterContaPagarOmie = async (req, res) => {
   try {
     const { codigoLancamento } = req.params;
-    console.log("Obtendo conta a pagar Omie:", codigoLancamento);
+    // console.log("Obtendo conta a pagar Omie:", codigoLancamento);
 
     const ticket = await Ticket.findOne({ contaPagarOmie: codigoLancamento });
     if (!ticket) {
@@ -13,10 +13,10 @@ const obterContaPagarOmie = async (req, res) => {
         .status(404)
         .json({ mensagem: "Ticket com a conta a pagar não encontrado." });
     }
-    console.log("Ticket encontrado:", ticket);
+    // console.log("Ticket encontrado:", ticket);
 
     const baseOmie = await BaseOmie.findOne();
-    console.log("Base Omie encontrada:", baseOmie);
+    // console.log("Base Omie encontrada:", baseOmie);
 
     const { appKey, appSecret } = baseOmie;
     if (!appKey || !appSecret)
@@ -26,7 +26,7 @@ const obterContaPagarOmie = async (req, res) => {
 
     // Consultar a conta a pagar na Omie usando o serviço de consulta
     const contaPagarOmie = await consultar(appKey, appSecret, codigoLancamento);
-    console.log("Conta a pagar Omie encontrada:", contaPagarOmie);
+    // console.log("Conta a pagar Omie encontrada:", contaPagarOmie);
 
     // Verificar se o status do título é "PAGO"
     if (contaPagarOmie.status_titulo === "PAGO") {

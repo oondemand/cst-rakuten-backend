@@ -23,8 +23,9 @@ WORKDIR /app
 # Copiar os arquivos do estágio de build
 COPY --from=builder /app .
 
-# Criar o diretório uploads/tickets
+# Criar o diretório uploads/tickets e rpas
 RUN mkdir -p uploads/tickets
+RUN mkdir -p uploads/rpas
 
 # Expor a porta em que a aplicação será executada
 EXPOSE 4000
