@@ -1,5 +1,6 @@
 const Ticket = require("../models/Ticket");
 const Arquivo = require("../models/Arquivo");
+const { criarNomePersonalizado } = require("../utils/formatters");
 
 exports.createTicket = async (req, res) => {
   const { baseOmieId, titulo, observacao, servicosIds, prestadorId } = req.body;
@@ -247,13 +248,15 @@ exports.uploadFiles = async (req, res) => {
     const arquivosSalvos = await Promise.all(
       req.files.map(async (file) => {
         const arquivo = new Arquivo({
-          nome: file.filename,
+          nome: criarNomePersonalizado({ nomeOriginal: file.originalname }),
           nomeOriginal: file.originalname,
           path: file.path,
           mimetype: file.mimetype,
           size: file.size,
           ticket: ticket._id,
+          buffer: file.buffer,
         });
+
         await arquivo.save();
         return arquivo;
       }),

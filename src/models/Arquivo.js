@@ -4,9 +4,10 @@ const ArquivoSchema = new mongoose.Schema(
   {
     nome: { type: String, required: true },
     nomeOriginal: { type: String, required: true },
-    path: { type: String, required: true },
+    path: { type: String },
     mimetype: { type: String, required: true },
     size: { type: Number, required: true },
+    buffer: { type: Buffer },
     ticket: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Ticket",
