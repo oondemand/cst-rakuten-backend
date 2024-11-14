@@ -318,8 +318,6 @@ const uploadDeArquivosOmie = async ({ ticket, nId, tabela }) => {
 
   try {
     for (const arquivo of ticket.arquivos) {
-      const buffer = fs.readFileSync(arquivo.path);
-
       await anexoService.incluir({
         appKey: baseOmie.appKey,
         appSecret: baseOmie.appSecret,
@@ -327,7 +325,7 @@ const uploadDeArquivosOmie = async ({ ticket, nId, tabela }) => {
         nId,
         nomeArquivo: arquivo.nomeOriginal,
         tipoArquivo: arquivo.mimetype,
-        arquivo: buffer,
+        arquivo: arquivo.buffer,
       });
     }
   } catch (error) {
