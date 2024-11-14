@@ -20,6 +20,8 @@ const emailUtils = require("../utils/emailUtils");
 const { CNPJouCPF } = require("../utils/formatters");
 const { converterNumeroSerieParaData } = require("../utils/dateUtils");
 
+const { criarNomePersonalizado } = require("../utils/formatters");
+
 exports.importarComissoes = async (req, res) => {
   const mesDeCompetencia = req.query.mes;
   const anoDeCompetencia = req.query.ano;
@@ -394,12 +396,13 @@ exports.importarRPAs = async (req, res) => {
     }
 
     const novoArquivoDoTicket = new Arquivo({
-      nome: arquivo.filename,
+      nome: criarNomePersonalizado({nomeOriginal:  arquivo.originalname }),
       nomeOriginal: arquivo.originalname,
       path: arquivo.path,
       mimetype: arquivo.mimetype,
       size: arquivo.size,
       ticket: ticket._id,
+      buffer: arquivo.buffer,
     });
     await novoArquivoDoTicket.save();
 

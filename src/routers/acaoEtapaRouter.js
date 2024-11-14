@@ -49,21 +49,13 @@ const rpasFileFilter = (req, file, cb) => {
 };
 
 // Configuração de armazenamento para a rota `importar-rpas`
-const rpasStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/rpas/"); // Pasta específica para RPA
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `${uniqueSuffix}${path.extname(file.originalname)}`);
-  },
-});
+const rpasStorage = multer.memoryStorage({});
 
 // Inicializando o upload com configuração específica para `importar-rpas`
 const uploadRpas = multer({
   storage: rpasStorage,
   fileFilter: rpasFileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }, // Limite de 10MB
+  limits: { fileSize: 1 * 1024 * 1024 }, // Limite de 1MB por arquivo
 });
 
 router.post(
