@@ -1,5 +1,6 @@
 # Define o diretório raiz para iniciar a busca
 $rootDir = "../../src"
+# $rootDir = "../../infra/kubernetes"
 
 # Função para verificar se um caminho está dentro de um diretório node_modules
 function Is-InNodeModules {
