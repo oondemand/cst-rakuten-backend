@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cst-rakuten-backend
+  namespace: cst-rakuten
 spec:
   replicas: 2
   selector:

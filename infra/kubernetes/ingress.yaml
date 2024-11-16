@@ -2,7 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: cst-rakuten-backend-ingress
-  namespace: default
+  namespace: cst-rakuten
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-nginx
     nginx.ingress.kubernetes.io/rewrite-target: /$2
