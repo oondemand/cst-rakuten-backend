@@ -231,8 +231,6 @@ exports.exportarServicos = async (req, res) => {
     let documento = "";
     const prestadoresComTicketsExportados = [];
 
-    console.log(prestadoresComTicketsExportados);
-
     for (const ticket of tickets) {
       const { prestador, servicos } = ticket;
       if (
@@ -263,7 +261,7 @@ exports.exportarServicos = async (req, res) => {
             ),
             dataDeRealizacao: format(dataDeCompetenciaMaisRecente, "ddMMyyyy"),
             tipoDeDocumento: 1, // numero do exemplo
-            valor: valorTotalDoTicket,
+            valor: valorTotalDoTicket.toString().replace(".", ","),
           }).concat("\n\n");
 
           ticket.status = "trabalhando";
@@ -329,10 +327,12 @@ exports.exportarPrestadores = async (req, res) => {
             ? prestador.pessoaFisica.rg.orgaoEmissor
             : "",
           dataNascimento:
-            dataNascimento == dataNascimento instanceof Date &&
-            !isNaN(dataNascimento)
+            dataNascimento instanceof Date
               ? format(dataNascimento, "ddMMyyyy")
               : "",
+          CBO: process.env.SCI_CBO,
+          CFIP: process.env.SCI_CFIP,
+          eSocial: process.env.SCI_ESOCIAL,
         }).concat("\n\n");
 
         prestador.status = "aguardando-codigo-sci";
@@ -396,7 +396,7 @@ exports.importarRPAs = async (req, res) => {
     }
 
     const novoArquivoDoTicket = new Arquivo({
-      nome: criarNomePersonalizado({nomeOriginal:  arquivo.originalname }),
+      nome: criarNomePersonalizado({ nomeOriginal: arquivo.originalname }),
       nomeOriginal: arquivo.originalname,
       path: arquivo.path,
       mimetype: arquivo.mimetype,

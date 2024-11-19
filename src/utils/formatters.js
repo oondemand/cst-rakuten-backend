@@ -15,7 +15,7 @@ exports.CNPJouCPF = (numero) => {
     return { tipo: "pj", numero: numeroStr.padStart(14, "0") };
   }
 
-  return { tipo: "", numero: "" };
+  return { tipo: null, numero: "" };
 };
 
 exports.criarNomePersonalizado = ({ nomeOriginal }) => {
