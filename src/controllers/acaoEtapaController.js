@@ -328,7 +328,7 @@ exports.exportarPrestadores = async (req, res) => {
             : "",
           dataNascimento:
             dataNascimento instanceof Date
-              ? format(dataNascimento, "ddMMyyyy")
+              ? format(dataNascimento, "dd/MM/yyyy")
               : "",
           CBO: process.env.SCI_CBO,
           CFIP: process.env.SCI_CFIP,
