@@ -192,7 +192,7 @@ exports.importarComissoes = async (req, res) => {
         detalhes.erros += `Erro ao processar linha: ${JSON.stringify(row)} - ${err} \n\n`;
 
         console.error(
-          `Erro ao processar linha: ${JSON.stringify(row)} - ${err}`,
+          `Erro ao processar linha: ${JSON.stringify(row)} - ${err}`
         );
       }
     }
@@ -240,16 +240,12 @@ exports.exportarServicos = async (req, res) => {
         prestador.status === "ativo"
       ) {
         let valorTotalDoTicket = 0;
-        const datasDeCompetencia = [];
-        for (const { valorTotal, mesCompetencia, anoCompetencia } of servicos) {
+
+        for (const { valorTotal } of servicos) {
           valorTotalDoTicket += valorTotal;
-          // -1 por que para o date fns janeiro = 0
-          datasDeCompetencia.push(new Date(anoCompetencia, mesCompetencia - 1));
         }
 
         if (valorTotalDoTicket > 0) {
-          const dataDeCompetenciaMaisRecente = max(datasDeCompetencia);
-
           documento += criarServicoParaExportacao({
             codAutonomo: prestador.sciUnico,
             codCentroDeCustos: process.env.SCI_CODIGO_CENTRO_CUSTO,
@@ -257,9 +253,9 @@ exports.exportarServicos = async (req, res) => {
             porcentualIss: process.env.SCI_PORCENTAGEM_ISS,
             dataDePagamento: format(
               addDays(new Date(), Number(process.env.SCI_DIAS_PAGAMENTO)),
-              "ddMMyyyy",
+              "ddMMyyyy"
             ),
-            dataDeRealizacao: format(dataDeCompetenciaMaisRecente, "ddMMyyyy"),
+            dataDeRealizacao: format(new Date(), "ddMMyyyy"),
             tipoDeDocumento: 1, // numero do exemplo
             valor: valorTotalDoTicket.toString().replace(".", ","),
           }).concat("\n\n");
