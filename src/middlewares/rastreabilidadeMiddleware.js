@@ -27,7 +27,7 @@ const rastreabilidadeMiddleware = async (req, res, next) => {
 
     log
       .save()
-      .then(() => console.log("Log de rastreabilidade salvo com sucesso"))
+      // .then(() => console.log("Log de rastreabilidade salvo com sucesso"))
       .catch((error) =>
         console.error("Erro ao salvar log de rastreabilidade:", error),
       );

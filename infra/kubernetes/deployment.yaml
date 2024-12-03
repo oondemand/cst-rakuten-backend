@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cst-rakuten-backend
-  namespace: cst-rakuten
+  namespace: default
 spec:
   replicas: 2
   selector:
@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: cst-rakuten-backend-container
-          image: registry.digitalocean.com/oondemand/cst-rakuten-backend:1.0.7
+          image: registry.digitalocean.com/oondemand/cst-rakuten-backend:1.0.13
           ports:
             - containerPort: 4000
           resources:

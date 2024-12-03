@@ -18,7 +18,7 @@ const app = express();
 
 // Middlewares globais
 app.use(express.json());
-app.use(cors());
+app.use(cors({ origin: '*' }));
 app.use(helmet());
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -56,16 +56,24 @@ app.use('/uploads', express.static(path.join(__dirname, "..", 'uploads')));
 
 // Middleware de erro
 app.use((err, req, res, next) => {
+  console.log("Middleware de Erro Invocado");
+  console.log("Erro:", err);
+  
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+
   if (err instanceof multer.MulterError) {
     if (err.code === "LIMIT_FILE_SIZE") {
+      console.log("Erro de Limite de Tamanho de Arquivo");
       return res.status(413).json({
         message: err.message,
       });
     }
 
+    console.log("Erro de Multer:", err.message);
     return res.status(400).json({ message: err.message });
   } else if (err) {
-    // Outros erros
+    console.log("Erro Interno do Servidor:", err.message);
     return res.status(500).json({ message: err.message });
   }
   next();

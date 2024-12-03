@@ -1,4 +1,3 @@
-// src/models/Servico.js
 const mongoose = require("mongoose");
 
 const servicoSchema = new mongoose.Schema(
@@ -18,7 +17,18 @@ const servicoSchema = new mongoose.Schema(
       default: "ativo",
     },
   },
-  { timestamps: true },
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+servicoSchema.virtual('competencia').get(function() {
+  if (this.mesCompetencia != null && this.anoCompetencia != null) {
+    const mes = this.mesCompetencia.toString().padStart(2, '0');
+    const ano = this.anoCompetencia.toString();
+    
+    return `${mes}/${ano}`;
+  }
+  
+  return '';
+});
 
 module.exports = mongoose.model("Servico", servicoSchema);

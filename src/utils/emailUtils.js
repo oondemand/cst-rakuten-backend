@@ -1,6 +1,6 @@
 const sgMail = require("@sendgrid/mail");
-const Usuario = require("../models/Usuario"); // Certifique-se de que o modelo de usuário está corretamente importado
 const { format } = require("date-fns");
+const Usuario = require("../models/Usuario");
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
@@ -34,7 +34,7 @@ const enviarEmail = async (emailFrom, emailTo, assunto, corpo, anexos = []) => {
     })),
   };
 
-  console.log("message", JSON.stringify(message, null, 2));
+  // console.log("message", JSON.stringify(message, null, 2));
 
   try {
     const retorno = await sgMail.send(message);

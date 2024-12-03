@@ -102,7 +102,13 @@ exports.getAllByBaseOmie = async (req, res) => {
 exports.getAllTickets = async (req, res) => {
   try {
     const filtros = req.query;
-    const tickets = await Ticket.find(filtros);
+    const tickets = await Ticket.find(filtros)
+      .populate("prestador", "nome documento sid sciUnico")
+      .populate({
+        path: "servicos",
+        select: "mesCompetencia anoCompetencia competencia valorTotal",
+        options: { virtuals: true }
+      });
 
     res.status(200).json(tickets);
   } catch (error) {
