@@ -181,7 +181,7 @@ const update = async (appKey, appSecret, cliente, maxTentativas = 3) => {
 };
 
 const cachePesquisaPorCNPJ = {};
-const pesquisarPorCNPJ = async (appKey, appSecret, cnpj) => {
+const pesquisarPorCNPJ = async (appKey, appSecret, cnpj, maxTentativas = 3) => {
   const cacheKey = `cnpj_${cnpj}`;
   const now = Date.now();
 
@@ -194,58 +194,71 @@ const pesquisarPorCNPJ = async (appKey, appSecret, cnpj) => {
     return cachePesquisaPorCNPJ[cacheKey].data;
   }
 
-  try {
-    const body = {
-      call: "ListarClientes",
-      app_key: appKey,
-      app_secret: appSecret,
-      param: [
-        {
-          pagina: 1,
-          registros_por_pagina: 50,
-          clientesFiltro: {
-            cnpj_cpf: cnpj,
+  let tentativas = 0;
+
+  while (tentativas < maxTentativas) {
+    try {
+      console.log("tentando", tentativas + 1);
+      const body = {
+        call: "ListarClientes",
+        app_key: appKey,
+        app_secret: appSecret,
+        param: [
+          {
+            pagina: 1,
+            registros_por_pagina: 50,
+            clientesFiltro: {
+              cnpj_cpf: cnpj,
+            },
           },
-        },
-      ],
-    };
+        ],
+      };
 
-    // console.log(JSON.stringify(body));
-    const response = await apiOmie.post("geral/clientes/", body);
-    const data = response.data?.clientes_cadastro[0];
+      // console.log(JSON.stringify(body));
+      const response = await apiOmie.post("geral/clientes/", body);
+      const data = response.data?.clientes_cadastro[0];
 
-    // Armazenar a resposta no cache com um timestamp
-    cachePesquisaPorCNPJ[cacheKey] = {
-      data: data,
-      timestamp: now,
-    };
+      // Armazenar a resposta no cache com um timestamp
+      cachePesquisaPorCNPJ[cacheKey] = {
+        data: data,
+        timestamp: now,
+      };
 
-    return data;
-  } catch (error) {
-    if (
-      error.response?.data?.faultstring?.includes(
-        "Não existem registros para a página",
+      return data;
+    } catch (error) {
+      console.log(error);
+      tentativas++;
+      if (
+        error.response?.data?.faultstring?.includes(
+          "Não existem registros para a página",
+        )
       )
-    )
-      return null;
+        return null;
 
-    if (
-      error.response?.data?.faultstring?.includes(
-        "Consumo redundante detectado",
-      )
-    )
-      await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+      await new Promise((resolve) => setTimeout(resolve, 60 * 1000 * 6));
 
-    if (error.response?.data?.faultstring)
-      throw (
-        "Erro ao pesquisar cliente por CNPJ: " + error.response.data.faultstring
-      );
-    if (error.response?.data)
-      throw "Erro ao pesquisar cliente por CNPJ:" + error.response.data;
-    if (error.response)
-      throw "Erro ao pesquisar cliente por CNPJ: " + error.response;
-    throw error;
+      // if (
+      //   error.response?.data?.faultstring?.includes(
+      //     "Consumo redundante detectado",
+      //   )
+      // ) {
+      //   console.log("Aguardando");
+      //   await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+      // }
+
+      // if (error.response?.data?.faultstring)
+      //   throw (
+      //     "Erro ao pesquisar cliente por CNPJ: " +
+      //     error.response.data.faultstring
+      //   );
+      // if (error.response?.data)
+      //   throw "Erro ao pesquisar cliente por CNPJ:" + error.response.data;
+      // if (error.response)
+      //   throw "Erro ao pesquisar cliente por CNPJ: " + error.response;
+    }
   }
+
+  throw `Falha ao buscar cliente omie pelo documento ${maxTentativas} tentativas.`;
 };
 
 module.exports = {

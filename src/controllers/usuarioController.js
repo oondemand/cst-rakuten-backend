@@ -251,22 +251,34 @@ exports.alterarSenha = async (req, res) => {
   const { code } = req.query;
 
   const token = req.headers.authorization?.split(" ")[1];
-  const { senhaAntiga, senhaNova } = req.body;
+  const { novaSenha, confirmacao } = req.body;
 
   if (!token && !code) {
     return res.status(401).json({ error: "Token inválido" });
   }
 
   if (code) {
-    if (!senhaNova) {
+    if (!novaSenha) {
       return res
         .status(404)
         .json({ error: "Nova senha é um campo obrigatório" });
     }
+
+    if (!confirmacao) {
+      return res
+        .status(404)
+        .json({ error: "Confirmação é um compo obrigatório" });
+    }
+
+    if (novaSenha !== confirmacao) {
+      return res
+        .status(400)
+        .json({ error: "A confirmação precisa ser igual a senha." });
+    }
     try {
       const decoded = jwt.verify(code, process.env.JWT_SECRET);
       const usuario = await Usuario.findById(decoded.id).select("-senha");
-      usuario.senha = senhaNova;
+      usuario.senha = novaSenha;
       await usuario.save();
       return res.status(200).json({ message: "Senha atualizada com sucesso." });
     } catch (error) {

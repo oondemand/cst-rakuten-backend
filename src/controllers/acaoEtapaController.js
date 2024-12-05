@@ -45,7 +45,7 @@ const buscarPrestadorOmie = async ({ documento }) => {
     } = await clienteService.pesquisarPorCNPJ(
       baseOmie.appKey,
       baseOmie.appSecret,
-      documento,
+      documento
     );
 
     const { agencia, codigo_banco, conta_corrente } = dadosBancarios;
@@ -117,6 +117,8 @@ exports.importarComissoes = async (req, res) => {
 
     // Processar os dados pela posição das colunas
     const processedData = jsonData.reduce((result, row, i) => {
+      console.log("i", i);
+
       const data = {
         type: row[0],
         sid: row[3],
@@ -209,19 +211,25 @@ exports.importarComissoes = async (req, res) => {
           }
 
           if (prestador.email) {
-            const novoUsuario = new Usuario({
-              email: prestador.email,
-              nome: prestador.nome,
-              tipo: "prestador",
-              senha: "123456",
-            });
+            let usuario = await Usuario.findOne({ email: prestador.email });
 
-            await novoUsuario.save();
+            if (!usuario) {
+              usuario = new Usuario({
+                email: prestador.email,
+                nome: prestador.nome,
+                tipo: "prestador",
+                senha: "123456",
+              });
+            }
+
+            await usuario.save();
+            prestador.usuario = usuario._id;
+            await prestador.save();
 
             await emailUtils.emailLinkCadastroUsuarioPrestador({
               email: "maikonalexandre574@gmail.com",
               nome: prestador.nome,
-              token: prestador.gerarToken(),
+              token: usuario.gerarToken(),
               url: "http://apppublisherurl",
             });
           }
@@ -294,7 +302,7 @@ exports.importarComissoes = async (req, res) => {
         detalhes.erros += `Erro ao processar linha: ${JSON.stringify(row)} - ${err} \n\n`;
 
         console.error(
-          `Erro ao processar linha: ${JSON.stringify(row)} - ${err}`,
+          `Erro ao processar linha: ${JSON.stringify(row)} - ${err}`
         );
       }
     }
@@ -355,7 +363,7 @@ exports.exportarServicos = async (req, res) => {
             porcentualIss: process.env.SCI_PORCENTAGEM_ISS,
             dataDePagamento: format(
               addDays(new Date(), Number(process.env.SCI_DIAS_PAGAMENTO)),
-              "ddMMyyyy",
+              "ddMMyyyy"
             ),
             dataDeRealizacao: format(new Date(), "ddMMyyyy"),
             tipoDeDocumento: 1, // numero do exemplo
