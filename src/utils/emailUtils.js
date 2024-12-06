@@ -311,7 +311,6 @@ const emailGeralDeErro = async ({ usuario, documento, tipoDeErro }) => {
 
     const assunto = "Erro ao realizar ação!";
 
-    // Template do corpo do e-mail com o link de confirmação
     const corpo = `<h1>Olá, ${usuario.nome}!</h1>
     <p>Ouve um erro ao ${tipoDeErro}, segue o log do erro em anexo.</p>`;
 
@@ -330,6 +329,36 @@ const emailGeralDeErro = async ({ usuario, documento, tipoDeErro }) => {
   }
 };
 
+const emailLinkCadastroUsuarioPrestador = async ({
+  email,
+  nome,
+  url,
+  token,
+}) => {
+  try {
+    const emailFrom = {
+      email: "suporte@oondemand.com.br",
+      nome: "OonDemand",
+    };
+
+    const emailTo = {
+      email,
+      nome,
+    };
+
+    const assunto = "Acesso Liberado";
+
+    const corpo = `<h1>Olá, ${nome}!</h1>
+    <p>Segue o link para acessar o seu app publisher:</p>
+    <a href="${url}?token=${token}">Acessar app publisher</a>`;
+
+    return await enviarEmail(emailFrom, emailTo, assunto, corpo);
+  } catch (error) {
+    console.error("Erro ao enviar e-mail de serviços exportados:", error);
+    throw new Error("Erro ao enviar e-mail de serviços exportados:");
+  }
+};
+
 module.exports = {
   confirmacaoEmailPrestador,
   emailEsqueciMinhaSenha,
@@ -339,4 +368,5 @@ module.exports = {
   importarComissõesDetalhes,
   emailErroIntegracaoOmie,
   emailGeralDeErro,
+  emailLinkCadastroUsuarioPrestador,
 };

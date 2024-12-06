@@ -1,6 +1,8 @@
 // backend/controllers/UsuarioController.js
 
 const Usuario = require("../models/Usuario");
+const Prestador = require("../models/Prestador");
+
 const bcrypt = require("bcryptjs");
 const emailUtils = require("../utils/emailUtils");
 const jwt = require("jsonwebtoken");
@@ -56,12 +58,29 @@ exports.registrarUsuarioPrestador = async (req, res) => {
 };
 
 exports.registrarUsuario = async (req, res) => {
-  const { nome, email, senha, status, permissoes } = req.body;
+  const { nome, email, senha, status, permissoes, tipo, prestadorId } =
+    req.body;
   try {
-    const novoUsuario = new Usuario({ nome, email, senha, status, permissoes });
+    const novoUsuario = new Usuario({
+      nome,
+      email,
+      senha,
+      status,
+      permissoes,
+    });
+
+    if (tipo && tipo === "prestador") {
+      const prestador = await Prestador.findOne({ _id: prestadorId });
+      prestador.email = email;
+      prestador.usuario = novoUsuario._id;
+      await prestador.save();
+    }
+
     await novoUsuario.save();
     res.status(201).json(novoUsuario);
   } catch (error) {
+    console.log(error);
+
     res.status(400).json({ error: "Erro ao registrar usuário" });
   }
 };
@@ -135,7 +154,7 @@ exports.atualizarUsuario = async (req, res) => {
     const usuario = await Usuario.findByIdAndUpdate(
       req.params.id,
       { nome, email, status, permissoes },
-      { new: true },
+      { new: true }
     );
     if (!usuario)
       return res.status(404).json({ error: "Usuário não encontrado" });
@@ -251,22 +270,34 @@ exports.alterarSenha = async (req, res) => {
   const { code } = req.query;
 
   const token = req.headers.authorization?.split(" ")[1];
-  const { senhaAntiga, senhaNova } = req.body;
+  const { novaSenha, confirmacao } = req.body;
 
   if (!token && !code) {
     return res.status(401).json({ error: "Token inválido" });
   }
 
   if (code) {
-    if (!senhaNova) {
+    if (!novaSenha) {
       return res
         .status(404)
         .json({ error: "Nova senha é um campo obrigatório" });
     }
+
+    if (!confirmacao) {
+      return res
+        .status(404)
+        .json({ error: "Confirmação é um compo obrigatório" });
+    }
+
+    if (novaSenha !== confirmacao) {
+      return res
+        .status(400)
+        .json({ error: "A confirmação precisa ser igual a senha." });
+    }
     try {
       const decoded = jwt.verify(code, process.env.JWT_SECRET);
       const usuario = await Usuario.findById(decoded.id).select("-senha");
-      usuario.senha = senhaNova;
+      usuario.senha = novaSenha;
       await usuario.save();
       return res.status(200).json({ message: "Senha atualizada com sucesso." });
     } catch (error) {
@@ -275,4 +306,27 @@ exports.alterarSenha = async (req, res) => {
   }
 
   return res.status(200).json({ message: "Não configurado ainda" });
+};
+
+exports.enviarConvite = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    console.log(userId);
+    
+
+    const usuario = await Usuario.findById(userId);
+
+    if (usuario.tipo && usuario.tipo === "prestador") {
+      await emailUtils.emailLinkCadastroUsuarioPrestador({
+        email: req.usuario.email,
+        nome: usuario.nome,
+        token: usuario.gerarToken(),
+        url: "http://apppublisherurl",
+      });
+    }
+
+    res.status(200).json({ message: "Ok" });
+  } catch (error) {
+    res.status(400).json({ message: "Ouve um erro ao enviar convite" });
+  }
 };
