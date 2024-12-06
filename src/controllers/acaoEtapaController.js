@@ -80,7 +80,10 @@ const buscarPrestadorOmie = async ({ documento }) => {
 
     return prestadorOmie;
   } catch (error) {
-    console.error("Erro ->", error);
+    if (error.includes("Não existem registros para a página")) {
+      console.log("Esperando 1 minuto");
+      await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+    }
     return;
   }
 };
@@ -117,8 +120,6 @@ exports.importarComissoes = async (req, res) => {
 
     // Processar os dados pela posição das colunas
     const processedData = jsonData.reduce((result, row, i) => {
-      console.log("i", i);
-
       const data = {
         type: row[0],
         sid: row[3],
@@ -220,14 +221,15 @@ exports.importarComissoes = async (req, res) => {
                 tipo: "prestador",
                 senha: "123456",
               });
+
+              await usuario.save();
             }
 
-            await usuario.save();
             prestador.usuario = usuario._id;
             await prestador.save();
 
             await emailUtils.emailLinkCadastroUsuarioPrestador({
-              email: "maikonalexandre574@gmail.com",
+              email: req.usuario.email,
               nome: prestador.nome,
               token: usuario.gerarToken(),
               url: "http://apppublisherurl",
@@ -307,10 +309,10 @@ exports.importarComissoes = async (req, res) => {
       }
     }
 
-    // await emailUtils.importarComissõesDetalhes({
-    //   detalhes,
-    //   usuario: req.usuario,
-    // });
+    await emailUtils.importarComissõesDetalhes({
+      detalhes,
+      usuario: req.usuario,
+    });
 
     // Remover o arquivo após o processamento
     fs.unlinkSync(arquivo.path);

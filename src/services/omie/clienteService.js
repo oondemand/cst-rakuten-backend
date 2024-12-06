@@ -102,7 +102,7 @@ const consultar = async (appKey, appSecret, codCliente) => {
   } catch (error) {
     if (
       error.response?.data?.faultstring?.includes(
-        "Consumo redundante detectado",
+        "Consumo redundante detectado"
       )
     )
       await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
@@ -133,14 +133,14 @@ const incluir = async (appKey, appSecret, cliente, maxTentativas = 3) => {
       tentativas++;
       if (
         error.response?.data?.faultstring?.includes(
-          "Consumo redundante detectado",
+          "Consumo redundante detectado"
         )
       ) {
         await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
       }
 
       console.error(
-        `Falha ao criar cliente: ${error.response?.data?.faultstring || error.response?.data || error.response || error}`,
+        `Falha ao criar cliente: ${error.response?.data?.faultstring || error.response?.data || error.response || error}`
       );
     }
   }
@@ -165,14 +165,14 @@ const update = async (appKey, appSecret, cliente, maxTentativas = 3) => {
       tentativas++;
       if (
         error.response?.data?.faultstring?.includes(
-          "Consumo redundante detectado",
+          "Consumo redundante detectado"
         )
       ) {
         await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
       }
 
       console.error(
-        `Falha ao atualizar cliente: ${error.response?.data?.faultstring || error.response?.data || error.response || error}`,
+        `Falha ao atualizar cliente: ${error.response?.data?.faultstring || error.response?.data || error.response || error}`
       );
     }
   }
@@ -185,6 +185,8 @@ const pesquisarPorCNPJ = async (appKey, appSecret, cnpj, maxTentativas = 3) => {
   const cacheKey = `cnpj_${cnpj}`;
   const now = Date.now();
 
+  let tentativas = 0;
+
   // Verificar se o CNPJ está no cache e se ainda é válido (10 minuto)
   if (
     cachePesquisaPorCNPJ[cacheKey] &&
@@ -193,12 +195,8 @@ const pesquisarPorCNPJ = async (appKey, appSecret, cnpj, maxTentativas = 3) => {
     console.log(`Retornando do cache para o CNPJ: ${cnpj}`);
     return cachePesquisaPorCNPJ[cacheKey].data;
   }
-
-  let tentativas = 0;
-
   while (tentativas < maxTentativas) {
     try {
-      console.log("tentando", tentativas + 1);
       const body = {
         call: "ListarClientes",
         app_key: appKey,
@@ -226,39 +224,28 @@ const pesquisarPorCNPJ = async (appKey, appSecret, cnpj, maxTentativas = 3) => {
 
       return data;
     } catch (error) {
-      console.log(error);
       tentativas++;
       if (
         error.response?.data?.faultstring?.includes(
-          "Não existem registros para a página",
+          "API bloqueada por consumo indevido."
         )
-      )
-        return null;
+      ) {
+        console.log("Esperando 5 minutos");
+        await new Promise((resolve) => setTimeout(resolve, 60 * 1000 * 5));
+      }
 
-      await new Promise((resolve) => setTimeout(resolve, 60 * 1000 * 6));
-
-      // if (
-      //   error.response?.data?.faultstring?.includes(
-      //     "Consumo redundante detectado",
-      //   )
-      // ) {
-      //   console.log("Aguardando");
-      //   await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
-      // }
-
-      // if (error.response?.data?.faultstring)
-      //   throw (
-      //     "Erro ao pesquisar cliente por CNPJ: " +
-      //     error.response.data.faultstring
-      //   );
-      // if (error.response?.data)
-      //   throw "Erro ao pesquisar cliente por CNPJ:" + error.response.data;
-      // if (error.response)
-      //   throw "Erro ao pesquisar cliente por CNPJ: " + error.response;
+      if (
+        error.response?.data?.faultstring?.includes(
+          "Consumo redundante detectado"
+        )
+      ) {
+        console.log("Aguardando 1 minuto");
+        await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+      }
     }
   }
 
-  throw `Falha ao buscar cliente omie pelo documento ${maxTentativas} tentativas.`;
+  throw `Falha ao buscar prestador após ${maxTentativas} tentativas.`;
 };
 
 module.exports = {
