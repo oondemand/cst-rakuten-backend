@@ -204,7 +204,7 @@ const emailImportarRpas = async ({ usuario, detalhes }) => {
 
     if (detalhes.erros.quantidade > 0) {
       const arquivoDeErros = Buffer.from(detalhes.erros.logs).toString(
-        "base64",
+        "base64"
       );
       const anexos = [
         {
@@ -264,10 +264,10 @@ const importarComissõesDetalhes = async ({ usuario, detalhes }) => {
   } catch (error) {
     console.error(
       "Erro ao enviar e-mail para detalhes de importação de comissões:",
-      error,
+      error
     );
     throw new Error(
-      "Erro ao enviar e-mail para detalhes de importação de comissões",
+      "Erro ao enviar e-mail para detalhes de importação de comissões"
     );
   }
 };
@@ -329,12 +329,7 @@ const emailGeralDeErro = async ({ usuario, documento, tipoDeErro }) => {
   }
 };
 
-const emailLinkCadastroUsuarioPrestador = async ({
-  email,
-  nome,
-  url,
-  token,
-}) => {
+const emailLinkCadastroUsuarioPrestador = async ({ email, nome, url }) => {
   try {
     const emailFrom = {
       email: "suporte@oondemand.com.br",
@@ -350,7 +345,7 @@ const emailLinkCadastroUsuarioPrestador = async ({
 
     const corpo = `<h1>Olá, ${nome}!</h1>
     <p>Segue o link para acessar o seu app publisher:</p>
-    <a href="${url}?token=${token}">Acessar app publisher</a>`;
+    <a href="${url}">Acessar app publisher</a>`;
 
     return await enviarEmail(emailFrom, emailTo, assunto, corpo);
   } catch (error) {

@@ -244,18 +244,19 @@ exports.esqueciMinhaSenha = async (req, res) => {
     if (usuario.status === "ativo") {
       const token = usuario.gerarToken();
 
-      const url = new URL("/update-password", process.env.CLIENT_BASE_URL);
+      const url = new URL(
+        "/recover-password",
+        process.env.APP_PUBLISHER_BASE_URL
+      );
       url.searchParams.append("code", token);
 
       //mostra url para não ter que verificar no email
       console.log("URL", url.toString());
 
-      if (process.env.NODE_ENV !== "development") {
-        await emailUtils.emailEsqueciMinhaSenha({
-          usuario,
-          url: url.toString(),
-        });
-      }
+      await emailUtils.emailEsqueciMinhaSenha({
+        usuario,
+        url: url.toString(),
+      });
 
       res.status(200).json({ message: "Email enviado" });
     }
@@ -267,61 +268,95 @@ exports.esqueciMinhaSenha = async (req, res) => {
 };
 
 exports.alterarSenha = async (req, res) => {
-  const { code } = req.query;
-
   const token = req.headers.authorization?.split(" ")[1];
-  const { novaSenha, confirmacao } = req.body;
+  const { senhaAtual, novaSenha, confirmacao, code } = req.body;
 
   if (!token && !code) {
     return res.status(401).json({ error: "Token inválido" });
   }
 
+  if (!novaSenha) {
+    return res.status(404).json({ error: "Nova senha é um campo obrigatório" });
+  }
+
+  if (!confirmacao) {
+    return res
+      .status(404)
+      .json({ error: "Confirmação é um compo obrigatório" });
+  }
+
+  if (novaSenha !== confirmacao) {
+    return res
+      .status(400)
+      .json({ error: "A confirmação precisa ser igual a senha." });
+  }
+
   if (code) {
-    if (!novaSenha) {
-      return res
-        .status(404)
-        .json({ error: "Nova senha é um campo obrigatório" });
-    }
-
-    if (!confirmacao) {
-      return res
-        .status(404)
-        .json({ error: "Confirmação é um compo obrigatório" });
-    }
-
-    if (novaSenha !== confirmacao) {
-      return res
-        .status(400)
-        .json({ error: "A confirmação precisa ser igual a senha." });
-    }
     try {
       const decoded = jwt.verify(code, process.env.JWT_SECRET);
-      const usuario = await Usuario.findById(decoded.id).select("-senha");
+      const usuario = await Usuario.findById(decoded.id);
       usuario.senha = novaSenha;
       await usuario.save();
-      return res.status(200).json({ message: "Senha atualizada com sucesso." });
+      return res.status(200).json({
+        token,
+        usuario: {
+          _id: usuario._id,
+          nome: usuario.nome,
+          tipo: usuario.tipo,
+        },
+      });
     } catch (error) {
       return res.status(401).json({ error: "Token inválido." });
     }
   }
 
-  return res.status(200).json({ message: "Não configurado ainda" });
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const usuario = await Usuario.findById(decoded.id);
+
+      if (!(await bcrypt.compare(senhaAtual, usuario.senha)))
+        return res.status(401).json({ mensagem: "Credenciais inválidas" });
+
+      usuario.senha = novaSenha;
+      await usuario.save();
+      return res.status(200).json({
+        token,
+        usuario: {
+          _id: usuario._id,
+          nome: usuario.nome,
+          tipo: usuario.tipo,
+        },
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(401).json({ error: "Token inválido." });
+    }
+  }
+
+  return res.status(404);
 };
 
 exports.enviarConvite = async (req, res) => {
   try {
     const { userId } = req.body;
     console.log(userId);
-    
 
     const usuario = await Usuario.findById(userId);
+
+    const token = usuario.gerarToken();
+
+    const url = new URL("/first-login", process.env.APP_PUBLISHER_BASE_URL);
+    url.searchParams.append("code", token);
+
+    //mostra url para não ter que verificar no email
+    console.log("URL", url.toString());
 
     if (usuario.tipo && usuario.tipo === "prestador") {
       await emailUtils.emailLinkCadastroUsuarioPrestador({
         email: req.usuario.email,
         nome: usuario.nome,
-        token: usuario.gerarToken(),
-        url: "http://apppublisherurl",
+        url,
       });
     }
 
