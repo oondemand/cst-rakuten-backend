@@ -244,7 +244,10 @@ exports.esqueciMinhaSenha = async (req, res) => {
     if (usuario.status === "ativo") {
       const token = usuario.gerarToken();
 
-      const url = new URL("/update-password", process.env.CLIENT_BASE_URL);
+      const url = new URL(
+        "/recover-password",
+        process.env.APP_PUBLISHER_BASE_URL
+      );
       url.searchParams.append("code", token);
 
       //mostra url para não ter que verificar no email
