@@ -14,5 +14,5 @@ jobs:
       - name: Build and push image
         run: |
           docker login --username maikonalexandre --password ${{ secrets.GH_PAT }} ghcr.io
-          docker build ./infra/docker/Dockerfile.prod --tag ghcr.io/maikonalexandre/cst-rakuten-backend:latest
+          docker build ../../infra/docker/Dockerfile.prod --tag ghcr.io/maikonalexandre/cst-rakuten-backend:latest
           docker push ghcr.io/maikonalexandre/cst-rakuten-backend:latest
