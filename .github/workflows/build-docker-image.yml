@@ -1,0 +1,18 @@
+name: Build and create package
+
+on:
+  push:
+    branches:
+      - humolog
+      - main
+      - dev
+jobs:
+  build_and_publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build and push image
+        run: |
+          docker login --username maikonalexandre --password ${{ secrets.GH_PAT }} ghcr.io
+          docker build ./infra/Dockerfile.prod --tag ghcr.io/maikonalexandre/cst-rakuten-backend:latest
+          docker push ghcr.io/maikonalexandre/cst-rakuten-backend:latest
