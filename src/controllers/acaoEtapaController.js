@@ -69,7 +69,9 @@ const buscarPrestadorOmie = async ({ documento }) => {
       },
       pessoaFisica: {
         rg: {
-          numero: pessoa_fisica,
+          numero:
+            pessoa_fisica === "S" &&
+            cnpj_cpf.replaceAll(".", "").replaceAll("-", ""),
         },
       },
       pessoaJuridica: {
@@ -232,7 +234,7 @@ exports.importarComissoes = async (req, res) => {
 
             const url = new URL(
               "/first-login",
-              process.env.APP_PUBLISHER_BASE_URL
+              process.env.BASE_URL_APP_PUBLISHER
             );
             url.searchParams.append("code", token);
 

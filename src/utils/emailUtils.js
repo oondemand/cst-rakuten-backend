@@ -52,7 +52,7 @@ const confirmacaoEmailPrestador = async (usuarioId) => {
       throw new Error("Usuário não encontrado");
     }
 
-    const confirmacaoPrestadorUrl = process.env.CONFIRMACAO_PRESTADOR_URL;
+    const confirmacaoPrestadorUrl = process.env.BASE_URL_CST;
     const token = usuario.gerarToken();
 
     const emailFrom = {
@@ -70,7 +70,7 @@ const confirmacaoEmailPrestador = async (usuarioId) => {
     // Template do corpo do e-mail com o link de confirmação
     const corpo = `<h1>Olá, ${usuario.nome}!</h1>
     <p>Clique no link abaixo para confirmar seu e-mail:</p>
-    <a href="${confirmacaoPrestadorUrl}?token=${token}">Confirmar e-mail</a>`;
+    <a href="${confirmacaoPrestadorUrl}/confirmar-email?token=${token}">Confirmar e-mail</a>`;
 
     await enviarEmail(emailFrom, emailTo, assunto, corpo);
   } catch (error) {

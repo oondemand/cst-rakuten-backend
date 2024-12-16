@@ -246,7 +246,7 @@ exports.esqueciMinhaSenha = async (req, res) => {
 
       const url = new URL(
         "/recover-password",
-        process.env.APP_PUBLISHER_BASE_URL
+        process.env.BASE_URL_APP_PUBLISHER
       );
       url.searchParams.append("code", token);
 
@@ -346,7 +346,7 @@ exports.enviarConvite = async (req, res) => {
 
     const token = usuario.gerarToken();
 
-    const url = new URL("/first-login", process.env.APP_PUBLISHER_BASE_URL);
+    const url = new URL("/first-login", process.env.BASE_URL_APP_PUBLISHER);
     url.searchParams.append("code", token);
 
     //mostra url para não ter que verificar no email
