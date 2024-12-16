@@ -12,6 +12,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Build and push image
         run: |
-          docker login --username maikonalexandre --password ${{ secrets.GH_PAT }} ghcr.io
+          docker login --username ${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.GH_PAT }} ghcr.io
           docker build -f ./infra/docker/Dockerfile.prod --tag ghcr.io/oondemand/cst-rakuten-backend:latest .
           docker push ghcr.io/oondemand/cst-rakuten-backend:latest
