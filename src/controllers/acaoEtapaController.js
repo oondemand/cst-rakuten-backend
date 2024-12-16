@@ -228,11 +228,21 @@ exports.importarComissoes = async (req, res) => {
             prestador.usuario = usuario._id;
             await prestador.save();
 
+            const token = usuario.gerarToken();
+
+            const url = new URL(
+              "/first-login",
+              process.env.APP_PUBLISHER_BASE_URL
+            );
+            url.searchParams.append("code", token);
+
+            //mostra url para não ter que verificar no email
+            console.log("URL", url.toString());
+
             await emailUtils.emailLinkCadastroUsuarioPrestador({
               email: req.usuario.email,
               nome: prestador.nome,
-              token: usuario.gerarToken(),
-              url: "http://apppublisherurl",
+              url: url.toString(),
             });
           }
         }
