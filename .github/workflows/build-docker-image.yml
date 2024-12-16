@@ -5,7 +5,6 @@ on:
     branches:
       - humolog
       - main
-      - dev
 jobs:
   build_and_publish:
     runs-on: ubuntu-latest
