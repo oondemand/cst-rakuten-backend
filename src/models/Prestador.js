@@ -1,5 +1,6 @@
 // src/models/Prestador.js
 const mongoose = require("mongoose");
+const jwt = require("jsonwebtoken");
 
 // Esquema de Endereço
 const enderecoSchema = new mongoose.Schema({
@@ -82,5 +83,11 @@ const prestadorSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+prestadorSchema.methods.gerarToken = function () {
+  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
+    expiresIn: "24h",
+  }); // Token expira em 24 horas
+};
 
 module.exports = mongoose.model("Prestador", prestadorSchema);

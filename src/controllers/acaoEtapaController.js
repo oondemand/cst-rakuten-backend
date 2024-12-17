@@ -5,6 +5,7 @@ const Servico = require("../models/Servico");
 const Prestador = require("../models/Prestador");
 const Ticket = require("../models/Ticket");
 const Arquivo = require("../models/Arquivo");
+const BaseOmie = require("../models/BaseOmie");
 
 const { max, addDays, format, getMonth, getYear } = require("date-fns");
 
@@ -21,6 +22,73 @@ const { CNPJouCPF } = require("../utils/formatters");
 const { converterNumeroSerieParaData } = require("../utils/dateUtils");
 
 const { criarNomePersonalizado } = require("../utils/formatters");
+
+const clienteService = require("../services/omie/clienteService");
+const Usuario = require("../models/Usuario");
+
+const buscarPrestadorOmie = async ({ documento }) => {
+  try {
+    const baseOmie = await BaseOmie.findOne({ status: "ativo" });
+
+    const {
+      cep,
+      cidade,
+      cnpj_cpf,
+      complemento,
+      endereco,
+      email,
+      endereco_numero,
+      estado,
+      pessoa_fisica,
+      razao_social,
+      dadosBancarios,
+    } = await clienteService.pesquisarPorCNPJ(
+      baseOmie.appKey,
+      baseOmie.appSecret,
+      documento
+    );
+
+    const { agencia, codigo_banco, conta_corrente } = dadosBancarios;
+
+    const prestadorOmie = {
+      nome: razao_social,
+      tipo: pessoa_fisica === "S" ? "pf" : "pj",
+      documento: cnpj_cpf.replaceAll(".", "").replaceAll("-", ""),
+      dadosBancarios: {
+        agencia: agencia,
+        conta: conta_corrente,
+      },
+      email: email,
+      endereco: {
+        cep: cep,
+        rua: endereco,
+        numero: endereco_numero,
+        complemento: complemento,
+        cidade: cidade,
+        estado: estado,
+      },
+      pessoaFisica: {
+        rg: {
+          numero:
+            pessoa_fisica === "S" &&
+            cnpj_cpf.replaceAll(".", "").replaceAll("-", ""),
+        },
+      },
+      pessoaJuridica: {
+        razaoSocial: pessoa_fisica !== "S" && razao_social,
+        nomeFantasia: pessoa_fisica !== "S" && razao_social,
+      },
+    };
+
+    return prestadorOmie;
+  } catch (error) {
+    if (error.includes("Não existem registros para a página")) {
+      console.log("Esperando 1 minuto");
+      await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+    }
+    return;
+  }
+};
 
 exports.importarComissoes = async (req, res) => {
   const mesDeCompetencia = req.query.mes;
@@ -109,21 +177,76 @@ exports.importarComissoes = async (req, res) => {
     // Percorrer os dados e salvar no banco
     for (const row of processedData) {
       try {
+        const { numero, tipo } = CNPJouCPF(row.documento);
+
         let prestador = await Prestador.findOne({ sid: row.sid });
 
         if (!prestador) {
-          const { numero, tipo } = CNPJouCPF(row.documento);
-
-          prestador = new Prestador({
-            sid: row.sid,
-            nome: row.nomePrestador,
-            status: "em-analise",
+          const prestadorOmie = await buscarPrestadorOmie({
             documento: numero,
-            tipo,
           });
 
-          await prestador.save();
-          detalhes.totalDeNovosPrestadores += 1;
+          if (prestadorOmie) {
+            prestador = new Prestador({
+              ...prestadorOmie,
+              sid: row.sid,
+              nome: row.nomePrestador,
+              status: "em-analise",
+            });
+            await prestador.save();
+            detalhes.totalDeNovosPrestadores += 1;
+
+            console.log("Criando prestador via omie");
+          }
+
+          if (!prestadorOmie) {
+            prestador = new Prestador({
+              sid: row.sid,
+              nome: row.nomePrestador,
+              status: "em-analise",
+              documento: numero,
+              tipo,
+            });
+
+            await prestador.save();
+            detalhes.totalDeNovosPrestadores += 1;
+            console.log("Criando prestador via planilha");
+          }
+
+          if (prestador.email) {
+            let usuario = await Usuario.findOne({ email: prestador.email });
+
+            if (!usuario) {
+              usuario = new Usuario({
+                email: prestador.email,
+                nome: prestador.nome,
+                tipo: "prestador",
+                senha: "123456",
+              });
+
+              await usuario.save();
+            }
+
+            prestador.usuario = usuario._id;
+            await prestador.save();
+
+            const token = usuario.gerarToken();
+
+            const url = new URL(
+              "/first-login",
+              process.env.BASE_URL_APP_PUBLISHER
+            );
+            url.searchParams.append("code", token);
+
+            //mostra url para não ter que verificar no email
+            console.log("URL", url.toString());
+
+            await emailUtils.emailLinkCadastroUsuarioPrestador({
+              email: req.usuario.email,
+              nome: prestador.nome,
+              url: url.toString(),
+            });
+          }
         }
 
         let ticket = await Ticket.findOne({
@@ -161,6 +284,7 @@ exports.importarComissoes = async (req, res) => {
           valorTotal: row.valorTotal,
           status: "ativo",
         });
+
         await servico.save();
         detalhes.valorTotalLido += row.valorTotal;
 
