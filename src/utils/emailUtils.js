@@ -52,7 +52,7 @@ const confirmacaoEmailPrestador = async (usuarioId) => {
       throw new Error("Usuário não encontrado");
     }
 
-    const confirmacaoPrestadorUrl = process.env.CONFIRMACAO_PRESTADOR_URL;
+    const confirmacaoPrestadorUrl = process.env.BASE_URL_CST;
     const token = usuario.gerarToken();
 
     const emailFrom = {
@@ -70,7 +70,7 @@ const confirmacaoEmailPrestador = async (usuarioId) => {
     // Template do corpo do e-mail com o link de confirmação
     const corpo = `<h1>Olá, ${usuario.nome}!</h1>
     <p>Clique no link abaixo para confirmar seu e-mail:</p>
-    <a href="${confirmacaoPrestadorUrl}?token=${token}">Confirmar e-mail</a>`;
+    <a href="${confirmacaoPrestadorUrl}/confirmar-email?token=${token}">Confirmar e-mail</a>`;
 
     await enviarEmail(emailFrom, emailTo, assunto, corpo);
   } catch (error) {
@@ -204,7 +204,7 @@ const emailImportarRpas = async ({ usuario, detalhes }) => {
 
     if (detalhes.erros.quantidade > 0) {
       const arquivoDeErros = Buffer.from(detalhes.erros.logs).toString(
-        "base64",
+        "base64"
       );
       const anexos = [
         {
@@ -264,10 +264,10 @@ const importarComissõesDetalhes = async ({ usuario, detalhes }) => {
   } catch (error) {
     console.error(
       "Erro ao enviar e-mail para detalhes de importação de comissões:",
-      error,
+      error
     );
     throw new Error(
-      "Erro ao enviar e-mail para detalhes de importação de comissões",
+      "Erro ao enviar e-mail para detalhes de importação de comissões"
     );
   }
 };
@@ -311,7 +311,6 @@ const emailGeralDeErro = async ({ usuario, documento, tipoDeErro }) => {
 
     const assunto = "Erro ao realizar ação!";
 
-    // Template do corpo do e-mail com o link de confirmação
     const corpo = `<h1>Olá, ${usuario.nome}!</h1>
     <p>Ouve um erro ao ${tipoDeErro}, segue o log do erro em anexo.</p>`;
 
@@ -330,6 +329,31 @@ const emailGeralDeErro = async ({ usuario, documento, tipoDeErro }) => {
   }
 };
 
+const emailLinkCadastroUsuarioPrestador = async ({ email, nome, url }) => {
+  try {
+    const emailFrom = {
+      email: "suporte@oondemand.com.br",
+      nome: "OonDemand",
+    };
+
+    const emailTo = {
+      email,
+      nome,
+    };
+
+    const assunto = "Acesso Liberado";
+
+    const corpo = `<h1>Olá, ${nome}!</h1>
+    <p>Segue o link para acessar o seu app publisher:</p>
+    <a href="${url}">Acessar app publisher</a>`;
+
+    return await enviarEmail(emailFrom, emailTo, assunto, corpo);
+  } catch (error) {
+    console.error("Erro ao enviar e-mail de serviços exportados:", error);
+    throw new Error("Erro ao enviar e-mail de serviços exportados:");
+  }
+};
+
 module.exports = {
   confirmacaoEmailPrestador,
   emailEsqueciMinhaSenha,
@@ -339,4 +363,5 @@ module.exports = {
   importarComissõesDetalhes,
   emailErroIntegracaoOmie,
   emailGeralDeErro,
+  emailLinkCadastroUsuarioPrestador,
 };

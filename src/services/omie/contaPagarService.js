@@ -58,9 +58,11 @@ const criarConta = ({
 
 const incluir = async (appKey, appSecret, conta, maxTentativas = 3) => {
   let tentativas = 0;
+  let erroEncontrado;
+
   while (tentativas < maxTentativas) {
     console.log(
-      `[CONTA A PAGAR]: Criando conta a pagar tentativa ${tentativas + 1}`,
+      `[CONTA A PAGAR]: Criando conta a pagar tentativa ${tentativas + 1}`
     );
     try {
       const body = {
@@ -76,30 +78,35 @@ const incluir = async (appKey, appSecret, conta, maxTentativas = 3) => {
       tentativas++;
       if (
         error.response?.data?.faultstring?.includes(
-          "Consumo redundante detectado",
+          "Consumo redundante detectado"
         )
       ) {
         await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
       }
 
-      console.log(
-        `Falha ao criar conta a pagar: ${error.response?.data?.faultstring || error.response?.data || error.response || error}`,
-      );
+      erroEncontrado =
+        error.response?.data?.faultstring ||
+        error.response?.data ||
+        error.response ||
+        error;
+
+      console.log(`Falha ao criar conta a pagar: ${erroEncontrado}`);
     }
   }
 
-  throw `Falha ao criar conta a pagar após ${maxTentativas} tentativas.`;
+  throw `Falha ao criar conta a pagar após ${maxTentativas} tentativas. ${erroEncontrado}`;
 };
 
 const remover = async (
   { appKey, appSecret, codigo_lancamento_omie, codigo_lancamento_integracao },
-  maxTentativas = 5,
+  maxTentativas = 5
 ) => {
   let tentativas = 0;
+  let erroEncontrado;
   while (tentativas < maxTentativas) {
     try {
       console.log(
-        `[CONTA A PAGAR/REMOVER CONTA]: Tentando remover conta, ${tentativas + 1} tentativa`,
+        `[CONTA A PAGAR/REMOVER CONTA]: Tentando remover conta, ${tentativas + 1} tentativa`
       );
 
       const body = {
@@ -115,19 +122,23 @@ const remover = async (
       tentativas++;
       if (
         error.response?.data?.faultstring?.includes(
-          "Consumo redundante detectado",
+          "Consumo redundante detectado"
         )
       ) {
         await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
       }
 
-      console.log(
-        `Erro ao remover conta a pagar: ${error.response?.data?.faultstring || error.response?.data || error.response || error}`,
-      );
+      erroEncontrado =
+        error.response?.data?.faultstring ||
+        error.response?.data ||
+        error.response ||
+        error;
+
+      console.log(`Erro ao remover conta a pagar: ${erroEncontrado}`);
     }
   }
 
-  throw `Erro ao remover conta a pagar após ${maxTentativas} tentativas.`;
+  throw `Erro ao remover conta a pagar após ${maxTentativas} tentativas. ${erroEncontrado}`;
 };
 
 const cache = {};
@@ -199,7 +210,7 @@ const consultarInterno = async (appKey, appSecret, codigoLancamento) => {
   } catch (error) {
     if (
       error.response?.data?.faultstring?.includes(
-        "Consumo redundante detectado",
+        "Consumo redundante detectado"
       )
     )
       await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
