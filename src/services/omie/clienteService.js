@@ -118,6 +118,7 @@ const consultar = async (appKey, appSecret, codCliente) => {
 
 const incluir = async (appKey, appSecret, cliente, maxTentativas = 3) => {
   let tentativas = 0;
+  let erroEncontrado;
   while (tentativas < maxTentativas) {
     try {
       const body = {
@@ -139,17 +140,23 @@ const incluir = async (appKey, appSecret, cliente, maxTentativas = 3) => {
         await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
       }
 
-      console.error(
-        `Falha ao criar cliente: ${error.response?.data?.faultstring || error.response?.data || error.response || error}`
-      );
+      erroEncontrado =
+        error.response?.data?.faultstring ||
+        error.response?.data ||
+        error.response ||
+        error;
+
+      console.error(`Falha ao criar cliente: ${erroEncontrado}`);
     }
   }
 
-  throw `Falha ao criar cliente após ${maxTentativas} tentativas.`;
+  throw `Falha ao criar cliente após ${maxTentativas} tentativas. ${erroEncontrado}`;
 };
 
 const update = async (appKey, appSecret, cliente, maxTentativas = 3) => {
   let tentativas = 0;
+  let erroEncontrado;
+
   while (tentativas < maxTentativas) {
     try {
       const body = {
@@ -171,13 +178,17 @@ const update = async (appKey, appSecret, cliente, maxTentativas = 3) => {
         await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
       }
 
-      console.error(
-        `Falha ao atualizar cliente: ${error.response?.data?.faultstring || error.response?.data || error.response || error}`
-      );
+      erroEncontrado =
+        error.response?.data?.faultstring ||
+        error.response?.data ||
+        error.response ||
+        error;
+
+      console.error(`Falha ao atualizar cliente: ${erroEncontrado}`);
     }
   }
 
-  throw `Falha ao cadastrar cliente após ${maxTentativas} tentativas.`;
+  throw `Falha ao atualizar cliente após ${maxTentativas} tentativas. ${erroEncontrado}`;
 };
 
 const cachePesquisaPorCNPJ = {};
