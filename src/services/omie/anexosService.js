@@ -3,13 +3,14 @@ const apiOmie = require("../../config/apiOmie");
 
 const incluir = async (
   { appKey, appSecret, tabela, nId, nomeArquivo, arquivo, cCodIntAnexo = "" },
-  maxTentativas = 3,
+  maxTentativas = 3
 ) => {
   let tentativas = 0;
+  let erroEncontrado;
   while (tentativas < maxTentativas) {
     try {
       console.log(
-        `[CONTA A PAGAR/ANEXOS]: Incluindo anexo ${nomeArquivo} tentativa ${tentativas + 1}`,
+        `[CONTA A PAGAR/ANEXOS]: Incluindo anexo ${nomeArquivo} tentativa ${tentativas + 1}`
       );
       const arquivoCompactado = await compactFile(arquivo, nomeArquivo);
 
@@ -35,17 +36,22 @@ const incluir = async (
       tentativas++;
       if (
         error.response?.data?.faultstring?.includes(
-          "Consumo redundante detectado",
+          "Consumo redundante detectado"
         )
       ) {
         await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
       }
-      console.log(
-        `Erro ao incluir anexos: ${error.response?.data?.faultstring || error.response?.data || error.response || error}`,
-      );
+
+      erroEncontrado =
+        error.response?.data?.faultstring ||
+        error.response?.data ||
+        error.response ||
+        error;
+
+      console.log(`Erro ao incluir anexos: ${erroEncontrado}`);
     }
   }
-  throw `Erro ao incluir anexo. ${nomeArquivo} após ${maxTentativas} tentativas.`;
+  throw `Erro ao incluir anexo. ${nomeArquivo} após ${maxTentativas} tentativas. ${erroEncontrado}`;
 };
 
 const anexoService = { incluir };

@@ -38,7 +38,7 @@ const aprovar = async (req, res) => {
     // Carregar as etapas do banco de dados, ordenadas pela posição
     const etapas = await Etapa.find({ status: "ativo" }).sort({ posicao: 1 });
     const currentEtapaIndex = etapas.findIndex(
-      (etapa) => etapa.codigo === ticket.etapa,
+      (etapa) => etapa.codigo === ticket.etapa
     );
 
     if (currentEtapaIndex < 0) {
@@ -96,7 +96,7 @@ const recusar = async (req, res) => {
     // Carregar as etapas do banco de dados, ordenadas pela posição
     const etapas = await Etapa.find({ status: "ativo" }).sort({ posicao: 1 });
     const currentEtapaIndex = etapas.findIndex(
-      (etapa) => etapa.codigo === ticket.etapa,
+      (etapa) => etapa.codigo === ticket.etapa
     );
 
     if (currentEtapaIndex < 0) {
@@ -152,7 +152,7 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
       baseOmie.appKey,
       baseOmie.appSecret,
       fornecedor.codigo_cliente_omie,
-      ticket,
+      ticket
     );
 
     //caso tenha uma conta tenta fazer o upload de arquivos
@@ -220,7 +220,7 @@ const atualizarOuCriarFornecedor = async ({
     fornecedor = await clienteService.pesquisarPorCNPJ(
       appKey,
       appSecret,
-      prestador.documento,
+      prestador.documento
     );
 
     const novoFornecedor = clienteService.criarFornecedor({
@@ -250,7 +250,7 @@ const atualizarOuCriarFornecedor = async ({
       const fornecedorCadastrado = await clienteService.update(
         appKey,
         appSecret,
-        novoFornecedor,
+        novoFornecedor
       );
 
       fornecedor = fornecedorCadastrado;
@@ -261,7 +261,7 @@ const atualizarOuCriarFornecedor = async ({
       const fornecedorCadastrado = await clienteService.incluir(
         appKey,
         appSecret,
-        novoFornecedor,
+        novoFornecedor
       );
 
       fornecedor = fornecedorCadastrado;
@@ -269,7 +269,7 @@ const atualizarOuCriarFornecedor = async ({
 
     return fornecedor;
   } catch (error) {
-    throw `Erro ao obter ou cadastrar fornecedor: ${error}`;
+    throw `Erro ao obter ou cadastrar fornecedor. ${error}`;
   }
 };
 
@@ -277,7 +277,7 @@ const cadastrarContaAPagar = async (
   appKey,
   appSecret,
   codigoFornecedor,
-  ticket,
+  ticket
 ) => {
   try {
     let valorTotalDaNota = 0;
@@ -307,7 +307,7 @@ const cadastrarContaAPagar = async (
 
     return await contaPagarService.incluir(appKey, appSecret, conta);
   } catch (error) {
-    throw `Erro ao cadastrar conta a pagar: ${error}`;
+    throw `Erro ao cadastrar conta a pagar. ${error}`;
   }
 };
 
