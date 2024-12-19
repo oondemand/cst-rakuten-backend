@@ -12,7 +12,7 @@ const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|pdf|xml|txt/;
   const mimetype = allowedTypes.test(file.mimetype);
   const extname = allowedTypes.test(
-    path.extname(file.originalname).toLowerCase(),
+    path.extname(file.originalname).toLowerCase()
   );
 
   if (mimetype && extname) {
@@ -30,7 +30,7 @@ const upload = multer({
 router.post(
   "/:id/upload",
   upload.array("arquivos", 10),
-  ticketController.uploadFiles,
+  ticketController.uploadFiles
 );
 
 router.get("/:id/arquivos", ticketController.listFilesFromTicket);
@@ -41,6 +41,7 @@ router.post("/", ticketController.createTicket);
 router.get("/", ticketController.getAllTickets);
 router.get("/base-omie/:baseOmieId", ticketController.getAllByBaseOmie);
 router.get("/prestador/:prestadorId", ticketController.getTicketsByPrestadorId);
+router.get("/usuario-prestador/:usuarioId", ticketController.getTicketsByUsuarioPrestador);
 router.get("/:id", ticketController.getTicketById);
 
 router.patch("/:id", ticketController.updateTicket);
