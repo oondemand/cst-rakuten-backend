@@ -15,7 +15,7 @@ jobs:
           if [[ "${GITHUB_REF##*/}" == "homolog" ]]; then
             echo "IMAGE_NAME=cst-rakuten-backend-homolog" >> $GITHUB_ENV
           elif [[ "${GITHUB_REF##*/}" == "main" ]]; then
-            echo "IMAGE_NAME=cst-rakuten-backend-prod" >> $GITHUB_ENV
+            echo "IMAGE_NAME=cst-rakuten-backend" >> $GITHUB_ENV
           fi
           echo "BRANCH=${GITHUB_REF##*/}"
       - name: Build and push image
