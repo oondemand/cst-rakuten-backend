@@ -523,6 +523,7 @@ exports.importarRPAs = async (req, res) => {
       size: arquivo.size,
       ticket: ticket._id,
       buffer: arquivo.buffer,
+      tipo: "rpa",
     });
     await novoArquivoDoTicket.save();
 
