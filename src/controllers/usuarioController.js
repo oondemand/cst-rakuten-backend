@@ -244,13 +244,17 @@ exports.esqueciMinhaSenha = async (req, res) => {
     if (usuario.status === "ativo") {
       const token = usuario.gerarToken();
 
-      const url = new URL(
-        "/recover-password",
-        process.env.BASE_URL_APP_PUBLISHER
-      );
-      url.searchParams.append("code", token);
+      let url = "";
 
-      //mostra url para não ter que verificar no email
+      if (usuario.tipo === "prestador") {
+        url = new URL("/recover-password", process.env.BASE_URL_APP_PUBLISHER);
+      }
+
+      if (usuario.tipo !== "prestador") {
+        url = new URL("/alterar-senha", process.env.BASE_URL_CST);
+      }
+
+      url.searchParams.append("code", token);
       console.log("URL", url.toString());
 
       await emailUtils.emailEsqueciMinhaSenha({
