@@ -25,6 +25,7 @@ const { criarNomePersonalizado } = require("../utils/formatters");
 
 const clienteService = require("../services/omie/clienteService");
 const Usuario = require("../models/Usuario");
+const { ControleAlteracaoService } = require("../services/controleAlteracao");
 
 const buscarPrestadorOmie = async ({ documento }) => {
   try {
@@ -180,6 +181,7 @@ exports.importarComissoes = async (req, res) => {
         const { numero, tipo } = CNPJouCPF(row.documento);
 
         let prestador = await Prestador.findOne({ sid: row.sid });
+        let acao = "alterar";
 
         if (!prestador) {
           const prestadorOmie = await buscarPrestadorOmie({
@@ -262,6 +264,7 @@ exports.importarComissoes = async (req, res) => {
         });
 
         if (!ticket) {
+          acao = "adicionar";
           ticket = new Ticket({
             prestador: prestador._id,
             titulo: `Comissão ${prestador.nome}: ${getMonth(row.periodo) + 1}/${getYear(row.periodo)}`,
@@ -311,6 +314,16 @@ exports.importarComissoes = async (req, res) => {
           ticket.servicos.push(servicoDeCorrecao._id);
           await ticket.save();
         }
+
+        ControleAlteracaoService.registrarAlteracao({
+          acao,
+          dataHora: new Date(),
+          idRegistroAlterado: ticket._id,
+          origem: "importacao-payment-control",
+          dadosAtualizados: ticket,
+          tipoRegistroAlterado: "ticket",
+          usuario: req.usuario._id,
+        });
       } catch (err) {
         detalhes.linhasLidasComErro += 1;
         detalhes.erros += `Erro ao processar linha: ${JSON.stringify(row)} - ${err} \n\n`;
@@ -386,6 +399,16 @@ exports.exportarServicos = async (req, res) => {
 
           ticket.status = "trabalhando";
           await ticket.save();
+
+          ControleAlteracaoService.registrarAlteracao({
+            acao: "alterar",
+            dataHora: new Date(),
+            idRegistroAlterado: ticket._id,
+            origem: "integracao-sci",
+            dadosAtualizados: ticket,
+            tipoRegistroAlterado: "ticket",
+            usuario: req.usuario._id,
+          });
 
           prestadoresComTicketsExportados.push(prestador._id);
         }
@@ -533,6 +556,16 @@ exports.importarRPAs = async (req, res) => {
     ticket.status = "aguardando-inicio";
 
     await ticket.save();
+
+    ControleAlteracaoService.registrarAlteracao({
+      acao: "alterar",
+      dataHora: new Date(),
+      idRegistroAlterado: ticket._id,
+      origem: "integracao-sci",
+      dadosAtualizados: ticket,
+      tipoRegistroAlterado: "ticket",
+      usuario: req.usuario._id,
+    });
 
     return ticket;
   };

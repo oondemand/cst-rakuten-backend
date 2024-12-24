@@ -2,6 +2,7 @@ const Ticket = require("../models/Ticket");
 const Arquivo = require("../models/Arquivo");
 const { criarNomePersonalizado } = require("../utils/formatters");
 const Prestador = require("../models/Prestador");
+const { ControleAlteracaoService } = require("../services/controleAlteracao");
 
 exports.createTicket = async (req, res) => {
   const { baseOmieId, titulo, observacao, servicosIds, prestadorId } = req.body;
@@ -23,6 +24,16 @@ exports.createTicket = async (req, res) => {
       .populate("baseOmie")
       .populate("servicos")
       .populate("prestador");
+
+    ControleAlteracaoService.registrarAlteracao({
+      acao: "adicionar",
+      dataHora: new Date(),
+      idRegistroAlterado: ticket._id,
+      origem: "formulario",
+      dadosAtualizados: JSON.stringify(req.body),
+      tipoRegistroAlterado: "ticket",
+      usuario: req.usuario._id,
+    });
 
     res.status(201).json({
       message: "Ticket criado com sucesso!",
@@ -71,6 +82,16 @@ exports.updateTicket = async (req, res) => {
       .populate("baseOmie")
       .populate("servicos")
       .populate("prestador");
+
+    ControleAlteracaoService.registrarAlteracao({
+      acao: "alterar",
+      dataHora: new Date(),
+      idRegistroAlterado: ticket._id,
+      origem: "formulario",
+      dadosAtualizados: JSON.stringify(req.body),
+      tipoRegistroAlterado: "ticket",
+      usuario: req.usuario._id,
+    });
 
     res.status(200).json({
       message: "Ticket atualizado com sucesso!",
@@ -219,6 +240,16 @@ exports.deleteTicket = async (req, res) => {
       return res.status(404).json({ message: "Ticket não encontrado" });
     }
 
+    ControleAlteracaoService.registrarAlteracao({
+      acao: "excluir",
+      dataHora: new Date(),
+      idRegistroAlterado: ticket._id,
+      origem: "formulario",
+      dadosAtualizados: JSON.stringify(ticket),
+      tipoRegistroAlterado: "ticket",
+      usuario: req.usuario._id,
+    });
+
     res.status(200).json({
       message: "Ticket removido com sucesso!",
       ticket,
@@ -245,6 +276,16 @@ exports.updateStatusTicket = async (req, res) => {
     if (!ticket) {
       return res.status(404).json({ message: "Ticket não encontrado" });
     }
+
+    ControleAlteracaoService.registrarAlteracao({
+      acao: "status",
+      dataHora: new Date(),
+      idRegistroAlterado: ticket._id,
+      origem: "formulario",
+      dadosAtualizados: JSON.stringify(req.body),
+      tipoRegistroAlterado: "ticket",
+      usuario: req.usuario._id,
+    });
 
     res.status(200).json({
       message: "Status do ticket atualizado com sucesso!",
@@ -279,6 +320,16 @@ exports.deleteFileFromTicket = async (req, res) => {
     const arquivo = await Arquivo.findByIdAndDelete(id);
     const ticket = await Ticket.findByIdAndUpdate(arquivo.ticket, {
       $pull: { arquivos: id },
+    });
+
+    ControleAlteracaoService.registrarAlteracao({
+      acao: "alterar",
+      dataHora: new Date(),
+      idRegistroAlterado: ticket._id,
+      origem: "formulario",
+      dadosAtualizados: JSON.stringify(ticket),
+      tipoRegistroAlterado: "ticket",
+      usuario: req.usuario._id,
     });
 
     res.status(200).json(arquivo);
@@ -321,6 +372,16 @@ exports.uploadFiles = async (req, res) => {
 
     ticket.arquivos.push(...arquivosSalvos.map((a) => a._id));
     await ticket.save();
+
+    ControleAlteracaoService.registrarAlteracao({
+      acao: "alterar",
+      dataHora: new Date(),
+      idRegistroAlterado: ticket._id,
+      origem: "formulario",
+      dadosAtualizados: JSON.stringify(ticket),
+      tipoRegistroAlterado: "ticket",
+      usuario: req.usuario._id,
+    });
 
     res.status(201).json({
       message: "Arquivos carregados e associados ao ticket com sucesso!",
