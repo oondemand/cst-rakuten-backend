@@ -247,6 +247,8 @@ const atualizarOuCriarFornecedor = async ({
       novoFornecedor.codigo_cliente_integracao =
         fornecedor.codigo_cliente_integracao;
 
+      novoFornecedor.codigo_cliente_omie = fornecedor.codigo_cliente_omie;
+
       const fornecedorCadastrado = await clienteService.update(
         appKey,
         appSecret,
@@ -257,7 +259,7 @@ const atualizarOuCriarFornecedor = async ({
     }
 
     if (!fornecedor) {
-      novoFornecedor.codigo_cliente_integracao = crypto.randomUUID();
+      novoFornecedor.codigo_cliente_integracao = prestador._id;
       const fornecedorCadastrado = await clienteService.incluir(
         appKey,
         appSecret,
