@@ -19,6 +19,7 @@ const Prestador = require("../models/Prestador");
 const Servico = require("../models/Servico");
 
 const { add, format } = require("date-fns");
+const { ControleAlteracaoService } = require("../services/controleAlteracao");
 
 // Função para aprovar um ticket
 const aprovar = async (req, res) => {
@@ -66,6 +67,17 @@ const aprovar = async (req, res) => {
     ticket.status = "aguardando-inicio";
 
     await ticket.save();
+
+    ControleAlteracaoService.registrarAlteracao({
+      acao: "aprovar",
+      dataHora: new Date(),
+      idRegistroAlterado: ticket._id,
+      origem: "formulario",
+      dadosAtualizados: ticket,
+      tipoRegistroAlterado: "ticket",
+      usuario: req.usuario._id,
+    });
+
     res.send({
       success: true,
       message: `Ticket aprovado e movido para a etapa: ${ticket.etapa}`,
@@ -111,6 +123,15 @@ const recusar = async (req, res) => {
     ticket.status = "revisao";
 
     await ticket.save();
+    ControleAlteracaoService.registrarAlteracao({
+      acao: "reprovar",
+      dataHora: new Date(),
+      idRegistroAlterado: ticket._id,
+      origem: "formulario",
+      dadosAtualizados: ticket,
+      tipoRegistroAlterado: "ticket",
+      usuario: req.usuario._id,
+    });
     res.send({
       success: true,
       message: `Ticket recusado e movido para a etapa: ${ticket.etapa}`,
@@ -134,6 +155,8 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
       appSecret: baseOmie.appSecret,
       prestadorId: ticket.prestador,
     });
+
+    console.log(fornecedor);
 
     // Caso ticket nã tenha serviços adiciona anexo ao prestador
     if (ticket.servicos.length === 0) {
@@ -187,12 +210,32 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
     ticket.contaPagarOmie = conta.codigo_lancamento_omie;
     ticket.status = "concluido";
     await ticket.save();
+
+    ControleAlteracaoService.registrarAlteracao({
+      acao: "aprovar",
+      dataHora: new Date(),
+      idRegistroAlterado: ticket._id,
+      origem: "formulario",
+      dadosAtualizados: ticket,
+      tipoRegistroAlterado: "ticket",
+      usuario: usuario._id,
+    });
   } catch (error) {
     // se ocorrer qualquer erro, volta ticket para etapa de aprovação, criar obs e atualiza o status
     ticket.observacao += `\n ${error} - ${format(new Date(), "dd/MM/yyyy")}`;
     ticket.etapa = "aprovacao-pagamento";
     ticket.status = "revisao";
     await ticket.save();
+
+    ControleAlteracaoService.registrarAlteracao({
+      acao: "aprovar",
+      dataHora: new Date(),
+      idRegistroAlterado: ticket._id,
+      origem: "formulario",
+      dadosAtualizados: ticket,
+      tipoRegistroAlterado: "ticket",
+      usuario: usuario._id,
+    });
 
     await emailUtils.emailErroIntegracaoOmie({
       error: error,
@@ -247,6 +290,8 @@ const atualizarOuCriarFornecedor = async ({
       novoFornecedor.codigo_cliente_integracao =
         fornecedor.codigo_cliente_integracao;
 
+      novoFornecedor.codigo_cliente_omie = fornecedor.codigo_cliente_omie;
+
       const fornecedorCadastrado = await clienteService.update(
         appKey,
         appSecret,
@@ -257,7 +302,7 @@ const atualizarOuCriarFornecedor = async ({
     }
 
     if (!fornecedor) {
-      novoFornecedor.codigo_cliente_integracao = crypto.randomUUID();
+      novoFornecedor.codigo_cliente_integracao = prestador._id;
       const fornecedorCadastrado = await clienteService.incluir(
         appKey,
         appSecret,

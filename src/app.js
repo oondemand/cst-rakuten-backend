@@ -18,7 +18,7 @@ const app = express();
 
 // Middlewares globais
 app.use(express.json());
-app.use(cors({ origin: '*' }));
+app.use(cors({ origin: "*" }));
 app.use(helmet());
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -51,16 +51,20 @@ app.use("/logs", require("./routers/logRouter"));
 app.use("/prestadores", require("./routers/prestadorRouter"));
 app.use("/servicos", require("./routers/servicoRouter"));
 app.use("/acoes-etapas", require("./routers/acaoEtapaRouter"));
+app.use("/registros", require("./routers/controleAlteracao"));
 
-app.use('/uploads', express.static(path.join(__dirname, "..", 'uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 // Middleware de erro
 app.use((err, req, res, next) => {
   console.log("Middleware de Erro Invocado");
   console.log("Erro:", err);
-  
+
   res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  );
 
   if (err instanceof multer.MulterError) {
     if (err.code === "LIMIT_FILE_SIZE") {

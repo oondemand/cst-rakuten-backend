@@ -1,25 +1,16 @@
-name: Build and create cst-rakuten-backend package
+name: Create cst-rakuten-backend image
 
 on:
   push:
     branches:
-      - homolog
       - main
 jobs:
   build_and_publish:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
-      - name: Set environment variables based on branch
-        run: |
-          if [[ "${GITHUB_REF##*/}" == "homolog" ]]; then
-            echo "IMAGE_NAME=cst-rakuten-backend-homolog" >> $GITHUB_ENV
-          elif [[ "${GITHUB_REF##*/}" == "main" ]]; then
-            echo "IMAGE_NAME=cst-rakuten-backend" >> $GITHUB_ENV
-          fi
-          echo "BRANCH=${GITHUB_REF##*/}"
       - name: Build and push image
         run: |
           docker login --username ${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.GH_PAT }} ghcr.io
-          docker build -f ./infra/docker/Dockerfile.prod --tag ghcr.io/oondemand/${{env.IMAGE_NAME}}:1.0.15 .
-          docker push ghcr.io/oondemand/${{env.IMAGE_NAME}}:1.0.15
+          docker build -f ./infra/docker/Dockerfile.prod --tag ghcr.io/oondemand/cst-rakuten-backend:1.1.0 .
+          docker push ghcr.io/oondemand/cst-rakuten-backend:1.1.0
