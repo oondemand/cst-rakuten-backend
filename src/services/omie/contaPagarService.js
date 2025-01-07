@@ -162,7 +162,7 @@ const processQueue = async () => {
     reject(error);
   }
 
-  setTimeout(processQueue, 300); // Processa a próxima consulta após 1 segundo
+  setTimeout(processQueue, 3000); // Processa a próxima consulta após 1 segundo
 };
 
 const consultar = (appKey, appSecret, codigoLancamento) => {
@@ -181,7 +181,10 @@ const consultarInterno = async (appKey, appSecret, codigoLancamento) => {
 
   // Verifica se o resultado está no cache e se não está expirado
   const cacheExpirationTime = 1 * 60 * 1000 * 30; // 30 min
-  if (cache[cacheKey] && now - cache[cacheKey].timestamp < cacheExpirationTime) {
+  if (
+    cache[cacheKey] &&
+    now - cache[cacheKey].timestamp < cacheExpirationTime
+  ) {
     console.log("Retornando resultado do cache");
     return cache[cacheKey].data;
   }
