@@ -180,7 +180,8 @@ const consultarInterno = async (appKey, appSecret, codigoLancamento) => {
   const now = Date.now();
 
   // Verifica se o resultado está no cache e se não está expirado
-  if (cache[cacheKey] && now - cache[cacheKey].timestamp < 1 * 60 * 1000) {
+  const cacheExpirationTime = 1 * 60 * 1000 * 30; // 30 min
+  if (cache[cacheKey] && now - cache[cacheKey].timestamp < cacheExpirationTime) {
     console.log("Retornando resultado do cache");
     return cache[cacheKey].data;
   }
