@@ -181,10 +181,16 @@ const consultarInterno = async (appKey, appSecret, codigoLancamento) => {
 
   // Verifica se o resultado está no cache e se não está expirado
   const cacheExpirationTime = 1 * 60 * 1000 * 30; // 30 min
+
   if (
     cache[cacheKey] &&
     now - cache[cacheKey].timestamp < cacheExpirationTime
   ) {
+    if (cache[cacheKey]?.contaNaoEncontrada) {
+      console.log("Retornando conta não encontrada do cache");
+      return null;
+    }
+
     console.log("Retornando resultado do cache");
     return cache[cacheKey].data;
   }
@@ -212,6 +218,19 @@ const consultarInterno = async (appKey, appSecret, codigoLancamento) => {
 
     return response.data;
   } catch (error) {
+    if (
+      error?.response?.data?.faultstring.includes(
+        "Lançamento não cadastrado para o Código"
+      )
+    ) {
+      cache[cacheKey] = {
+        timestamp: now,
+        contaNaoEncontrada: error?.response?.data?.faultstring,
+      };
+
+      return null;
+    }
+
     if (
       error.response?.data?.faultstring?.includes(
         "Consumo redundante detectado"

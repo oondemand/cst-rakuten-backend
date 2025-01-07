@@ -28,6 +28,17 @@ const obterContaPagarOmie = async (req, res) => {
     const contaPagarOmie = await consultar(appKey, appSecret, codigoLancamento);
     // console.log("Conta a pagar Omie encontrada:", contaPagarOmie);
 
+    if (!contaPagarOmie) {
+      ticket.status = "arquivado";
+      ticket.etapa = "conta-pagar-excluido";
+
+      await ticket.save();
+
+      return res.status(404).json({
+        mensagem: `Conta a pagar [${codigoLancamento}] não encontrada!`,
+      });
+    }
+
     // Verificar se o status do título é "PAGO"
     if (contaPagarOmie.status_titulo === "PAGO") {
       // Alterar o status do ticket para "concluído"
@@ -38,7 +49,7 @@ const obterContaPagarOmie = async (req, res) => {
 
     return res.status(200).json(contaPagarOmie);
   } catch (error) {
-    console.error("Erro ao obter conta a pagar Omie:", error);
+    console.error("❌ Erro ao obter conta a pagar Omie:", error);
     return res.status(500).json({
       mensagem: "Erro ao obter conta a pagar Omie.",
       erro: error.message,
