@@ -180,23 +180,18 @@ const consultarInterno = async (appKey, appSecret, codigoLancamento) => {
   const now = Date.now();
 
   // Verifica se o resultado está no cache e se não está expirado
-  const cacheExpirationTime = 1 * 60 * 1000 * 30; // 30 min
+  const cacheExpirationTime = 1 * 60 * 1000 * 10; // 10 min
 
   if (
     cache[cacheKey] &&
     now - cache[cacheKey].timestamp < cacheExpirationTime
   ) {
-    if (cache[cacheKey]?.contaNaoEncontrada) {
-      console.log("Retornando conta não encontrada do cache");
-      return null;
-    }
-
     console.log("Retornando resultado do cache");
     return cache[cacheKey].data;
   }
 
   try {
-    console.log("Consultando financas/contapaga");
+    console.log("Retornando resultado do omie");
     const body = {
       call: "ConsultarContaPagar",
       app_key: appKey,
@@ -223,11 +218,6 @@ const consultarInterno = async (appKey, appSecret, codigoLancamento) => {
         "Lançamento não cadastrado para o Código"
       )
     ) {
-      cache[cacheKey] = {
-        timestamp: now,
-        contaNaoEncontrada: error?.response?.data?.faultstring,
-      };
-
       return null;
     }
 
