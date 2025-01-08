@@ -162,7 +162,7 @@ const processQueue = async () => {
     reject(error);
   }
 
-  setTimeout(processQueue, 3000); // Processa a próxima consulta após 1 segundo
+  setTimeout(processQueue, 300); // Processa a próxima consulta após 1 segundo
 };
 
 const consultar = (appKey, appSecret, codigoLancamento) => {

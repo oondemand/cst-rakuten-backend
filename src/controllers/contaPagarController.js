@@ -35,7 +35,8 @@ const obterContaPagarOmie = async (req, res) => {
       await ticket.save();
 
       return res.status(404).json({
-        mensagem: `Conta a pagar [${codigoLancamento}] não encontrada!`,
+        mensagem: `Conta a pagar não encontrada! [${codigoLancamento}]`,
+        erro: "PAYABLE ACCOUNT NOT FOUND",
       });
     }
 
