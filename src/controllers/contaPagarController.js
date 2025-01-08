@@ -36,7 +36,7 @@ const obterContaPagarOmie = async (req, res) => {
 
       return res.status(404).json({
         mensagem: `Conta a pagar não encontrada! [${codigoLancamento}]`,
-        erro: "PAYABLE ACCOUNT NOT FOUND",
+        erro: "CONTA A PAGAR NÃO ENCONTRADA NO OMIE",
       });
     }
 
