@@ -11,8 +11,8 @@ RUN npm install --production
 
 # Copiar o diretório 'src' e os arquivos necessários da raiz do projeto
 COPY src ./src
-COPY .env.dev .env
-COPY schemaOpenAPI.yaml schemaOpenAPI.yaml
+# COPY .env.dev .env
+# COPY schemaOpenAPI.yaml schemaOpenAPI.yaml
 
 
 # Estágio 2: Produção
