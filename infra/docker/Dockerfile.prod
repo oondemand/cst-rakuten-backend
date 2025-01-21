@@ -1,13 +1,7 @@
-# Definindo o argumento SERVICE_VERSION, que pode ser passado durante o build
-ARG SERVICE_VERSION
-
 # Estágio 1: Builder
 FROM node:18 AS builder
 
 WORKDIR /app
-
-# Definindo a variável de ambiente SERVICE_VERSION com o valor do argumento
-ENV SERVICE_VERSION=${SERVICE_VERSION}
 
 WORKDIR /app
 COPY package*.json ./
@@ -22,6 +16,13 @@ COPY src ./src
 
 # Estágio 2: Produção
 FROM node:18-alpine
+
+# Definindo a variável de ambiente SERVICE_VERSION com o valor do argumento
+ARG SERVICE_VERSION
+# Definindo o argumento SERVICE_VERSION, que pode ser passado durante o build
+ENV SERVICE_VERSION=${SERVICE_VERSION}
+
+RUN echo "A versão da aplicação é: $SERVICE_VERSION"
 
 WORKDIR /app
 
