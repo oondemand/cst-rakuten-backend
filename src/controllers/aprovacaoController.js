@@ -28,7 +28,8 @@ const aprovar = async (req, res) => {
 
     const ticket = await Ticket.findById(ticketId)
       .populate("arquivos")
-      .populate("servicos");
+      .populate("servicos")
+      .populate("prestador");
 
     if (!ticket) {
       return res
@@ -326,9 +327,18 @@ const cadastrarContaAPagar = async (
 ) => {
   try {
     let valorTotalDaNota = 0;
+    let observacao = `Serviços prestados SID - ${ticket.prestador.sid}\n-- Serviços --\n`;
 
     for (const id of ticket.servicos) {
-      const { valorTotal } = await Servico.findById(id);
+      const { valorTotal, mesCompetencia, anoCompetencia } =
+        await Servico.findById(id);
+
+      const valorTotalFormatado = valorTotal.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      });
+
+      observacao += `Competência: ${mesCompetencia}/${anoCompetencia} - Valor total: ${valorTotalFormatado}\n`;
       valorTotalDaNota += valorTotal;
     }
 
@@ -345,9 +355,10 @@ const cadastrarContaAPagar = async (
       codigoFornecedor: codigoFornecedor,
       dataEmissao: dataDaEmissão,
       dataVencimento: add(dataDaEmissão, { hours: 24 }), // 24 horas a mais
-      descrição: "Serviços prestados",
+      observacao,
       valor: valorTotalDaNota,
-      id_conta_corrente: 4809215570, //TODO: Deixar dinâmico
+      id_conta_corrente: process.env.ID_CONTA_CORRENTE,
+      codigo_categoria: process.env.CODIGO_CATEGORIA,
     });
 
     return await contaPagarService.incluir(appKey, appSecret, conta);

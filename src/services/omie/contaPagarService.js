@@ -9,8 +9,9 @@ const criarConta = ({
   codigoFornecedor,
   dataEmissao,
   dataVencimento,
-  descrição,
+  observacao,
   valor,
+  codigo_categoria,
 }) => {
   const conta = {
     codigo_lancamento_integracao: crypto.randomUUID(),
@@ -21,7 +22,7 @@ const criarConta = ({
     data_emissao: formatarDataOmie(dataEmissao),
     data_vencimento: formatarDataOmie(dataVencimento),
     data_previsao: formatarDataOmie(dataVencimento),
-    observacao: descrição,
+    observacao,
   };
 
   // if (dadosNFSe.pis && dadosNFSe.pis > 0) {
@@ -204,6 +205,8 @@ const consultarInterno = async (appKey, appSecret, codigoLancamento) => {
     };
 
     const response = await apiOmie.post("financas/contapagar/", body);
+
+    console.log("LOG IMPORTANTE ->", response);
 
     // Armazena o resultado no cache
     cache[cacheKey] = {
