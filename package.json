@@ -4,6 +4,7 @@
   "description": "Backend para a Central de Serviços Integrada ao Omie",
   "main": "src/server.js",
   "scripts": {
+    "release": "release-it",
     "format": "prettier --write .",
     "lint": "eslint . --fix",
     "start": "node src/server.js",
