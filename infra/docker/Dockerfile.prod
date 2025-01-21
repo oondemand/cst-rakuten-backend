@@ -1,9 +1,15 @@
+# Definindo o argumento SERVICE_VERSION, que pode ser passado durante o build
+ARG SERVICE_VERSION
+
 # Estágio 1: Builder
 FROM node:18 AS builder
 
 WORKDIR /app
 
-# Copiar os arquivos package.json e package-lock.json da raiz do projeto
+# Definindo a variável de ambiente SERVICE_VERSION com o valor do argumento
+ENV SERVICE_VERSION=${SERVICE_VERSION}
+
+WORKDIR /app
 COPY package*.json ./
 
 # Instalar apenas as dependências de produção
@@ -13,7 +19,6 @@ RUN npm install --production
 COPY src ./src
 # COPY .env.dev .env
 # COPY schemaOpenAPI.yaml schemaOpenAPI.yaml
-
 
 # Estágio 2: Produção
 FROM node:18-alpine
