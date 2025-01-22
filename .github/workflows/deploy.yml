@@ -1,4 +1,4 @@
-name: Create cst-rakuten-backend image
+name: Deploy
 
 on:
   pull_request:
