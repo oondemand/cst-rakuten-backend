@@ -3,7 +3,7 @@ name: Teste yml
 on:
   push:
     branches:
-      - main
+      - dev
 
 jobs:
   build_and_publish:
