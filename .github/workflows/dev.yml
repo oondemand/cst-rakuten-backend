@@ -20,7 +20,7 @@ jobs:
 
       - name: Substituir variáveis no deployment.yml
         run: |
-          envsubst < infra/kubernets/deployment.yaml
+          envsubst < infra/kubernetes/deployment.yaml
 
         env:
           TESTE: 0.0.1
