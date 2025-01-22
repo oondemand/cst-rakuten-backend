@@ -18,9 +18,41 @@ jobs:
         run: |
           ls
 
+      - name: Decodificar variáveis e substituir no deployment.yaml
+        run: |
+          echo "$ENV_VARS_BASE64" | base64 --decode > .env
+
+          set -a
+          source .env
+          set +a
+
       - name: Substituir variáveis no deployment.yml
         run: |
           envsubst < infra/kubernetes/deployment.yaml
 
         env:
-          TESTE: 0.0.1
+          IMAGE_TAG: 0.0.1
+          ENV_VARS_BASE64: ${{ secrets.ENV_VARS_BASE64 }}
+          # NODE_ENV: "production"
+          # SERVICE_NAME: "cst-rakuten-backend"
+          # PORT: "4000"
+          # DB_SERVER: ""
+          # DB_USER: ""
+          # DB_PASSWORD: ""
+          # DB_NAME: ""
+          # DB_AUTH_SOURCE: ""
+          # DB_REPLICA_SET: ""
+          # DB_TSL: ""
+          # API_OMIE: ""
+          # JWT_SECRET: ""
+          # SENDGRID_REMETENTE: ""
+          # SENDGRID_API_KEY: ""
+          # BASE_URL_CST: ""
+          # BASE_URL_APP_PUBLISHER: ""
+          # SCI_CODIGO_EMPRESA: ""
+          # SCI_CODIGO_CENTRO_CUSTO: ""
+          # SCI_PORCENTAGEM_ISS: ""
+          # SCI_DIAS_PAGAMENTO: ""
+          # SCI_CBO: ""
+          # SCI_CFIP: ""
+          # SCI_ESOCIAL: ""
