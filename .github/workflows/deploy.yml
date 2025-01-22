@@ -80,3 +80,5 @@ jobs:
           SCI_CBO: ${{ secrets.SCI_CBO }}
           SCI_CFIP: ${{ secrets.SCI_CFIP }}
           SCI_ESOCIAL: ${{ secrets.SCI_ESOCIAL }}
+          ID_CONTA_CORRENTE: ${{ secrets.ID_CONTA_CORRENTE }}
+          CODIGO_CATEGORIA: ${{ secrets.CODIGO_CATEGORIA }}

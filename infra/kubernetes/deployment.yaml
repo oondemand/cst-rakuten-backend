@@ -72,3 +72,7 @@ spec:
               value: "${SCI_CFIP}"
             - name: SCI_ESOCIAL
               value: "${SCI_ESOCIAL}"
+            - name: ID_CONTA_CORRENTE
+              value: "${ID_CONTA_CORRENTE}"
+            - name: CODIGO_CATEGORIA
+              value: "${CODIGO_CATEGORIA}"
