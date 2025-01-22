@@ -22,6 +22,7 @@ const criarConta = ({
     data_emissao: formatarDataOmie(dataEmissao),
     data_vencimento: formatarDataOmie(dataVencimento),
     data_previsao: formatarDataOmie(dataVencimento),
+    codigo_categoria,
     observacao,
   };
 

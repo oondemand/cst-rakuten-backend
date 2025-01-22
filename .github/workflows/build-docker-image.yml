@@ -40,3 +40,12 @@ jobs:
           docker login --username ${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.GH_PAT }} ghcr.io
           docker build -f ./infra/docker/Dockerfile.prod --build-arg SERVICE_VERSION=${{ env.TAG }} --tag ghcr.io/oondemand/cst-rakuten-backend:${{ env.TAG }}-prod .
           docker push ghcr.io/oondemand/cst-rakuten-backend:${{ env.TAG }}-prod
+
+      - name: Create kubeconfig
+        run: |
+          mkdir ${HOME}/.kube
+          echo ${{ secrets.KUBE_CONFIG }} | base64 --decode > ${HOME}/.kube/config
+          cat ${HOME}/.kube/config
+      - name: Use context
+        run: kubectl config use-context do-sfo2-oondemand-prod
+        run: kubectl config get-contexts
