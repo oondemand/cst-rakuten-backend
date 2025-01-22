@@ -1,0 +1,26 @@
+name: Teste yml
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_publish:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # Permissão para o workflow criar tags
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Teste deployment.yaml
+        run: |
+          ls
+
+      - name: Substituir variáveis no deployment.yml
+        run: |
+          envsubst < infra/kubernets/deployment.yaml
+
+        env:
+          TESTE: 0.0.1
