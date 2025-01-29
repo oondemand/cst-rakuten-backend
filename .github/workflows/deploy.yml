@@ -1,4 +1,4 @@
-name: Deploy
+name: Deploy adn publish
 
 on:
   pull_request:
