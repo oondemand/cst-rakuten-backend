@@ -84,7 +84,7 @@ const aprovar = async (req, res) => {
       message: `Ticket aprovado e movido para a etapa: ${ticket.etapa}`,
     });
   } catch (error) {
-    console.error("Erro ao aprovar ticket:", error);
+    // console.error("Erro ao aprovar ticket:", error);
     res.status(500).send({
       success: false,
       message: "Erro ao aprovar ticket",
@@ -138,7 +138,7 @@ const recusar = async (req, res) => {
       message: `Ticket recusado e movido para a etapa: ${ticket.etapa}`,
     });
   } catch (error) {
-    console.error("Erro ao recusar ticket:", error);
+    // console.error("Erro ao recusar ticket:", error);
     res.status(500).send({ success: false, error: error.message });
   }
 };
@@ -157,7 +157,7 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
       prestadorId: ticket.prestador,
     });
 
-    console.log(fornecedor);
+    // console.log(fornecedor);
 
     // Caso ticket nã tenha serviços adiciona anexo ao prestador
     if (ticket.servicos.length === 0) {
@@ -189,7 +189,7 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
         });
       } catch (error) {
         // caso tenha algum erro no upload de arquivos, tenta remover a conta
-        console.error(error);
+        // console.error(error);
         try {
           await contaPagarService.remover({
             codigo_lancamento_integracao: conta.codigo_lancamento_integracao,
@@ -201,7 +201,7 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
           throw error;
         } catch (error) {
           //caso de erro ao remover a conta repassa o erro
-          console.error(error);
+          // console.error(error);
           throw error;
         }
       }
@@ -343,7 +343,7 @@ const cadastrarContaAPagar = async (
     }
 
     if (valorTotalDaNota === 0) {
-      console.error("Valor do serviço é zero. Não será gerada conta a pagar.");
+      // console.error("Valor do serviço é zero. Não será gerada conta a pagar.");
       return;
     }
 
@@ -385,7 +385,7 @@ const uploadDeArquivosOmie = async ({ ticket, nId, tabela }) => {
       });
     }
   } catch (error) {
-    console.log("Erro ao anexar arquivo:", error);
+    // console.log("Erro ao anexar arquivo:", error);
     throw error;
   }
 };

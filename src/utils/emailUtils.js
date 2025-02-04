@@ -40,7 +40,7 @@ const enviarEmail = async (emailFrom, emailTo, assunto, corpo, anexos = []) => {
     const retorno = await sgMail.send(message);
     return retorno;
   } catch (error) {
-    console.error("Erro ao enviar e-mail:", error);
+    // console.error("Erro ao enviar e-mail:", error);
     throw new Error("Erro ao enviar e-mail");
   }
 };
@@ -74,7 +74,7 @@ const confirmacaoEmailPrestador = async (usuarioId) => {
 
     await enviarEmail(emailFrom, emailTo, assunto, corpo);
   } catch (error) {
-    console.error("Erro ao enviar e-mail de confirmação:", error);
+    // console.error("Erro ao enviar e-mail de confirmação:", error);
     throw new Error("Erro ao enviar e-mail de confirmação");
   }
 };
@@ -100,7 +100,7 @@ const emailEsqueciMinhaSenha = async ({ usuario, url }) => {
 
     await enviarEmail(emailFrom, emailTo, assunto, corpo);
   } catch (error) {
-    console.error("Erro ao enviar e-mail para recuperação de senha:", error);
+    // console.error("Erro ao enviar e-mail para recuperação de senha:", error);
     throw new Error("Erro ao enviar e-mail para recuperação de senha");
   }
 };
@@ -138,7 +138,7 @@ const emailPrestadoresExportados = async ({
 
     return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
   } catch (error) {
-    console.error("Erro ao enviar e-mail de prestadores exportados:", error);
+    // console.error("Erro ao enviar e-mail de prestadores exportados:", error);
     throw new Error("Erro ao enviar e-mail de prestadores exportados:");
   }
 };
@@ -176,7 +176,7 @@ const emailServicosExportados = async ({
 
     return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
   } catch (error) {
-    console.error("Erro ao enviar e-mail de serviços exportados:", error);
+    // console.error("Erro ao enviar e-mail de serviços exportados:", error);
     throw new Error("Erro ao enviar e-mail de serviços exportados:");
   }
 };
@@ -218,7 +218,7 @@ const emailImportarRpas = async ({ usuario, detalhes }) => {
 
     return await enviarEmail(emailFrom, emailTo, assunto, corpo);
   } catch (error) {
-    console.error("Erro ao enviar e-mail de serviços exportados:", error);
+    // console.error("Erro ao enviar e-mail de serviços exportados:", error);
     throw new Error("Erro ao enviar e-mail de serviços exportados:");
   }
 };
@@ -250,7 +250,7 @@ const importarComissõesDetalhes = async ({ usuario, detalhes }) => {
     <p>Valor total lido: ${detalhes.valorTotalLido.toFixed(2).replace(".", ",")}</p>`;
 
     if (process.env.NODE_ENV === "development") {
-      console.log(corpo);
+      // console.log(corpo);
     }
 
     if (detalhes.erros) {
@@ -262,10 +262,10 @@ const importarComissõesDetalhes = async ({ usuario, detalhes }) => {
 
     return await enviarEmail(emailFrom, emailTo, assunto, corpo);
   } catch (error) {
-    console.error(
-      "Erro ao enviar e-mail para detalhes de importação de comissões:",
-      error
-    );
+    // console.error(
+    //   "Erro ao enviar e-mail para detalhes de importação de comissões:",
+    //   error
+    // );
     throw new Error(
       "Erro ao enviar e-mail para detalhes de importação de comissões"
     );
@@ -292,7 +292,7 @@ const emailErroIntegracaoOmie = async ({ usuario, error }) => {
 
     await enviarEmail(emailFrom, emailTo, assunto, corpo);
   } catch (error) {
-    console.error("Erro ao enviar e-mail para erro integração omie:", error);
+    // console.error("Erro ao enviar e-mail para erro integração omie:", error);
     throw new Error("Erro ao enviar e-mail para erro integração omie");
   }
 };
@@ -324,7 +324,7 @@ const emailGeralDeErro = async ({ usuario, documento, tipoDeErro }) => {
 
     return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
   } catch (error) {
-    console.error("Erro ao enviar e-mail de serviços exportados:", error);
+    // console.error("Erro ao enviar e-mail de serviços exportados:", error);
     throw new Error("Erro ao enviar e-mail de serviços exportados:");
   }
 };
@@ -349,7 +349,7 @@ const emailLinkCadastroUsuarioPrestador = async ({ email, nome, url }) => {
 
     return await enviarEmail(emailFrom, emailTo, assunto, corpo);
   } catch (error) {
-    console.error("Erro ao enviar e-mail de serviços exportados:", error);
+    // console.error("Erro ao enviar e-mail de serviços exportados:", error);
     throw new Error("Erro ao enviar e-mail de serviços exportados:");
   }
 };

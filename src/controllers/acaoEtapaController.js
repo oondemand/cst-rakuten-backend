@@ -84,7 +84,7 @@ const buscarPrestadorOmie = async ({ documento }) => {
     return prestadorOmie;
   } catch (error) {
     if (error.includes("Não existem registros para a página")) {
-      console.log("Esperando 1 minuto");
+      // console.log("Esperando 1 minuto");
       await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
     }
     return;
@@ -92,15 +92,6 @@ const buscarPrestadorOmie = async ({ documento }) => {
 };
 
 exports.importarComissoes = async (req, res) => {
-  const mesDeCompetencia = req.query.mes;
-  const anoDeCompetencia = req.query.ano;
-
-  if (!mesDeCompetencia || !anoDeCompetencia) {
-    return res
-      .status(400)
-      .json({ message: "Data de competência não enviada." });
-  }
-
   const arquivo = req.file;
 
   if (!arquivo) {
@@ -114,7 +105,7 @@ exports.importarComissoes = async (req, res) => {
 
     // Ler o arquivo usando XLSX
     const workbook = XLSX.readFile(arquivo.path);
-    const sheetName = workbook.SheetNames[1];
+    const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     const jsonData = XLSX.utils.sheet_to_json(worksheet, {
       header: 1,
@@ -123,6 +114,10 @@ exports.importarComissoes = async (req, res) => {
 
     // Processar os dados pela posição das colunas
     const processedData = jsonData.reduce((result, row, i) => {
+      if (i === 0) {
+        return result;
+      }
+
       const data = {
         type: row[0],
         sid: row[3],
@@ -152,13 +147,7 @@ exports.importarComissoes = async (req, res) => {
       // Adiciona ao resultado apenas se atender aos critérios
       // Detalhe para o tipo "RPA", isso que vai fazer com que
       // o cabeçalho seja pulado corretamente
-      if (
-        data.sid &&
-        data.nomePrestador &&
-        data.type === "RPA" &&
-        getMonth(data.periodo) + 1 == mesDeCompetencia &&
-        getYear(data.periodo) == anoDeCompetencia
-      ) {
+      if (data.sid && data.nomePrestador) {
         result.push(data);
       }
 
@@ -166,7 +155,6 @@ exports.importarComissoes = async (req, res) => {
     }, []);
 
     let detalhes = {
-      competenciaProscessada: `${mesDeCompetencia}/${anoDeCompetencia}`,
       linhasEncontradas: processedData.length,
       linhasLidasComErro: 0,
       totalDeNovosPrestadores: 0,
@@ -175,8 +163,11 @@ exports.importarComissoes = async (req, res) => {
       erros: null,
     };
 
+    console.log("[ARQUIVO PROCESSADO]");
+    console.log("LINHAS LIDAS:", processedData.length);
+
     // Percorrer os dados e salvar no banco
-    for (const row of processedData) {
+    for (const [index, row] of processedData.entries()) {
       try {
         const { numero, tipo } = CNPJouCPF(row.documento);
 
@@ -241,7 +232,7 @@ exports.importarComissoes = async (req, res) => {
             url.searchParams.append("code", token);
 
             //mostra url para não ter que verificar no email
-            console.log("URL", url.toString());
+            // console.log("URL", url.toString());
 
             await emailUtils.emailLinkCadastroUsuarioPrestador({
               email: req.usuario.email,
@@ -326,10 +317,10 @@ exports.importarComissoes = async (req, res) => {
         });
       } catch (err) {
         detalhes.linhasLidasComErro += 1;
-        detalhes.erros += `Erro ao processar linha: ${JSON.stringify(row)} - ${err} \n\n`;
+        detalhes.erros += `Erro ao processar linha: ${index + 1} - ${JSON.stringify(row)} - ${err} \n\n`;
 
         console.error(
-          `Erro ao processar linha: ${JSON.stringify(row)} - ${err}`
+          `Erro ao processar linha: ${index + 1} [SID: ${row.sid} - PRESTADOR: ${row.nomePrestador}] - \nDETALHES DO ERRO: ${err}\n`
         );
       }
     }
@@ -339,8 +330,10 @@ exports.importarComissoes = async (req, res) => {
       usuario: req.usuario,
     });
 
+    console.log("[EMAIL ENVIADO PARA]:", req.usuario.email);
     // Remover o arquivo após o processamento
     fs.unlinkSync(arquivo.path);
+    console.log("🟩[PROCESSAMENTO CONCLUIDO]");
   } catch (error) {
     console.error("Erro ao importar comissões:", error);
   }
@@ -501,7 +494,7 @@ exports.exportarPrestadores = async (req, res) => {
 };
 
 exports.importarPrestadores = async (req, res) => {
-  console.log("Importar prestadores");
+  // console.log("Importar prestadores");
   res.send("Importar prestadores");
 };
 

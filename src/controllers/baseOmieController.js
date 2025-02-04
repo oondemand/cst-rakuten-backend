@@ -23,7 +23,7 @@ exports.registrarBaseOmie = async (req, res) => {
       baseOmie: baseOmiePopulada,
     });
   } catch (error) {
-    console.error("Erro ao registrar Base Omie:", error);
+    // console.error("Erro ao registrar Base Omie:", error);
     res.status(500).json({
       message: "Erro ao registrar Base Omie",
       detalhes: error.message,
@@ -59,7 +59,7 @@ exports.atualizarBaseOmie = async (req, res) => {
     const baseOmie = await BaseOmie.findByIdAndUpdate(
       req.params.id,
       { nome, cnpj, appKey, appSecret, status },
-      { new: true, runValidators: true },
+      { new: true, runValidators: true }
     );
 
     if (!baseOmie) {
@@ -74,7 +74,7 @@ exports.atualizarBaseOmie = async (req, res) => {
       baseOmie: baseOmiePopulada,
     });
   } catch (error) {
-    console.error("Erro ao atualizar Base Omie:", error);
+    // console.error("Erro ao atualizar Base Omie:", error);
     res.status(500).json({
       message: "Erro ao atualizar Base Omie",
       detalhes: error.message,

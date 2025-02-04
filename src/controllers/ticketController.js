@@ -40,7 +40,7 @@ exports.createTicket = async (req, res) => {
       ticket: ticketPopulado,
     });
   } catch (error) {
-    console.error("Erro ao criar ticket:", error);
+    // console.error("Erro ao criar ticket:", error);
     res.status(500).json({
       message: "Erro ao criar ticket",
       detalhes: error.message,
@@ -98,7 +98,7 @@ exports.updateTicket = async (req, res) => {
       ticket: ticketPopulado,
     });
   } catch (error) {
-    console.error("Erro ao atualizar ticket:", error);
+    // console.error("Erro ao atualizar ticket:", error);
     res.status(500).json({
       message: "Erro ao atualizar ticket",
       detalhes: error.message,
@@ -113,7 +113,7 @@ exports.getAllByBaseOmie = async (req, res) => {
 
     res.status(200).json(tickets);
   } catch (error) {
-    console.error("Erro ao buscar tickets:", error);
+    // console.error("Erro ao buscar tickets:", error);
     res.status(500).json({
       message: "Erro ao buscar tickets",
       detalhes: error.message,
@@ -134,7 +134,7 @@ exports.getAllTickets = async (req, res) => {
 
     res.status(200).json(tickets);
   } catch (error) {
-    console.error("Erro ao buscar tickets:", error);
+    // console.error("Erro ao buscar tickets:", error);
     res.status(500).json({
       message: "Erro ao buscar tickets",
       detalhes: error.message,
@@ -154,7 +154,7 @@ exports.getTicketsByPrestadorId = async (req, res) => {
 
     res.status(200).json(tickets);
   } catch (error) {
-    console.error("Erro ao buscar tickets:", error);
+    // console.error("Erro ao buscar tickets:", error);
     res.status(500).json({
       message: "Erro ao buscar tickets",
       detalhes: error.message,
@@ -204,7 +204,7 @@ exports.getTicketsByUsuarioPrestador = async (req, res) => {
 
     res.status(200).json({ valorTotalRecebido, valorTotalPendente, tickets });
   } catch (error) {
-    console.error("Erro ao buscar tickets:", error);
+    // console.error("Erro ao buscar tickets:", error);
     res.status(500).json({
       message: "Erro ao buscar tickets",
       detalhes: error.message,
@@ -225,7 +225,7 @@ exports.getTicketById = async (req, res) => {
 
     res.status(200).json(ticket);
   } catch (error) {
-    console.error("Erro ao buscar ticket:", error);
+    // console.error("Erro ao buscar ticket:", error);
     res
       .status(500)
       .json({ message: "Erro ao buscar ticket", detalhes: error.message });
@@ -255,7 +255,7 @@ exports.deleteTicket = async (req, res) => {
       ticket,
     });
   } catch (error) {
-    console.error("Erro ao remover ticket:", error);
+    // console.error("Erro ao remover ticket:", error);
     res.status(500).json({
       message: "Erro ao remover ticket",
       detalhes: error.message,
@@ -292,7 +292,7 @@ exports.updateStatusTicket = async (req, res) => {
       ticket,
     });
   } catch (error) {
-    console.error("Erro ao atualizar status do ticket:", error);
+    // console.error("Erro ao atualizar status do ticket:", error);
     res.status(500).json({
       message: "Erro ao atualizar status do ticket",
       detalhes: error.message,
@@ -388,7 +388,7 @@ exports.uploadFiles = async (req, res) => {
       arquivos: arquivosSalvos,
     });
   } catch (error) {
-    console.error("Erro ao fazer upload de arquivos:", error);
+    // console.error("Erro ao fazer upload de arquivos:", error);
     res.status(500).json({
       message: "Erro ao fazer upload de arquivos.",
       detalhes: error.message,
