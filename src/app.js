@@ -22,7 +22,7 @@ app.use(cors({ origin: "*" }));
 app.use(helmet());
 app.use(express.static(path.join(__dirname, "public")));
 
-if (process.env.NODE_ENV === "development") app.use(morgan("dev"));
+app.use(morgan("dev"));
 
 // **Rotas públicas** - Não requerem autenticação
 app.use("/", require("./routers/statusRouter"));
