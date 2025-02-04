@@ -317,7 +317,7 @@ exports.importarComissoes = async (req, res) => {
         });
       } catch (err) {
         detalhes.linhasLidasComErro += 1;
-        detalhes.erros += `Erro ao processar linha: ${index + 1} - ${JSON.stringify(row)} - ${err} \n\n`;
+        detalhes.erros += `❌ Erro ao processar linha: ${index + 1} [SID: ${row.sid} - PRESTADOR: ${row.nomePrestador}] - \nDETALHES DO ERRO: ${err}\n\n`;
 
         console.error(
           `❌ Erro ao processar linha: ${index + 1} [SID: ${row.sid} - PRESTADOR: ${row.nomePrestador}] - \nDETALHES DO ERRO: ${err}\n`

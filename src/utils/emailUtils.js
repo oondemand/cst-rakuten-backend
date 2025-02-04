@@ -56,7 +56,7 @@ const confirmacaoEmailPrestador = async (usuarioId) => {
     const token = usuario.gerarToken();
 
     const emailFrom = {
-      email: "suporte@oondemand.com.br",
+      email: process.env.SENDGRID_REMETENTE,
       nome: "OonDemand",
     };
 
@@ -82,7 +82,7 @@ const confirmacaoEmailPrestador = async (usuarioId) => {
 const emailEsqueciMinhaSenha = async ({ usuario, url }) => {
   try {
     const emailFrom = {
-      email: "suporte@oondemand.com.br",
+      email: process.env.SENDGRID_REMETENTE,
       nome: "OonDemand",
     };
 
@@ -112,7 +112,7 @@ const emailPrestadoresExportados = async ({
 }) => {
   try {
     const emailFrom = {
-      email: "suporte@oondemand.com.br",
+      email: process.env.SENDGRID_REMETENTE,
       nome: "OonDemand",
     };
 
@@ -150,7 +150,7 @@ const emailServicosExportados = async ({
 }) => {
   try {
     const emailFrom = {
-      email: "suporte@oondemand.com.br",
+      email: process.env.SENDGRID_REMETENTE,
       nome: "OonDemand",
     };
 
@@ -184,7 +184,7 @@ const emailServicosExportados = async ({
 const emailImportarRpas = async ({ usuario, detalhes }) => {
   try {
     const emailFrom = {
-      email: "suporte@oondemand.com.br",
+      email: process.env.SENDGRID_REMETENTE,
       nome: "OonDemand",
     };
 
@@ -226,7 +226,7 @@ const emailImportarRpas = async ({ usuario, detalhes }) => {
 const importarComissõesDetalhes = async ({ usuario, detalhes }) => {
   try {
     const emailFrom = {
-      email: "suporte@oondemand.com.br",
+      email: process.env.SENDGRID_REMETENTE,
       nome: "OonDemand",
     };
 
@@ -240,7 +240,6 @@ const importarComissõesDetalhes = async ({ usuario, detalhes }) => {
     // Template do corpo do e-mail com o link para recuperação de senha
     const corpo = `<h1>Olá, ${usuario.nome}!</h1>
     <p>Segue o relatório sobre a importação de comissões:</p>
-    <p>Competência processada: <b>${detalhes.competenciaProscessada}</b></p>
     <p>Linhas lidas: ${detalhes.linhasEncontradas}</p>
     <p>Linhas com erro: ${detalhes.linhasLidasComErro}</p>
     <p>Linhas com sucesso: ${detalhes.linhasEncontradas - detalhes.linhasLidasComErro}</p>
@@ -300,7 +299,7 @@ const emailErroIntegracaoOmie = async ({ usuario, error }) => {
 const emailGeralDeErro = async ({ usuario, documento, tipoDeErro }) => {
   try {
     const emailFrom = {
-      email: "suporte@oondemand.com.br",
+      email: process.env.SENDGRID_REMETENTE,
       nome: "OonDemand",
     };
 
@@ -332,7 +331,7 @@ const emailGeralDeErro = async ({ usuario, documento, tipoDeErro }) => {
 const emailLinkCadastroUsuarioPrestador = async ({ email, nome, url }) => {
   try {
     const emailFrom = {
-      email: "suporte@oondemand.com.br",
+      email: process.env.SENDGRID_REMETENTE,
       nome: "OonDemand",
     };
 
