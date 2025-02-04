@@ -16,7 +16,7 @@ const compactFile = async (fileBuffer, filename) => {
 
     return { archiveBuffer, base64File, md5 };
   } catch (error) {
-    console.log(error);
+    // console.log(error);
     throw new Error("Erro ao compactar arquivo");
   }
 };

@@ -14,7 +14,7 @@ exports.obterCodigoBanco = async (nomeBanco) => {
       return "Banco não encontrado";
     }
   } catch (error) {
-    console.error("Erro ao consultar a API:", error);
+    // console.error("Erro ao consultar a API:", error);
     return "";
   }
 };

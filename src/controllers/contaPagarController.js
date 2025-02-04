@@ -50,7 +50,7 @@ const obterContaPagarOmie = async (req, res) => {
 
     return res.status(200).json(contaPagarOmie);
   } catch (error) {
-    console.error("❌ Erro ao obter conta a pagar Omie:", error);
+    // console.error("❌ Erro ao obter conta a pagar Omie:", error);
     return res.status(500).json({
       mensagem: "Erro ao obter conta a pagar Omie.",
       erro: error.message,

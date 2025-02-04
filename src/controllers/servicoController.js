@@ -16,7 +16,7 @@ exports.getServicoById = async (req, res) => {
 
     res.status(200).json(servico);
   } catch (error) {
-    console.error("Erro ao obter serviço:", error);
+    // console.error("Erro ao obter serviço:", error);
     res.status(500).json({
       message: "Erro ao obter serviço",
       detalhes: error.message,
@@ -35,7 +35,7 @@ exports.createServicoETicket = async (req, res) => {
       valor,
     });
 
-    console.log("novoServico", novoServico);
+    // console.log("novoServico", novoServico);
 
     await novoServico.save();
 
@@ -47,7 +47,7 @@ exports.createServicoETicket = async (req, res) => {
       prestador,
       servico: novoServico._id,
     });
-    console.log("novoTicket", novoTicket);
+    // console.log("novoTicket", novoTicket);
 
     await novoTicket.save();
 
@@ -57,7 +57,7 @@ exports.createServicoETicket = async (req, res) => {
       ticket: novoTicket,
     });
   } catch (error) {
-    console.error("Erro ao criar serviço e ticket:", error);
+    // console.error("Erro ao criar serviço e ticket:", error);
     res.status(500).json({
       message: "Erro ao criar serviço e ticket",
       detalhes: error.message,
@@ -68,7 +68,7 @@ exports.createServicoETicket = async (req, res) => {
 exports.createServico = async (req, res) => {
   try {
     const filteredBody = Object.fromEntries(
-      Object.entries(req.body).filter(([_, value]) => value !== ""),
+      Object.entries(req.body).filter(([_, value]) => value !== "")
     );
 
     const novoServico = new Servico(filteredBody);
@@ -79,7 +79,7 @@ exports.createServico = async (req, res) => {
       servico: novoServico,
     });
   } catch (error) {
-    console.error("Erro ao criar serviço:", error);
+    // console.error("Erro ao criar serviço:", error);
     res.status(500).json({
       message: "Erro ao criar serviço",
       detalhes: error.message,
@@ -107,7 +107,7 @@ exports.updateServico = async (req, res) => {
       servico: servico,
     });
   } catch (error) {
-    console.error("Erro ao atualizar serviço:", error);
+    // console.error("Erro ao atualizar serviço:", error);
     res.status(500).json({
       message: "Erro ao atualizar serviço",
       detalhes: error.message,

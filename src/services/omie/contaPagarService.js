@@ -63,9 +63,9 @@ const incluir = async (appKey, appSecret, conta, maxTentativas = 3) => {
   let erroEncontrado;
 
   while (tentativas < maxTentativas) {
-    console.log(
-      `[CONTA A PAGAR]: Criando conta a pagar tentativa ${tentativas + 1}`
-    );
+    // console.log(
+    //   `[CONTA A PAGAR]: Criando conta a pagar tentativa ${tentativas + 1}`
+    // );
     try {
       const body = {
         call: "IncluirContaPagar",
@@ -92,7 +92,7 @@ const incluir = async (appKey, appSecret, conta, maxTentativas = 3) => {
         error.response ||
         error;
 
-      console.log(`Falha ao criar conta a pagar: ${erroEncontrado}`);
+      // console.log(`Falha ao criar conta a pagar: ${erroEncontrado}`);
     }
   }
 
@@ -107,9 +107,9 @@ const remover = async (
   let erroEncontrado;
   while (tentativas < maxTentativas) {
     try {
-      console.log(
-        `[CONTA A PAGAR/REMOVER CONTA]: Tentando remover conta, ${tentativas + 1} tentativa`
-      );
+      // console.log(
+      //   `[CONTA A PAGAR/REMOVER CONTA]: Tentando remover conta, ${tentativas + 1} tentativa`
+      // );
 
       const body = {
         call: "ExcluirContaPagar",
@@ -136,7 +136,7 @@ const remover = async (
         error.response ||
         error;
 
-      console.log(`Erro ao remover conta a pagar: ${erroEncontrado}`);
+      // console.log(`Erro ao remover conta a pagar: ${erroEncontrado}`);
     }
   }
 
@@ -188,12 +188,12 @@ const consultarInterno = async (appKey, appSecret, codigoLancamento) => {
     cache[cacheKey] &&
     now - cache[cacheKey].timestamp < cacheExpirationTime
   ) {
-    console.log("Retornando resultado do cache");
+    // console.log("Retornando resultado do cache");
     return cache[cacheKey].data;
   }
 
   try {
-    console.log("Retornando resultado do omie");
+    // console.log("Retornando resultado do omie");
     const body = {
       call: "ConsultarContaPagar",
       app_key: appKey,
@@ -207,7 +207,7 @@ const consultarInterno = async (appKey, appSecret, codigoLancamento) => {
 
     const response = await apiOmie.post("financas/contapagar/", body);
 
-    console.log("LOG IMPORTANTE ->", response);
+    // console.log("LOG IMPORTANTE ->", response);
 
     // Armazena o resultado no cache
     cache[cacheKey] = {

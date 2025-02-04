@@ -73,7 +73,7 @@ const consultar = async (appKey, appSecret, codCliente) => {
 
   // Verificar se o cliente está no cache e se ainda é válido (10 minuto)
   if (cache[cacheKey] && now - cache[cacheKey].timestamp < 600000) {
-    console.log(`Retornando do cache para o cliente: ${codCliente}`);
+    // console.log(`Retornando do cache para o cliente: ${codCliente}`);
     return cache[cacheKey].data;
   }
 
@@ -146,7 +146,7 @@ const incluir = async (appKey, appSecret, cliente, maxTentativas = 3) => {
         error.response ||
         error;
 
-      console.error(`Falha ao criar cliente: ${erroEncontrado}`);
+      // console.error(`Falha ao criar cliente: ${erroEncontrado}`);
     }
   }
 
@@ -184,7 +184,7 @@ const update = async (appKey, appSecret, cliente, maxTentativas = 3) => {
         error.response ||
         error;
 
-      console.error(`Falha ao atualizar cliente: ${erroEncontrado}`);
+      // console.error(`Falha ao atualizar cliente: ${erroEncontrado}`);
     }
   }
 
@@ -203,7 +203,7 @@ const pesquisarPorCNPJ = async (appKey, appSecret, cnpj, maxTentativas = 3) => {
     cachePesquisaPorCNPJ[cacheKey] &&
     now - cachePesquisaPorCNPJ[cacheKey].timestamp < 60 * 1000
   ) {
-    console.log(`Retornando do cache para o CNPJ: ${cnpj}`);
+    // console.log(`Retornando do cache para o CNPJ: ${cnpj}`);
     return cachePesquisaPorCNPJ[cacheKey].data;
   }
   while (tentativas < maxTentativas) {
@@ -241,7 +241,7 @@ const pesquisarPorCNPJ = async (appKey, appSecret, cnpj, maxTentativas = 3) => {
           "API bloqueada por consumo indevido."
         )
       ) {
-        console.log("Esperando 5 minutos");
+        // console.log("Esperando 5 minutos");
         await new Promise((resolve) => setTimeout(resolve, 60 * 1000 * 5));
       }
 
@@ -250,7 +250,7 @@ const pesquisarPorCNPJ = async (appKey, appSecret, cnpj, maxTentativas = 3) => {
           "Consumo redundante detectado"
         )
       ) {
-        console.log("Aguardando 1 minuto");
+        // console.log("Aguardando 1 minuto");
         await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
       }
     }

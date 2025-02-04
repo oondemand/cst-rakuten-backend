@@ -23,7 +23,7 @@ const authMiddleware = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.log("Erro ao verificar o token:", error);
+    // console.log("Erro ao verificar o token:", error);
     return res.status(401).json({ error: "Token inválido." });
   }
 };

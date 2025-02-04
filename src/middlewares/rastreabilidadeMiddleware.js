@@ -25,12 +25,11 @@ const rastreabilidadeMiddleware = async (req, res, next) => {
     log.statusResposta = res.statusCode;
     log.dadosResposta = res.locals.body || null; // Capturar o corpo se armazenado anteriormente
 
-    log
-      .save()
-      // .then(() => console.log("Log de rastreabilidade salvo com sucesso"))
-      .catch((error) =>
-        console.error("Erro ao salvar log de rastreabilidade:", error),
-      );
+    log.save();
+    // .then(() => console.log("Log de rastreabilidade salvo com sucesso"))
+    // .catch((error) =>
+    //   console.error("Erro ao salvar log de rastreabilidade:", error),
+    // );
   });
 
   next();
