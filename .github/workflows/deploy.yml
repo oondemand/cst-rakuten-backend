@@ -1,4 +1,4 @@
-name: Deploy adn publish
+name: Deploy adn publish backend
 
 on:
   pull_request:
