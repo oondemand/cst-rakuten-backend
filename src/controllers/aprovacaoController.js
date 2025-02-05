@@ -358,7 +358,7 @@ const cadastrarContaAPagar = async (
       observacao,
       valor: valorTotalDaNota,
       id_conta_corrente: process.env.ID_CONTA_CORRENTE,
-      codigo_categoria: process.env.CODIGO_CATEGORIA,
+      // codigo_categoria: process.env.CODIGO_CATEGORIA,
     });
 
     return await contaPagarService.incluir(appKey, appSecret, conta);
