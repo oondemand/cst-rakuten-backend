@@ -239,8 +239,6 @@ const pesquisarPorCNPJ = async (appKey, appSecret, cnpj, maxTentativas = 3) => {
 
       return data;
     } catch (error) {
-      console.log(error);
-
       if (
         error.response?.data?.faultstring?.includes(
           "ERROR: Não existem registros para a página [1]!"
@@ -322,8 +320,6 @@ const pesquisarCodIntegracao = async (
 
       return data;
     } catch (error) {
-      console.log(error);
-
       if (
         error.response?.data?.faultstring?.includes(
           "ERROR: Não existem registros para a página [1]!"
