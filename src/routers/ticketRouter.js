@@ -39,9 +39,13 @@ router.delete("/arquivo/:id", ticketController.deleteFileFromTicket);
 router.post("/", ticketController.createTicket);
 
 router.get("/", ticketController.getAllTickets);
+router.get("/arquivados", ticketController.getArchivedTickets);
 router.get("/base-omie/:baseOmieId", ticketController.getAllByBaseOmie);
 router.get("/prestador/:prestadorId", ticketController.getTicketsByPrestadorId);
-router.get("/usuario-prestador/:usuarioId", ticketController.getTicketsByUsuarioPrestador);
+router.get(
+  "/usuario-prestador/:usuarioId",
+  ticketController.getTicketsByUsuarioPrestador
+);
 router.get("/:id", ticketController.getTicketById);
 
 router.patch("/:id", ticketController.updateTicket);

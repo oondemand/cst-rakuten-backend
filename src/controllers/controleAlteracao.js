@@ -2,8 +2,9 @@ const ControleAlteracao = require("../models/ControleAlteracao");
 
 const listarTodosRegistros = async (req, res) => {
   try {
-    const controleAlteracao =
-      await ControleAlteracao.find().populate("usuario");
+    const controleAlteracao = await ControleAlteracao.find()
+      .sort({ dataHora: -1 })
+      .populate("usuario");
 
     if (controleAlteracao.length === 0) {
       return res.status(404).json({ message: "Nenhum registro encontrado!" });
