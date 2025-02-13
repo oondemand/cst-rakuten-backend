@@ -10,6 +10,7 @@ const enderecoSchema = new mongoose.Schema({
   complemento: String,
   cidade: String,
   estado: String,
+  pais: { type: { nome: String, cod: Number } },
 });
 
 // Esquema de Dados Bancários
@@ -32,8 +33,20 @@ const prestadorSchema = new mongoose.Schema(
       unique: true,
       match: [/^\d{7}$/, "O SID deve ter exatamente 7 dígitos."],
     },
-    tipo: { type: String, enum: ["pj", "pf"] },
-    documento: { type: String, match: /^\d{11}$|^\d{14}$/ },
+    tipo: { type: String, enum: ["pj", "pf", "ext"] },
+    documento: {
+      type: String,
+      validate: {
+        validator: function (valor) {
+          if (this.tipo === "ext") {
+            return true;
+          }
+
+          return /^\d{11}$|^\d{14}$/.test(valor);
+        },
+        message: "Documento inválido para o tipo selecionado.",
+      },
+    },
     dadosBancarios: dadosBancariosSchema,
     email: {
       type: String,
@@ -81,7 +94,7 @@ const prestadorSchema = new mongoose.Schema(
     },
     dataExportacao: { type: Date, default: null },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 prestadorSchema.methods.gerarToken = function () {

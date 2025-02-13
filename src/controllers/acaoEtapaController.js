@@ -31,6 +31,16 @@ const buscarPrestadorOmie = async ({ documento }) => {
   try {
     const baseOmie = await BaseOmie.findOne({ status: "ativo" });
 
+    const cliente = await clienteService.pesquisarPorCNPJ(
+      baseOmie.appKey,
+      baseOmie.appSecret,
+      documento
+    );
+
+    if (!cliente) {
+      throw new Error("Cliente não encontrado");
+    }
+
     const {
       cep,
       cidade,
@@ -43,13 +53,9 @@ const buscarPrestadorOmie = async ({ documento }) => {
       pessoa_fisica,
       razao_social,
       dadosBancarios,
-    } = await clienteService.pesquisarPorCNPJ(
-      baseOmie.appKey,
-      baseOmie.appSecret,
-      documento
-    );
+    } = cliente;
 
-    const { agencia, codigo_banco, conta_corrente } = dadosBancarios;
+    const { agencia, codigo_banco, conta_corrente } = dadosBancarios || {};
 
     const prestadorOmie = {
       nome: razao_social,
@@ -83,10 +89,6 @@ const buscarPrestadorOmie = async ({ documento }) => {
 
     return prestadorOmie;
   } catch (error) {
-    if (error.includes("Não existem registros para a página")) {
-      // console.log("Esperando 1 minuto");
-      await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
-    }
     return;
   }
 };
@@ -198,12 +200,16 @@ exports.importarComissoes = async (req, res) => {
               nome: row.nomePrestador,
               status: "em-analise",
               documento: numero,
-              tipo,
+              tipo: row?.type === "INVOICE" ? "ext" : tipo,
             });
 
             await prestador.save();
             detalhes.totalDeNovosPrestadores += 1;
-            console.log("Criando prestador via planilha");
+            console.log(
+              "Criando prestador via planilha",
+              prestador.tipo,
+              row?.type
+            );
           }
 
           if (prestador.email) {

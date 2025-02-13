@@ -3,15 +3,9 @@ const Etapa = require("../models/Etapa");
 const BaseOmie = require("../models/BaseOmie");
 const contaPagarService = require("../services/omie/contaPagarService");
 const clienteService = require("../services/omie/clienteService");
-const Arquivo = require("../models/Arquivo");
-
 const emailUtils = require("../utils/emailUtils");
 
-const crypto = require("crypto");
-
 const { obterCodigoBanco } = require("../utils/brasilApi");
-
-const fs = require("fs");
 
 const anexoService = require("../services/omie/anexosService");
 
@@ -267,6 +261,14 @@ const atualizarOuCriarFornecedor = async ({
       prestador.documento
     );
 
+    if (!fornecedor) {
+      fornecedor = await clienteService.pesquisarCodIntegracao(
+        appKey,
+        appSecret,
+        prestador._id
+      );
+    }
+
     const novoFornecedor = clienteService.criarFornecedor({
       documento: prestador.documento,
       nome: prestador.nome,
@@ -285,6 +287,7 @@ const atualizarOuCriarFornecedor = async ({
       tipoConta: prestador.dadosBancarios
         ? prestador.dadosBancarios.tipoConta
         : "",
+      codPais: prestador?.endereco?.pais?.cod,
     });
 
     if (fornecedor) {
