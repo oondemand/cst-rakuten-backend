@@ -3,7 +3,7 @@ name: Deploy adn publish backend
 on:
   pull_request:
     branches:
-      - main # Branch de destino para gerenciar releases
+      - main 
     types:
       - closed
 
