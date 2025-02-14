@@ -124,7 +124,10 @@ exports.getAllByBaseOmie = async (req, res) => {
 exports.getAllTickets = async (req, res) => {
   try {
     const filtros = req.query;
-    const tickets = await Ticket.find(filtros)
+    const tickets = await Ticket.find({
+      ...filtros,
+      status: { $ne: "arquivado" },
+    })
       .populate("prestador", "nome documento sid sciUnico")
       .populate({
         path: "servicos",
@@ -216,7 +219,7 @@ exports.getTicketById = async (req, res) => {
   try {
     const ticket = await Ticket.findById(req.params.id)
       .populate("baseOmie")
-      .populate("prestador")
+      .populate("prestador prestador.endereco")
       .populate("servicos");
 
     if (!ticket) {
@@ -391,6 +394,28 @@ exports.uploadFiles = async (req, res) => {
     // console.error("Erro ao fazer upload de arquivos:", error);
     res.status(500).json({
       message: "Erro ao fazer upload de arquivos.",
+      detalhes: error.message,
+    });
+  }
+};
+
+exports.getArchivedTickets = async (req, res) => {
+  try {
+    const ticketsArquivados = await Ticket.find({
+      status: "arquivado", // Filtra apenas por status arquivado
+    })
+      .populate("prestador", "nome documento sid")
+      .populate({
+        path: "servicos",
+        options: { virtuals: true },
+      });
+
+    console.log(ticketsArquivados);
+
+    res.status(200).json(ticketsArquivados);
+  } catch (error) {
+    res.status(500).json({
+      message: "Erro ao buscar tickets arquivados",
       detalhes: error.message,
     });
   }
