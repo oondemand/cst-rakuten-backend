@@ -201,6 +201,8 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
       }
     }
 
+    console.log("🟧 [CONTA A PAGAR]:", conta);
+
     // caso de tudo certo, vincula codigo da conta o ticket, muda o status e salva
     ticket.contaPagarOmie = conta.codigo_lancamento_omie;
     ticket.status = "concluido";
