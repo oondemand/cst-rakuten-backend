@@ -33,7 +33,7 @@ const criarFornecedor = ({
   observacao,
 }) => {
   const cliente = {
-    cnpj_cpf: tipo === "ext" ? "" : documento,
+    cnpj_cpf: documento,
     razao_social: nome.substring(0, 60),
     tags: ["Fornecedor"],
     nome_fantasia: razaoSocial ? razaoSocial.substring(0, 60) : "",
@@ -45,12 +45,7 @@ const criarFornecedor = ({
     cep: cep ? cep : "",
     email: email ? email : "",
     observacao: observacao ? observacao : "",
-    exterior: tipo === "ext" ? "S" : "N",
     importado_api: "S",
-    nif: tipo === "ext" ? documento : "", //numero de identificação fiscal para estrangeiros
-    estado: "EX",
-    codigo_pais: codPais ? codPais : "",
-    cidade: "EX",
   };
 
   cliente.dadosBancarios = {
@@ -65,6 +60,15 @@ const criarFornecedor = ({
     observacao
       ? (cliente.observacao += "\n\n conta poupança")
       : (cliente.observacao = "conta poupança");
+  }
+
+  if (tipo === "ext") {
+    cliente.estado = "EX";
+    cliente.codigo_pais = codPais ? codPais : "";
+    cliente.cidade = "EX";
+    cliente.exterior = "S";
+    cliente.nif = documento; //numero de identificação fiscal para estrangeiros
+    cliente.cnpj_cpf = "";
   }
 
   return cliente;
