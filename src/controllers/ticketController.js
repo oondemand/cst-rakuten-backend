@@ -133,7 +133,10 @@ exports.getAllTickets = async (req, res) => {
         path: "servicos",
         select: "mesCompetencia anoCompetencia competencia valorTotal",
         options: { virtuals: true },
-      });
+      })
+      .populate("contaPagarOmie");
+
+    // console.log(tickets);
 
     res.status(200).json(tickets);
   } catch (error) {

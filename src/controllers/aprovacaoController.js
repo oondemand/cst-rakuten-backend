@@ -14,6 +14,7 @@ const Servico = require("../models/Servico");
 
 const { add, format } = require("date-fns");
 const { ControleAlteracaoService } = require("../services/controleAlteracao");
+const ContaPagar = require("../models/ContaPagar");
 
 // Função para aprovar um ticket
 const aprovar = async (req, res) => {
@@ -49,7 +50,7 @@ const aprovar = async (req, res) => {
       ticket.status = "trabalhando";
       await ticket.save();
 
-      gerarContaPagar({ ticket, usuario: req.usuario });
+      await gerarContaPagar({ ticket, usuario: req.usuario });
 
       return res.send({
         success: true,
@@ -166,9 +167,8 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
     }
 
     // caso ticket tenha serviço tenta criar uma conta
-    const conta = await cadastrarContaAPagar(
-      baseOmie.appKey,
-      baseOmie.appSecret,
+    let conta = await cadastrarContaAPagar(
+      baseOmie,
       fornecedor.codigo_cliente_omie,
       ticket
     );
@@ -201,10 +201,10 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
       }
     }
 
-    console.log("🟧 [CONTA A PAGAR]:", conta);
+    console.log("🟨", conta);
 
     // caso de tudo certo, vincula codigo da conta o ticket, muda o status e salva
-    ticket.contaPagarOmie = conta.codigo_lancamento_omie;
+    ticket.contaPagarOmie = conta._id;
     ticket.status = "concluido";
     await ticket.save();
 
@@ -324,12 +324,7 @@ const atualizarOuCriarFornecedor = async ({
   }
 };
 
-const cadastrarContaAPagar = async (
-  appKey,
-  appSecret,
-  codigoFornecedor,
-  ticket
-) => {
+const cadastrarContaAPagar = async (baseOmie, codigoFornecedor, ticket) => {
   try {
     let valorTotalDaNota = 0;
     let observacao = `Serviços prestados SID - ${ticket.prestador.sid}\n-- Serviços --\n`;
@@ -366,7 +361,28 @@ const cadastrarContaAPagar = async (
       // codigo_categoria: process.env.CODIGO_CATEGORIA,
     });
 
-    return await contaPagarService.incluir(appKey, appSecret, conta);
+    const contaPagarOmie = await contaPagarService.incluir(
+      baseOmie.appKey,
+      baseOmie.appSecret,
+      {
+        ...conta,
+      }
+    );
+
+    const contaPagarCompleta = await contaPagarService.consultar(
+      baseOmie.appKey,
+      baseOmie.appSecret,
+      contaPagarOmie.codigo_lancamento_omie
+    );
+
+    const contaPagar = new ContaPagar({
+      ...contaPagarCompleta,
+      baseOmie: baseOmie._id,
+    });
+
+    await contaPagar.save();
+
+    return contaPagar;
   } catch (error) {
     throw `Erro ao cadastrar conta a pagar. ${error}`;
   }

@@ -10,7 +10,7 @@ const TicketSchema = new mongoose.Schema(
     data: { type: Date, default: Date.now },
     prestador: { type: mongoose.Schema.Types.ObjectId, ref: "Prestador" },
     servicos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Servico" }],
-    contaPagarOmie: { type: String },
+    contaPagarOmie: { type: Schema.Types.ObjectId, ref: "ContaPagar" },
     arquivos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Arquivo" }],
     status: {
       type: String,
@@ -24,7 +24,7 @@ const TicketSchema = new mongoose.Schema(
       default: "aguardando-inicio",
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 module.exports = mongoose.model("Ticket", TicketSchema);
