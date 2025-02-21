@@ -4,6 +4,8 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+const configuracoesSchema = new mongoose.Schema({ idioma: { type: String } });
+
 const UsuarioSchema = new mongoose.Schema({
   tipo: {
     type: String,
@@ -30,6 +32,7 @@ const UsuarioSchema = new mongoose.Schema({
     default: "ativo",
   },
   permissoes: { type: [String], default: [] },
+  configuracoes: { type: configuracoesSchema },
 });
 
 UsuarioSchema.pre("save", async function (next) {

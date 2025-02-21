@@ -108,6 +108,7 @@ exports.loginUsuario = async (req, res) => {
           _id: usuario._id,
           nome: usuario.nome,
           tipo: usuario.tipo,
+          idioma: usuario?.configuracoes?.idioma,
         },
       });
     } else if (usuario.status === "email-nao-confirmado") {
@@ -151,11 +152,11 @@ exports.obterUsuario = async (req, res) => {
 };
 
 exports.atualizarUsuario = async (req, res) => {
-  const { nome, email, status, permissoes } = req.body;
+  const { nome, email, status, permissoes, configuracoes } = req.body;
   try {
     const usuario = await Usuario.findByIdAndUpdate(
       req.params.id,
-      { nome, email, status, permissoes },
+      { nome, email, status, permissoes, configuracoes },
       { new: true }
     );
     if (!usuario)
