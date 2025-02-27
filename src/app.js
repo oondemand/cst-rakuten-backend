@@ -53,6 +53,7 @@ app.use("/prestadores", require("./routers/prestadorRouter"));
 app.use("/servicos", require("./routers/servicoRouter"));
 app.use("/acoes-etapas", require("./routers/acaoEtapaRouter"));
 app.use("/registros", require("./routers/controleAlteracao"));
+app.use("/listas", require("./routers/listaRouter"));
 
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
