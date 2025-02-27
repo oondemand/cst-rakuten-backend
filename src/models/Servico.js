@@ -3,32 +3,53 @@ const mongoose = require("mongoose");
 const servicoSchema = new mongoose.Schema(
   {
     prestador: { type: mongoose.Schema.Types.ObjectId, ref: "Prestador" },
-    mesCompetencia: { type: Number, required: true, min: 1, max: 12 },
-    anoCompetencia: { type: Number, required: true, min: 2000 },
-    valorPrincipal: { type: Number, required: true, min: 0, default: 0 },
-    valorBonus: { type: Number },
-    valorAjusteComercial: { type: Number },
-    valorHospedagemAnuncio: { type: Number },
-    valorTotal: { type: Number, required: true, min: 0, default: 0 },
-    correcao: { type: Boolean, required: true, default: false },
+    dataProvisaoContabil: { type: Date },
+    dataRegistro: { type: Date },
+    competencia: {
+      type: {
+        mes: { type: Number, required: true, min: 1, max: 12 },
+        ano: { type: Number, required: true, min: 2000 },
+      },
+    },
+    valor: { type: Number, required: true, min: 0, default: 0 },
+    tipoDocumentoFiscal: { type: String },
+    campanha: { type: String },
+    valores: {
+      grossValue: Number,
+      bonus: Number,
+      ajusteComercial: Number,
+      paidPlacement: Number,
+      revisionMonthProvision: Number,
+      revisionGrossValue: Number,
+      revisionProvisionBonus: Number,
+      revisionComissãoPlataforma: Number,
+      revisionPaidPlacement: Number,
+      totalServico: Number,
+      totalRevisao: Number,
+    },
     status: {
       type: String,
-      enum: ["ativo", "em-analise", "pendente-de-revisao", "arquivado"],
-      default: "ativo",
+      enum: ["pendente", "pago-segeti", "pago-rakuten"],
+      default: "pendente",
     },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-servicoSchema.virtual('competencia').get(function() {
-  if (this.mesCompetencia != null && this.anoCompetencia != null) {
-    const mes = this.mesCompetencia.toString().padStart(2, '0');
-    const ano = this.anoCompetencia.toString();
-    
-    return `${mes}/${ano}`;
-  }
-  
-  return '';
-});
+servicoSchema.index(
+  { prestador: 1, "competencia.mes": 1, "competencia.ano": 1 },
+  { unique: true }
+);
+
+// servicoSchema.virtual("competencia").get(function () {
+//   if (this.mesCompetencia != null && this.anoCompetencia != null) {
+//     const mes = this.mesCompetencia.toString().padStart(2, "0");
+//     const ano = this.anoCompetencia.toString();
+
+//     return `${mes}/${ano}`;
+//   }
+
+//   return "";
+// });
 
 module.exports = mongoose.model("Servico", servicoSchema);
