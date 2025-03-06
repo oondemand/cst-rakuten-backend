@@ -115,6 +115,7 @@ exports.listarPrestadores = async (req, res) => {
       "email",
       "nome",
       "sid",
+      "sciUnico",
       "documento",
       "campanha",
       "status",
@@ -186,37 +187,40 @@ exports.atualizarPrestador = async (req, res) => {
     // Verificar se o tipo de usuário é "prestador"
     // if (usuario.tipo === "prestador") req.body.status = "em-analise";
 
-    const prestador = await Prestador.findById(req.params.id);
+    const prestador = await Prestador.findByIdAndUpdate(
+      req.params.id,
+      req.body
+    );
 
     if (!prestador) {
       return res.status(404).json({ message: "Prestador não encontrado" });
     }
 
-    if (req.body?.sciUnico) {
-      const sci = await Prestador.findOne({
-        sciUnico: req.body.sciUnico,
-      });
+    // if (req.body?.sciUnico) {
+    //   const sci = await Prestador.findOne({
+    //     sciUnico: req.body.sciUnico,
+    //   });
 
-      if (sci && sci._id.toString() !== prestador._id.toString()) {
-        return res.status(409).json({
-          message: "Já existe um prestador com esse sciUnico registrado",
-        });
-      }
-    }
+    //   if (sci && sci._id.toString() !== prestador._id.toString()) {
+    //     return res.status(409).json({
+    //       message: "Já existe um prestador com esse sciUnico registrado",
+    //     });
+    //   }
+    // }
 
-    // Atualiza apenas os campos fornecidos no corpo da requisição
-    Object.keys(req.body).forEach((key) => {
-      prestador[key] = req.body[key];
-    });
+    // // Atualiza apenas os campos fornecidos no corpo da requisição
+    // Object.keys(req.body).forEach((key) => {
+    //   prestador[key] = req.body[key];
+    // });
 
-    await prestador.save();
+    // await prestador.save();
 
     res.status(200).json({
       message: "Prestador atualizado com sucesso!",
       prestador,
     });
   } catch (error) {
-    // console.error("Erro ao atualizar prestador:", error);
+    console.error("Erro ao atualizar prestador:", error);
     res.status(500).json({
       message: "Erro ao atualizar prestador",
       detalhes: error.message,

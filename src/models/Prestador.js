@@ -26,6 +26,7 @@ const prestadorSchema = new mongoose.Schema(
   {
     sciUnico: { type: Number, match: /^\d{5,}$/ },
     usuario: { type: mongoose.Schema.Types.ObjectId, ref: "Usuario" },
+    manager: { type: String },
     nome: { type: String, required: true },
     sid: {
       type: Number,

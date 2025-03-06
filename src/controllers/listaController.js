@@ -78,10 +78,27 @@ const updateItem = async (req, res) => {
   }
 };
 
+const getListaPorCodigo = async (req, res) => {
+  try {
+    const { codigo } = req.params;
+    const lista = await Lista.findOne({ codigo });
+
+    if (!lista) {
+      return res.status(404).json({ mensagem: "Lista não encontrada" });
+    }
+
+    lista.valores = lista.valores.filter((item) => item.chave || item.valor);
+    res.json(lista);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   createLista,
   addItem,
   removeItem,
   getListas,
   updateItem,
+  getListaPorCodigo,
 };
