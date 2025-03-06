@@ -1,6 +1,7 @@
 // src/controllers/prestadorController.js
 const Prestador = require("../models/Prestador");
 const Ticket = require("../models/Ticket");
+const filtersUtils = require("../utils/filter");
 
 // Método para obter prestador pelo idUsuario
 exports.obterPrestadorPorIdUsuario = async (req, res) => {
@@ -106,9 +107,61 @@ exports.criarPrestador = async (req, res) => {
 // Listar todos os Prestadores
 exports.listarPrestadores = async (req, res) => {
   try {
-    const prestadores = await Prestador.find();
-    res.status(200).json(prestadores);
+    const { sortBy, pageIndex, pageSize, searchTerm, ...rest } = req.query;
+
+    const schema = Prestador.schema;
+
+    const camposBusca = [
+      "email",
+      "nome",
+      "sid",
+      "documento",
+      "campanha",
+      "status",
+      "grossValue",
+      "bonus",
+    ];
+
+    const queryResult = filtersUtils.buildQuery({
+      filtros: rest,
+      searchTerm,
+      schema,
+      camposBusca,
+    });
+
+    let sorting = {};
+
+    if (sortBy) {
+      const [campo, direcao] = sortBy.split(".");
+      const campoFormatado = campo.replaceAll("_", ".");
+      sorting[campoFormatado] = direcao === "desc" ? -1 : 1;
+    }
+
+    const page = parseInt(pageIndex) || 0;
+    const limit = parseInt(pageSize) || 10;
+
+    const prestadores = await Prestador.find(queryResult)
+      .sort(sorting)
+      .skip(page * limit)
+      .limit(limit);
+
+    const totalDePrestadores = await Prestador.countDocuments(queryResult);
+
+    const totalPages = Math.ceil(totalDePrestadores / limit);
+
+    const response = {
+      prestadores,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: totalDePrestadores,
+        itemsPerPage: limit,
+      },
+    };
+
+    res.status(200).json(response);
   } catch (error) {
+    console.log("ERROR", error);
     res.status(400).json({ error: "Erro ao listar prestadores" });
   }
 };

@@ -1,6 +1,7 @@
 // src/controllers/servicoController.js
 const Servico = require("../models/Servico");
 const Ticket = require("../models/Ticket");
+const filtersUtils = require("../utils/filter");
 
 exports.getServicoById = async (req, res) => {
   const { id } = req.params;
@@ -79,7 +80,7 @@ exports.createServico = async (req, res) => {
       servico: novoServico,
     });
   } catch (error) {
-    // console.error("Erro ao criar serviço:", error);
+    console.error("Erro ao criar serviço:", error);
     res.status(500).json({
       message: "Erro ao criar serviço",
       detalhes: error.message,
@@ -112,5 +113,78 @@ exports.updateServico = async (req, res) => {
       message: "Erro ao atualizar serviço",
       detalhes: error.message,
     });
+  }
+};
+
+  exports.listarServicos = async (req, res) => {
+    try {
+      const { sortBy, pageIndex, pageSize, searchTerm, ...rest } = req.query;
+
+      const schema = Servico.schema;
+
+      const camposBusca = [
+        "valor",
+        "prestador.nome",
+        "prestador.sid",
+        "prestador.documento",
+        "campanha",
+        "status",
+        "valores.grossValue",
+        "valores.bonus",
+      ];
+
+      const queryResult = filtersUtils.buildQuery({
+        filtros: rest,
+        searchTerm,
+        schema,
+        camposBusca,
+      });
+
+      let sorting = {};
+
+      if (sortBy) {
+        const [campo, direcao] = sortBy.split(".");
+        const campoFormatado = campo.replaceAll("_", ".");
+        sorting[campoFormatado] = direcao === "desc" ? -1 : 1;
+      }
+
+      const page = parseInt(pageIndex) || 0;
+      const limit = parseInt(pageSize) || 10;
+
+      const servicos = await Servico.find(queryResult)
+        .populate("prestador", "sid nome documento")
+        .sort(sorting)
+        .skip(page * limit)
+        .limit(limit);
+
+      const totalDeServicos = await Servico.countDocuments(queryResult);
+
+      const totalPages = Math.ceil(totalDeServicos / limit);
+
+      const response = {
+        servicos,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalItems: totalDeServicos,
+          itemsPerPage: limit,
+        },
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      console.log(error);
+      res.status(400).json({ error: "Erro ao listar servicoes" });
+    }
+  };
+
+exports.excluirServico = async (req, res) => {
+  try {
+    const servico = await Servico.findByIdAndDelete(req.params.id);
+    if (!servico)
+      return res.status(404).json({ error: "Servico não encontrado" });
+    res.status(204).send();
+  } catch (error) {
+    res.status(400).json({ error: "Erro ao excluir servico" });
   }
 };
