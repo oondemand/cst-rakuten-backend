@@ -500,8 +500,93 @@ exports.exportarPrestadores = async (req, res) => {
 };
 
 exports.importarPrestadores = async (req, res) => {
-  // console.log("Importar prestadores");
-  res.send("Importar prestadores");
+  console.log("[PROCESSANDO ARQUIVOS]:");
+
+  try {
+    const arquivo = req.files[0];
+
+    const workbook = XLSX.readFile(arquivo.path);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+      header: 1,
+      defval: "",
+    });
+
+    for (const [i, value] of jsonData.entries()) {
+      if (i == 0) continue;
+      const [
+        sciUnico,
+        manager,
+        nome,
+        sid,
+        tipo,
+        documento,
+        banco,
+        agencia,
+        conta,
+        tipoConta,
+        email,
+        cep,
+        rua,
+        numero,
+        complemento,
+        cidade,
+        estado,
+        pais,
+        dataNascimento,
+        pis,
+        nomeMae,
+        razaoSocial,
+        nomeFantasia,
+      ] = value;
+
+      const prestadorFields = {
+        sciUnico,
+        manager,
+        nome,
+        sid,
+        tipo,
+        documento,
+        banco,
+        agencia,
+        conta,
+        tipoConta,
+        email,
+        cep,
+        rua,
+        numero,
+        complemento,
+        cidade,
+        estado,
+        pais,
+        dataNascimento,
+        pis,
+        nomeMae,
+        razaoSocial,
+        nomeFantasia,
+      };
+
+      const prestadorExistente = await Prestador.findOne({
+        $or: [{ sciUnico }, { email }, { sid }, { documento }],
+      });
+
+      if (prestadorExistente) {
+        console.log("Prestador already exists");
+        continue;
+      }
+
+      const novoPrestador = new Prestador({
+        ...prestadorFields,
+      });
+
+      console.log("Prestador criado:", novoPrestador);
+    }
+
+    return res.status(200).json();
+  } catch (error) {
+    return res.status(500).json();
+  }
 };
 
 exports.importarRPAs = async (req, res) => {
@@ -591,5 +676,124 @@ exports.importarRPAs = async (req, res) => {
     await emailUtils.emailImportarRpas({ detalhes, usuario: req.usuario });
   } catch (error) {
     console.error(error);
+  }
+};
+
+exports.importarServicos = async (req, res) => {
+  console.log("[PROCESSANDO ARQUIVOS]:");
+
+  try {
+    const arquivo = req.files[0];
+
+    const workbook = XLSX.readFile(arquivo.path);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+      header: 1,
+      defval: "",
+    });
+
+    console.log("[LINHAS LIDAS]:", jsonData.length);
+
+    const detalhes = {
+      totalDeLinhasLidas: jsonData.length,
+      linhasLidasComErro: 0,
+      novosPrestadores: 0,
+      novosServicos: 0,
+      errors: "",
+    };
+
+    for (const [i, value] of jsonData.entries()) {
+      if (i === 0) continue;
+
+      const row = {
+        tipoDocumentoFiscal: value[0],
+
+        prestador: {
+          sid: value[3],
+          documento: value[19],
+          nome: value[20],
+        },
+
+        periodo: converterNumeroSerieParaData(value[5]),
+
+        valores: {
+          grossValue: value[6],
+          bonus: value[7],
+          ajusteComercial: value[8],
+          paidPlacement: value[9],
+
+          revisionMonthProvision: converterNumeroSerieParaData(value[11]),
+
+          revisionGrossValue: value[12],
+          revisionProvisionBonus: value[13],
+          revisionComissaoPlataforma: value[14],
+          revisionPaidPlacement: value[15],
+        },
+      };
+
+      try {
+        const { numero, tipo } = CNPJouCPF(row?.prestador?.documento);
+
+        let prestador = await Prestador.findOne({
+          $or: [
+            { sid: row?.prestador?.sid },
+            { documento: row?.prestador?.documento },
+          ],
+        });
+
+        if (!prestador) {
+          prestador = new Prestador({
+            sid: row?.prestador?.sid,
+            nome: row?.prestador?.nome,
+            status: "em-analise",
+            documento: numero,
+            tipo: row?.type === "INVOICE" ? "ext" : tipo,
+          });
+
+          await prestador.save();
+          detalhes.novosPrestadores += 1;
+        }
+
+        const servico = new Servico({
+          prestador: prestador._id,
+          competencia: {
+            mes: getMonth(row?.periodo) + 1,
+            ano: getYear(row?.periodo),
+          },
+          valores: { ...row?.valores },
+          tipoDocumentoFiscal: row?.tipoDocumentoFiscal,
+          status: "pendente",
+        });
+
+        await servico.save();
+        detalhes.novosServicos += 1;
+
+        console.log("[RESULTADO]", servico, prestador, "\n");
+      } catch (error) {
+        detalhes.linhasLidasComErro += 1;
+        detalhes.errors += `❌ [ERROR AO PROCESSAR LINHA]: ${i + 1} [SID: ${row?.prestador?.sid} - PRESTADOR: ${row?.prestador?.nome}] - \nDETALHES DO ERRO: ${error}\n\n`;
+
+        console.log("Ouve um erro", error, "\n", detalhes.errors);
+      }
+    }
+
+    await emailUtils.importarComissõesDetalhes({
+      detalhes: {
+        linhasEncontradas: detalhes?.totalDeLinhasLidas,
+        linhasLidasComErro: detalhes?.linhasLidasComErro,
+        totalDeNovosPrestadores: detalhes?.novosPrestadores,
+        totalDeNovosTickets: detalhes?.novosServicos,
+      },
+      usuario: req.usuario,
+    });
+
+    console.log("[EMAIL ENVIADO PARA]:", req.usuario.email);
+    fs.unlinkSync(arquivo.path);
+
+    return res.status(200).json();
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json();
   }
 };

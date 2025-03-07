@@ -6,21 +6,21 @@ const router = express.Router();
 // Rotas para CRUD de Prestador
 router.post(
   "/adicionar-e-criar-ticket",
-  prestadorController.adicionarPrestadorECriarTicket,
+  prestadorController.adicionarPrestadorECriarTicket
 );
 
 router.post("/", prestadorController.criarPrestador);
 
 router.get(
   "/usuario/:idUsuario",
-  prestadorController.obterPrestadorPorIdUsuario,
+  prestadorController.obterPrestadorPorIdUsuario
 );
 
 router.get("/sid/:sid", prestadorController.obterPrestadorPorSid);
 
 router.get(
   "/documento/:documento",
-  prestadorController.obterPrestadorPorDocumento,
+  prestadorController.obterPrestadorPorDocumento
 );
 
 router.get("/email/:email", prestadorController.obterPrestadorPorEmail);

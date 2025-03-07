@@ -58,18 +58,31 @@ const uploadRpas = multer({
   limits: { fileSize: 1 * 1024 * 1024 }, // Limite de 1MB por arquivo
 });
 
+router.post("/exportar-servicos", acaoEtapaController.exportarServicos);
+router.post("/exportar-prestadores", acaoEtapaController.exportarPrestadores);
+
 router.post(
   "/importar-comissoes",
   upload.single("file"),
-  acaoEtapaController.importarComissoes,
+  acaoEtapaController.importarComissoes
 );
-router.post("/exportar-servicos", acaoEtapaController.exportarServicos);
-router.post("/exportar-prestadores", acaoEtapaController.exportarPrestadores);
-router.post("/importar-prestadores", acaoEtapaController.importarPrestadores);
+
+router.post(
+  "/importar-servicos",
+  upload.array("file"),
+  acaoEtapaController.importarServicos
+);
+
+router.post(
+  "/importar-prestadores",
+  upload.array("file"),
+  acaoEtapaController.importarPrestadores
+);
+
 router.post(
   "/importar-rpas",
   uploadRpas.array("file", 50),
-  acaoEtapaController.importarRPAs,
+  acaoEtapaController.importarRPAs
 );
 
 module.exports = router;
