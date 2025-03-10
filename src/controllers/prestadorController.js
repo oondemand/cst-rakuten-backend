@@ -185,45 +185,14 @@ exports.obterPrestador = async (req, res) => {
 // Atualizar um Prestador
 exports.atualizarPrestador = async (req, res) => {
   try {
-    const usuario = req.usuario;
-
-    // Verificar se o tipo de usuário é "prestador"
-    // if (usuario.tipo === "prestador") req.body.status = "em-analise";
-
-    console.log("ID", req.params.id);
-
     const prestador = sincronizarPrestador({
       id: req.params.id,
       body: req.body,
     });
 
-    // const prestador = await Prestador.findByIdAndUpdate(
-    //   req.params.id,
-    //   req.body
-    // );
-
     if (!prestador) {
       return res.status(404).json({ message: "Prestador não encontrado" });
     }
-
-    // if (req.body?.sciUnico) {
-    //   const sci = await Prestador.findOne({
-    //     sciUnico: req.body.sciUnico,
-    //   });
-
-    //   if (sci && sci._id.toString() !== prestador._id.toString()) {
-    //     return res.status(409).json({
-    //       message: "Já existe um prestador com esse sciUnico registrado",
-    //     });
-    //   }
-    // }
-
-    // // Atualiza apenas os campos fornecidos no corpo da requisição
-    // Object.keys(req.body).forEach((key) => {
-    //   prestador[key] = req.body[key];
-    // });
-
-    // await prestador.save();
 
     res.status(200).json({
       message: "Prestador atualizado com sucesso!",
@@ -296,5 +265,62 @@ exports.obterPrestadorPorPis = async (req, res) => {
       message: "Erro ao obter prestador",
       detalhes: error.message,
     });
+  }
+};
+
+exports.prestadorWebHook = async (req, res) => {
+  try {
+    console.log("--", req.body);
+
+    const { event, ping, topic } = req.body;
+    if (ping === "omie") return res.status(200).json({ message: "pong" });
+
+    if (topic === "ClienteFornecedor.Alterado") {
+      const documento = event?.cnpj_cpf
+        ? Number(event.cnpj_cpf.replaceAll(".", "").replaceAll("-", ""))
+        : null;
+
+      const prestadorOmie = {
+        nome: event.razao_social,
+        tipo:
+          event?.pessoa_fisica === "S"
+            ? "pf"
+            : event?.pessoa_fisica === "pf"
+              ? "pf"
+              : "ext",
+        documento,
+        dadosBancarios: {
+          banco: event?.dadosBancarios?.codigo_banco ?? "",
+          agencia: event?.dadosBancarios?.agencia ?? "",
+          conta: event?.dadosBancarios?.conta_corrente ?? "",
+        },
+        email: event?.email ?? "",
+        endereco: {
+          cep: event?.cep ?? "",
+          rua: event?.endereco ?? "",
+          numero: event?.endereco_numero ? Number(event?.endereco_numero) : "",
+          complemento: event?.complemento ?? complemento,
+          cidade: event?.cidade ?? "",
+          estado: event?.estado ?? "",
+        },
+      };
+
+      const prestador = await Prestador.findOneAndUpdate(
+        {
+          $or: [{ documento }, { email: event.email }],
+        },
+        { ...prestadorOmie }
+      );
+
+      await prestador.save();
+      console.log("Prestador", prestador);
+    }
+
+    res
+      .status(200)
+      .json({ message: "Webhook recebido. Dados sendo atualizados." });
+  } catch (error) {
+    console.error("Erro ao processar o webhook:", error);
+    res.status(500).json({ error: "Erro ao processar o webhook." });
   }
 };
