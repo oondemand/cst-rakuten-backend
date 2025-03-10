@@ -4,7 +4,7 @@ metadata:
   name: cst-rakuten-backend
   namespace: rakuten
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: cst-rakuten-backend
