@@ -345,6 +345,96 @@ exports.importarComissoes = async (req, res) => {
   }
 };
 
+exports.importarRPAs = async (req, res) => {
+  const arquivos = req.files;
+
+  if (arquivos === 0) {
+    return res.status(400).json({ message: "Nenhum arquivo enviado." });
+  }
+
+  res.status(200).json({ message: "Arquivos recebidos e sendo processados!" });
+
+  const anexarArquivoAoTicket = async (arquivo) => {
+    const detalhes = {};
+    const sciUnico = arquivo.originalname.replace(".pdf", "").split("_")[2];
+
+    if (!sciUnico || isNaN(sciUnico)) {
+      throw `Erro ao fazer upload de arquivo ${arquivo.originalname}; sciUnico não encontrado no nome do arquivo ou não é um número válido`;
+    }
+
+    const prestador = await Prestador.findOne({ sciUnico: sciUnico });
+
+    if (!prestador) {
+      throw `Erro ao fazer upload de arquivo ${arquivo.originalname} - Não foi encontrado um prestador com sciUnico: ${sciUnico}`;
+    }
+
+    const ticket = await Ticket.findOne({
+      etapa: "integracao-unico",
+      prestador,
+      status: "trabalhando",
+    });
+
+    if (!ticket) {
+      throw `Erro ao fazer upload de arquivo ${arquivo.originalname} - Não foi encontrado um ticket aberto e com status trabalhando referente ao prestador ${prestador.name} - sciUnico: ${prestador.sciUnico}`;
+    }
+
+    const novoArquivoDoTicket = new Arquivo({
+      nome: criarNomePersonalizado({ nomeOriginal: arquivo.originalname }),
+      nomeOriginal: arquivo.originalname,
+      path: arquivo.path,
+      mimetype: arquivo.mimetype,
+      size: arquivo.size,
+      ticket: ticket._id,
+      buffer: arquivo.buffer,
+      tipo: "rpa",
+    });
+    await novoArquivoDoTicket.save();
+
+    ticket.arquivos.push(novoArquivoDoTicket._id);
+
+    ticket.etapa = "aprovacao-pagamento";
+    ticket.status = "aguardando-inicio";
+
+    await ticket.save();
+
+    ControleAlteracaoService.registrarAlteracao({
+      acao: "alterar",
+      dataHora: new Date(),
+      idRegistroAlterado: ticket._id,
+      origem: "integracao-sci",
+      dadosAtualizados: ticket,
+      tipoRegistroAlterado: "ticket",
+      usuario: req.usuario._id,
+    });
+
+    return ticket;
+  };
+
+  try {
+    let detalhes = {
+      erros: { quantidade: 0, logs: "" },
+      sucesso: 0,
+    };
+
+    for (const arquivo of arquivos) {
+      try {
+        const ticket = await anexarArquivoAoTicket(arquivo);
+        if (ticket) {
+          detalhes.sucesso += 1;
+        }
+      } catch (error) {
+        detalhes.erros.quantidade += 1;
+        detalhes.erros.logs += JSON.stringify(error).concat("\n\n");
+        console.error(error);
+      }
+    }
+
+    await emailUtils.emailImportarRpas({ detalhes, usuario: req.usuario });
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 exports.exportarServicos = async (req, res) => {
   try {
     const tickets = await Ticket.find({
@@ -515,167 +605,90 @@ exports.importarPrestadores = async (req, res) => {
 
     for (const [i, value] of jsonData.entries()) {
       if (i == 0) continue;
-      const [
-        sciUnico,
-        manager,
-        nome,
-        sid,
-        tipo,
-        documento,
-        banco,
-        agencia,
-        conta,
-        tipoConta,
-        email,
-        cep,
-        rua,
-        numero,
-        complemento,
-        cidade,
-        estado,
-        pais,
-        dataNascimento,
-        pis,
-        nomeMae,
-        razaoSocial,
-        nomeFantasia,
-      ] = value;
 
-      const prestadorFields = {
-        sciUnico,
-        manager,
-        nome,
-        sid,
-        tipo,
-        documento,
-        banco,
-        agencia,
-        conta,
-        tipoConta,
-        email,
-        cep,
-        rua,
-        numero,
-        complemento,
-        cidade,
-        estado,
-        pais,
-        dataNascimento,
-        pis,
-        nomeMae,
-        razaoSocial,
-        nomeFantasia,
+      console.log({ pais: value[17] });
+
+      const row = {
+        sciUnico: value[0],
+        manager: value[1],
+        nome: value[2],
+        sid: value[3],
+        tipo: value[4],
+        documento: value[5],
+        dadosBancarios: {
+          banco: value[6],
+          agencia: value[7],
+          conta: value[8],
+          tipoConta: value[9],
+        },
+        email: value[10],
+        endereco: {
+          cep: value[11],
+          rua: value[12],
+          numero: value[13],
+          complemento: value[14],
+          cidade: value[15],
+          estado: value[16],
+          // pais: { nome: value[17] },
+        },
+        pessoaFisica: {
+          dataNascimento: value[18],
+          pis: value[19],
+          nomeMae: value[20],
+        },
+        pessoaJuridica: { nomeFantasia: value[21] },
       };
 
-      const prestadorExistente = await Prestador.findOne({
-        $or: [{ sciUnico }, { email }, { sid }, { documento }],
-      });
+      let prestador = await Prestador.findOneAndUpdate(
+        {
+          $or: [
+            { sciUnico: row?.sciUnico },
+            { email: row?.email },
+            { sid: row?.sid },
+            { documento: row?.documento },
+          ],
+        },
+        row
+      );
 
-      if (prestadorExistente) {
-        console.log("Prestador already exists");
-        continue;
+      const { numero, tipo } = CNPJouCPF(row?.documento);
+
+      if (!prestador) {
+        const prestadorOmie = await buscarPrestadorOmie({
+          documento: numero,
+        });
+
+        prestador = new Prestador({
+          ...prestadorOmie,
+          sid: row?.sid,
+          nome: row?.nome,
+          status: "em-analise",
+        });
+
+        await prestador.save();
+        console.log("Prestador criado via omie:");
       }
 
-      const novoPrestador = new Prestador({
-        ...prestadorFields,
-      });
+      if (!prestador) {
+        prestador = new Prestador({
+          ...row,
+          sid: row.sid,
+          status: "em-analise",
+          documento: numero,
+          tipo: row?.tipo.toLowerCase() === "invoice" ? "ext" : tipo,
+        });
 
-      console.log("Prestador criado:", novoPrestador);
+        await prestador.save();
+        console.log("Prestador criado via planilha:");
+      }
+
+      await prestador.save();
     }
 
     return res.status(200).json();
   } catch (error) {
+    console.log(error);
     return res.status(500).json();
-  }
-};
-
-exports.importarRPAs = async (req, res) => {
-  const arquivos = req.files;
-
-  if (arquivos === 0) {
-    return res.status(400).json({ message: "Nenhum arquivo enviado." });
-  }
-
-  res.status(200).json({ message: "Arquivos recebidos e sendo processados!" });
-
-  const anexarArquivoAoTicket = async (arquivo) => {
-    const detalhes = {};
-    const sciUnico = arquivo.originalname.replace(".pdf", "").split("_")[2];
-
-    if (!sciUnico || isNaN(sciUnico)) {
-      throw `Erro ao fazer upload de arquivo ${arquivo.originalname}; sciUnico não encontrado no nome do arquivo ou não é um número válido`;
-    }
-
-    const prestador = await Prestador.findOne({ sciUnico: sciUnico });
-
-    if (!prestador) {
-      throw `Erro ao fazer upload de arquivo ${arquivo.originalname} - Não foi encontrado um prestador com sciUnico: ${sciUnico}`;
-    }
-
-    const ticket = await Ticket.findOne({
-      etapa: "integracao-unico",
-      prestador,
-      status: "trabalhando",
-    });
-
-    if (!ticket) {
-      throw `Erro ao fazer upload de arquivo ${arquivo.originalname} - Não foi encontrado um ticket aberto e com status trabalhando referente ao prestador ${prestador.name} - sciUnico: ${prestador.sciUnico}`;
-    }
-
-    const novoArquivoDoTicket = new Arquivo({
-      nome: criarNomePersonalizado({ nomeOriginal: arquivo.originalname }),
-      nomeOriginal: arquivo.originalname,
-      path: arquivo.path,
-      mimetype: arquivo.mimetype,
-      size: arquivo.size,
-      ticket: ticket._id,
-      buffer: arquivo.buffer,
-      tipo: "rpa",
-    });
-    await novoArquivoDoTicket.save();
-
-    ticket.arquivos.push(novoArquivoDoTicket._id);
-
-    ticket.etapa = "aprovacao-pagamento";
-    ticket.status = "aguardando-inicio";
-
-    await ticket.save();
-
-    ControleAlteracaoService.registrarAlteracao({
-      acao: "alterar",
-      dataHora: new Date(),
-      idRegistroAlterado: ticket._id,
-      origem: "integracao-sci",
-      dadosAtualizados: ticket,
-      tipoRegistroAlterado: "ticket",
-      usuario: req.usuario._id,
-    });
-
-    return ticket;
-  };
-
-  try {
-    let detalhes = {
-      erros: { quantidade: 0, logs: "" },
-      sucesso: 0,
-    };
-
-    for (const arquivo of arquivos) {
-      try {
-        const ticket = await anexarArquivoAoTicket(arquivo);
-        if (ticket) {
-          detalhes.sucesso += 1;
-        }
-      } catch (error) {
-        detalhes.erros.quantidade += 1;
-        detalhes.erros.logs += JSON.stringify(error).concat("\n\n");
-        console.error(error);
-      }
-    }
-
-    await emailUtils.emailImportarRpas({ detalhes, usuario: req.usuario });
-  } catch (error) {
-    console.error(error);
   }
 };
 
@@ -706,70 +719,141 @@ exports.importarServicos = async (req, res) => {
     for (const [i, value] of jsonData.entries()) {
       if (i === 0) continue;
 
+      const competencia = value[6].split("/");
+
       const row = {
-        tipoDocumentoFiscal: value[0],
-
         prestador: {
-          sid: value[3],
-          documento: value[19],
-          nome: value[20],
+          nome: value[0],
+          sid: value[1],
+          documento: value[2],
         },
-
-        periodo: converterNumeroSerieParaData(value[5]),
+        tipoDocumentoFiscal: value[3],
+        dataProvisaoContabil: value[4],
+        dataRegistro: [5],
+        competencia: {
+          mes: competencia[0] ? Number(competencia[0]) : null,
+          ano: competencia[1] ? Number(competencia[1]) : null,
+        },
+        campanha: value[7],
 
         valores: {
-          grossValue: value[6],
-          bonus: value[7],
-          ajusteComercial: value[8],
-          paidPlacement: value[9],
+          grossValue: value[8],
+          bonus: value[9],
+          ajusteComercial: value[10],
+          paidPlacement: value[11],
 
-          revisionMonthProvision: converterNumeroSerieParaData(value[11]),
+          revisionMonthProvision: value[12],
 
-          revisionGrossValue: value[12],
-          revisionProvisionBonus: value[13],
-          revisionComissaoPlataforma: value[14],
-          revisionPaidPlacement: value[15],
+          revisionGrossValue: value[13],
+          revisionProvisionBonus: value[14],
+          revisionComissaoPlataforma: value[15],
+          revisionPaidPlacement: value[16],
         },
       };
 
       try {
         const { numero, tipo } = CNPJouCPF(row?.prestador?.documento);
+        let prestador = await Prestador.findOne({ sid: row?.prestador?.sid });
 
-        let prestador = await Prestador.findOne({
-          $or: [
-            { sid: row?.prestador?.sid },
-            { documento: row?.prestador?.documento },
-          ],
-        });
+        if (!prestador) {
+          const prestadorOmie = await buscarPrestadorOmie({
+            documento: numero,
+          });
+
+          if (prestadorOmie) {
+            prestador = new Prestador({
+              ...prestadorOmie,
+              sid: row?.prestador?.sid,
+              nome: row?.prestador?.nome,
+              status: "em-analise",
+            });
+
+            await prestador.save();
+            detalhes.novosPrestadores += 1;
+            console.log("Criando prestador via omie");
+          }
+        }
 
         if (!prestador) {
           prestador = new Prestador({
             sid: row?.prestador?.sid,
             nome: row?.prestador?.nome,
             status: "em-analise",
-            documento: numero,
-            tipo: row?.type === "INVOICE" ? "ext" : tipo,
+            documento: numero || null,
+            tipo:
+              row?.tipoDocumentoFiscal.toLowerCase() === "invoice"
+                ? "ext"
+                : tipo,
           });
 
           await prestador.save();
           detalhes.novosPrestadores += 1;
+          console.log("Criando prestador via planilha");
         }
 
-        const servico = new Servico({
+        if (prestador.email && !prestador.usuario) {
+          let usuario = await Usuario.findOne({ email: prestador.email });
+
+          if (!usuario) {
+            usuario = new Usuario({
+              email: prestador.email,
+              nome: prestador.nome,
+              tipo: "prestador",
+              senha: "123456",
+            });
+
+            await usuario.save();
+          }
+
+          prestador.usuario = usuario._id;
+          await prestador.save();
+
+          const token = usuario.gerarToken();
+
+          const url = new URL(
+            "/first-login",
+            process.env.BASE_URL_APP_PUBLISHER
+          );
+
+          url.searchParams.append("code", token);
+
+          //mostra url para não ter que verificar no email
+          console.log("URL", url.toString());
+
+          await emailUtils.emailLinkCadastroUsuarioPrestador({
+            email: req.usuario.email,
+            nome: prestador?.nome,
+            url: url?.toString(),
+          });
+        }
+
+        let servico = await Servico.findOne({
           prestador: prestador._id,
-          competencia: {
-            mes: getMonth(row?.periodo) + 1,
-            ano: getYear(row?.periodo),
-          },
-          valores: { ...row?.valores },
-          tipoDocumentoFiscal: row?.tipoDocumentoFiscal,
-          status: "pendente",
+          "competencia.mes": row?.competencia?.mes,
+          "competencia.ano": row?.competencia?.ano,
         });
+
+        if (servico) {
+          console.log("atualizando serviço");
+          servico.competencia = { ...row?.competencia };
+          servico.valores = { ...row?.valores };
+          servico.tipoDocumentoFiscal = row?.tipoDocumentoFiscal;
+          servico.status = "pendente";
+        }
+
+        if (!servico) {
+          console.log("criando novo serviço");
+          servico = new Servico({
+            prestador: prestador._id,
+            competencia: { ...row?.competencia },
+            valores: { ...row?.valores },
+            tipoDocumentoFiscal: row?.tipoDocumentoFiscal,
+            status: "pendente",
+          });
+        }
 
         await servico.save();
         detalhes.novosServicos += 1;
-
-        console.log("[RESULTADO]", servico, prestador, "\n");
       } catch (error) {
         detalhes.linhasLidasComErro += 1;
         detalhes.errors += `❌ [ERROR AO PROCESSAR LINHA]: ${i + 1} [SID: ${row?.prestador?.sid} - PRESTADOR: ${row?.prestador?.nome}] - \nDETALHES DO ERRO: ${error}\n\n`;
@@ -790,7 +874,6 @@ exports.importarServicos = async (req, res) => {
 
     console.log("[EMAIL ENVIADO PARA]:", req.usuario.email);
     fs.unlinkSync(arquivo.path);
-
     return res.status(200).json();
   } catch (error) {
     console.log(error);

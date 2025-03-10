@@ -1,6 +1,9 @@
 // src/controllers/prestadorController.js
 const Prestador = require("../models/Prestador");
 const Ticket = require("../models/Ticket");
+const {
+  sincronizarPrestador,
+} = require("../services/omie/sincronizarPrestador");
 const filtersUtils = require("../utils/filter");
 
 // Método para obter prestador pelo idUsuario
@@ -187,10 +190,17 @@ exports.atualizarPrestador = async (req, res) => {
     // Verificar se o tipo de usuário é "prestador"
     // if (usuario.tipo === "prestador") req.body.status = "em-analise";
 
-    const prestador = await Prestador.findByIdAndUpdate(
-      req.params.id,
-      req.body
-    );
+    console.log("ID", req.params.id);
+
+    const prestador = sincronizarPrestador({
+      id: req.params.id,
+      body: req.body,
+    });
+
+    // const prestador = await Prestador.findByIdAndUpdate(
+    //   req.params.id,
+    //   req.body
+    // );
 
     if (!prestador) {
       return res.status(404).json({ message: "Prestador não encontrado" });
