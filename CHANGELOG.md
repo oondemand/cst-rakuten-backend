@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.0 (2025-03-10)
+
+### Features
+
+* add estado model, controller, and router; update deployment configurations for homolog environment ([7575f40](https://github.com/oondemand/cst-rakuten-backend/commit/7575f409384bfe29b356196284c537d87b257ff7))
+
 ## 1.2.14 (2025-02-21)
 
 ## 1.2.13 (2025-02-20)
