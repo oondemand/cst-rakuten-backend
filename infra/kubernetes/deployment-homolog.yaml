@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: cst-rakuten-backend-container
-          image: ghcr.io/oondemand/cst-rakuten-backend:${IMAGE_TAG}
+          image: ghcr.io/oondemand/cst-rakuten-backend:${IMAGE_TAG}-homolog
           ports:
             - containerPort: 4000
           resources:
