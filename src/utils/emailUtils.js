@@ -240,13 +240,13 @@ const importarComissõesDetalhes = async ({ usuario, detalhes }) => {
     // Template do corpo do e-mail com o link para recuperação de senha
     const corpo = `<h1>Olá, ${usuario.nome}!</h1>
     <p>Segue o relatório sobre a importação de comissões:</p>
-    <p>Linhas lidas: ${detalhes.linhasEncontradas}</p>
-    <p>Linhas com erro: ${detalhes.linhasLidasComErro}</p>
-    <p>Linhas com sucesso: ${detalhes.linhasEncontradas - detalhes.linhasLidasComErro}</p>
-    <p>Total de serviços criados: ${detalhes.linhasEncontradas - detalhes.linhasLidasComErro}</p>
-    <p>Total novos prestadores criados: ${detalhes.totalDeNovosPrestadores}</p>
-    <p>Total de novos tickets criados: ${detalhes.totalDeNovosTickets}</p>
-    <p>Valor total lido: ${detalhes.valorTotalLido.toFixed(2).replace(".", ",")}</p>`;
+    <p>Linhas lidas: ${detalhes?.linhasEncontradas}</p>
+    <p>Linhas com erro: ${detalhes?.linhasLidasComErro}</p>
+    <p>Linhas com sucesso: ${detalhes?.linhasEncontradas - detalhes?.linhasLidasComErro}</p>
+    <p>Total de serviços criados: ${detalhes?.linhasEncontradas - detalhes?.linhasLidasComErro}</p>
+    <p>Total novos prestadores criados: ${detalhes?.totalDeNovosPrestadores}</p>
+    <p>Total de novos tickets criados: ${detalhes?.totalDeNovosTickets}</p>
+    <p>Valor total lido: ${detalhes?.valorTotalLido?.toFixed(2)?.replace(".", ",")}</p>`;
 
     if (process.env.NODE_ENV === "development") {
       // console.log(corpo);
