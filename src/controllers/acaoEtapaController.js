@@ -26,6 +26,7 @@ const { criarNomePersonalizado } = require("../utils/formatters");
 const clienteService = require("../services/omie/clienteService");
 const Usuario = require("../models/Usuario");
 const { ControleAlteracaoService } = require("../services/controleAlteracao");
+const { parse } = require("date-fns");
 
 const buscarPrestadorOmie = async ({ documento }) => {
   try {
@@ -632,7 +633,7 @@ exports.importarPrestadores = async (req, res) => {
           // pais: { nome: value[17] },
         },
         pessoaFisica: {
-          dataNascimento: value[18],
+          dataNascimento: parse(value[18], "dd/MM/yyyy", new Date()),
           pis: value[19],
           nomeMae: value[20],
         },
@@ -727,8 +728,8 @@ exports.importarServicos = async (req, res) => {
           sid: value[1],
           documento: value[2],
         },
-        tipoDocumentoFiscal: value[3],
-        dataProvisaoContabil: value[4],
+        tipoDocumentoFiscal: parse(value[3], "dd/MM/yyyy", new Date()),
+        dataProvisaoContabil: parse(value[4], "dd/MM/yyyy", new Date()),
         dataRegistro: [5],
         competencia: {
           mes: competencia[0] ? Number(competencia[0]) : null,
