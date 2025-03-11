@@ -4,14 +4,8 @@ const { obterCodigoBanco } = require("../../utils/brasilApi");
 
 const BaseOmie = require("../../models/BaseOmie");
 
-exports.sincronizarPrestador = async ({ body, id }) => {
+exports.sincronizarPrestador = async ({ prestador, id }) => {
   try {
-    const prestador = await Prestador.findByIdAndUpdate(id, body, {
-      new: true,
-    });
-
-    await prestador.save();
-
     const { appKey, appSecret } = await BaseOmie.findOne({ status: "ativo" });
 
     let banco;

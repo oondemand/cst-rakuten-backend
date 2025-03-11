@@ -99,7 +99,7 @@ exports.criarPrestador = async (req, res) => {
       prestador,
     });
   } catch (error) {
-    // console.error("Erro ao criar prestador:", error);
+    console.error("Erro ao criar prestador:", error);
     res.status(500).json({
       message: "Erro ao criar prestador",
       detalhes: error.message,
@@ -185,9 +185,19 @@ exports.obterPrestador = async (req, res) => {
 // Atualizar um Prestador
 exports.atualizarPrestador = async (req, res) => {
   try {
-    const prestador = sincronizarPrestador({
-      id: req.params.id,
-      body: req.body,
+    const prestador = await Prestador.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+      }
+    );
+
+    await prestador.save();
+
+    sincronizarPrestador({
+      id: prestador._id,
+      prestador,
     });
 
     if (!prestador) {
