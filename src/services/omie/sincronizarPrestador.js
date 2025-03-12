@@ -8,12 +8,6 @@ exports.sincronizarPrestador = async ({ prestador, id }) => {
   try {
     const { appKey, appSecret } = await BaseOmie.findOne({ status: "ativo" });
 
-    let banco;
-
-    if (prestador?.dadosBancarios?.banco) {
-      banco = await obterCodigoBanco(prestador.dadosBancarios.banco);
-    }
-
     let fornecedor = null;
 
     fornecedor = await clienteService.pesquisarPorCNPJ(
@@ -42,7 +36,7 @@ exports.sincronizarPrestador = async ({ prestador, id }) => {
       // cidade: prestador.endereco ? prestador.endereco.cidade : "",
       // estado: prestador.endereco ? prestador.endereco.estado : "",
       razaoSocial: prestador.nome,
-      banco: banco ?? "",
+      banco: prestador?.dadosBancarios?.banco ?? "",
       agencia: prestador.dadosBancarios ? prestador.dadosBancarios.agencia : "",
       conta: prestador.dadosBancarios ? prestador.dadosBancarios.conta : "",
       tipoConta: prestador.dadosBancarios
