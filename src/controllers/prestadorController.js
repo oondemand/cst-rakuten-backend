@@ -195,10 +195,10 @@ exports.atualizarPrestador = async (req, res) => {
 
     await prestador.save();
 
-    sincronizarPrestador({
-      id: prestador._id,
-      prestador,
-    });
+    // sincronizarPrestador({
+    //   id: prestador._id,
+    //   prestador,
+    // });
 
     if (!prestador) {
       return res.status(404).json({ message: "Prestador não encontrado" });

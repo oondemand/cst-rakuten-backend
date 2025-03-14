@@ -131,7 +131,7 @@ exports.getAllTickets = async (req, res) => {
       .populate("prestador", "nome documento sid sciUnico")
       .populate({
         path: "servicos",
-        select: "mesCompetencia anoCompetencia competencia valorTotal",
+        select: "competencia valores valor",
         options: { virtuals: true },
       })
       .populate("contaPagarOmie");
