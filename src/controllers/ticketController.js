@@ -62,15 +62,7 @@ exports.updateTicket = async (req, res) => {
   try {
     const ticket = await Ticket.findByIdAndUpdate(
       req.params.id,
-      {
-        baseOmie: baseOmieId,
-        titulo,
-        observacao,
-        etapa,
-        status,
-        servicos: servicosIds,
-        prestador: prestadorId,
-      },
+      { ...req.body },
       { new: true, runValidators: true }
     );
 
@@ -128,15 +120,10 @@ exports.getAllTickets = async (req, res) => {
       ...filtros,
       status: { $ne: "arquivado" },
     })
-      .populate("prestador", "nome documento sid sciUnico")
-      .populate({
-        path: "servicos",
-        select: "competencia valores valor",
-        options: { virtuals: true },
-      })
+      .populate("prestador")
+      .populate("servicos")
+      .populate("arquivos", "nomeOriginal size mimetype tipo")
       .populate("contaPagarOmie");
-
-    // console.log(tickets);
 
     res.status(200).json(tickets);
   } catch (error) {
@@ -419,6 +406,18 @@ exports.getArchivedTickets = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Erro ao buscar tickets arquivados",
+      detalhes: error.message,
+    });
+  }
+};
+
+exports.getArquivoPorId = async (req, res) => {
+  try {
+    const arquivo = await Arquivo.findById(req.params.id);
+    res.status(200).json(arquivo);
+  } catch (error) {
+    res.status(500).json({
+      message: "Erro ao buscar arquivo!",
       detalhes: error.message,
     });
   }

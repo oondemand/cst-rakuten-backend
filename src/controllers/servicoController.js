@@ -1,5 +1,6 @@
 // src/controllers/servicoController.js
 const Servico = require("../models/Servico");
+const Prestador = require("../models/Prestador");
 const Ticket = require("../models/Ticket");
 const filtersUtils = require("../utils/filter");
 
@@ -116,74 +117,169 @@ exports.updateServico = async (req, res) => {
   }
 };
 
-  exports.listarServicos = async (req, res) => {
-    try {
-      const { sortBy, pageIndex, pageSize, searchTerm, ...rest } = req.query;
+exports.listarServicos = async (req, res) => {
+  try {
+    const { sortBy, pageIndex, pageSize, searchTerm, ...rest } = req.query;
 
-      const schema = Servico.schema;
+    const schema = Servico.schema;
 
-      const camposBusca = [
-        "valor",
-        "prestador.nome",
-        "prestador.sid",
-        "prestador.documento",
-        "campanha",
-        "status",
-        "valores.grossValue",
-        "valores.bonus",
-      ];
+    const camposBusca = [
+      "tipoDocumentoFiscal",
+      "valores.grossValue",
+      "competencia.mes",
+      "competencia.ano",
+      "valores.bonus",
+      "valor",
+      "campanha",
+      "status",
+    ];
 
-      const queryResult = filtersUtils.buildQuery({
-        filtros: rest,
+    // procura ids dos prestadores pelo nome documento e sid
+    const prestadoresIds = await Prestador.find({
+      $or: [
+        { nome: { $regex: searchTerm, $options: "i" } },
+        {
+          ...(!isNaN(Number(searchTerm))
+            ? { documento: Number(searchTerm) }
+            : {}),
+        },
+        { ...(!isNaN(Number(searchTerm)) ? { sid: Number(searchTerm) } : {}) },
+      ],
+    }).select("_id");
+
+    // monta a query que ira buscar os prestadores pelos ids referentes
+    const queryResult = {
+      $and: [
+        filtersUtils.buildQuery({ filtros: rest, schema }),
+        {
+          $or: [
+            filtersUtils.querySearchTerm({
+              searchTerm,
+              schema,
+              camposBusca,
+            }),
+
+            ...(prestadoresIds.length > 0
+              ? [{ prestador: { $in: prestadoresIds.map((e) => e._id) } }]
+              : []),
+          ],
+        },
+      ],
+    };
+
+    let sorting = {};
+
+    if (sortBy) {
+      const [campo, direcao] = sortBy.split(".");
+      const campoFormatado = campo.replaceAll("_", ".");
+      sorting[campoFormatado] = direcao === "desc" ? -1 : 1;
+    }
+
+    const page = parseInt(pageIndex) || 0;
+    const limite = parseInt(pageSize) || 10;
+    const skip = page * limite;
+
+    const [servicos, totalDeServicos] = await Promise.all([
+      Servico.find(queryResult)
+        .populate("prestador", "sid nome documento")
+        .skip(skip)
+        .limit(limite),
+      Servico.countDocuments(queryResult),
+    ]);
+
+    res.status(200).json({
+      servicos,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalDeServicos / limite),
+        totalItems: totalDeServicos,
+        itemsPerPage: limite,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ error: "Erro ao listar servicoes" });
+  }
+};
+
+exports.listarServicoCompetenciaOuPrestador = async (req, res) => {
+  try {
+    const { searchTerm, pageIndex, pageSize } = req.query;
+    const schema = Servico.schema;
+
+    const prestadoresIds = await Prestador.find({
+      $or: [
+        { nome: { $regex: searchTerm, $options: "i" } },
+        { documento: searchTerm },
+        { sid: searchTerm },
+      ],
+    }).distinct("_id");
+
+    const condicoesBusca = [
+      filtersUtils.querySearchTerm({
         searchTerm,
         schema,
-        camposBusca,
-      });
+        camposBusca: [
+          "competencia.mes",
+          "competencia.ano",
+          "campanha",
+          "valor",
+        ],
+      }),
+    ];
 
-      let sorting = {};
-
-      if (sortBy) {
-        const [campo, direcao] = sortBy.split(".");
-        const campoFormatado = campo.replaceAll("_", ".");
-        sorting[campoFormatado] = direcao === "desc" ? -1 : 1;
-      }
-
-      const page = parseInt(pageIndex) || 0;
-      const limit = parseInt(pageSize) || 10;
-
-      const servicos = await Servico.find(queryResult)
-        .populate("prestador", "sid nome documento")
-        .sort(sorting)
-        .skip(page * limit)
-        .limit(limit);
-
-      const totalDeServicos = await Servico.countDocuments(queryResult);
-
-      const totalPages = Math.ceil(totalDeServicos / limit);
-
-      const response = {
-        servicos,
-        pagination: {
-          currentPage: page,
-          totalPages,
-          totalItems: totalDeServicos,
-          itemsPerPage: limit,
-        },
-      };
-
-      res.status(200).json(response);
-    } catch (error) {
-      console.log(error);
-      res.status(400).json({ error: "Erro ao listar servicoes" });
+    if (prestadoresIds.length) {
+      condicoesBusca.push({ prestador: { $in: prestadoresIds } });
     }
-  };
+
+    const queryResult = { $or: condicoesBusca };
+
+    const pagina = parseInt(pageIndex) || 0;
+    const limite = parseInt(pageSize) || 10;
+    const skip = pagina * limite;
+
+    const [servicos, totalDeServicos] = await Promise.all([
+      Servico.find(queryResult)
+        .populate("prestador", "sid nome documento")
+        .skip(skip)
+        .limit(limite),
+      Servico.countDocuments(queryResult),
+    ]);
+
+    res.status(200).json({
+      servicos,
+      pagination: {
+        currentPage: pagina,
+        totalPages: Math.ceil(totalDeServicos / limite),
+        totalItems: totalDeServicos,
+        itemsPerPage: limite,
+      },
+    });
+  } catch (error) {
+    console.error("Erro na listagem:", error);
+    res
+      .status(400)
+      .json({ error: "Falha ao buscar serviços", details: error.message });
+  }
+};
 
 exports.excluirServico = async (req, res) => {
   try {
-    const servico = await Servico.findByIdAndDelete(req.params.id);
+    const servicoId = req.params.id;
+
+    await Ticket.updateMany(
+      { servicos: servicoId },
+      { $pull: { servicos: servicoId } }
+    );
+
+    const servico = await Servico.findByIdAndDelete(servicoId);
+
+    console.log(servico);
+
     if (!servico)
       return res.status(404).json({ error: "Servico não encontrado" });
-    res.status(204).send();
+
+    res.status(200).json({ data: servico });
   } catch (error) {
     res.status(400).json({ error: "Erro ao excluir servico" });
   }
