@@ -65,6 +65,7 @@ const buscarPrestadorOmie = async ({ documento }) => {
       dadosBancarios: {
         agencia: agencia,
         conta: conta_corrente,
+        banco: codigo_banco,
       },
       email: email,
       endereco: {
@@ -87,6 +88,8 @@ const buscarPrestadorOmie = async ({ documento }) => {
         nomeFantasia: pessoa_fisica !== "S" && razao_social,
       },
     };
+
+    console.log("PRESTADOR OMIE", prestadorOmie);
 
     return prestadorOmie;
   } catch (error) {
@@ -607,8 +610,6 @@ exports.importarPrestadores = async (req, res) => {
     for (const [i, value] of jsonData.entries()) {
       if (i == 0) continue;
 
-      console.log({ pais: value[17] });
-
       const row = {
         sciUnico: value[0],
         manager: value[1],
@@ -633,7 +634,8 @@ exports.importarPrestadores = async (req, res) => {
           // pais: { nome: value[17] },
         },
         pessoaFisica: {
-          dataNascimento: parse(value[18], "dd/MM/yyyy", new Date()),
+          dataNascimento:
+            value[18] !== "" ? parse(value[18], "dd/MM/yyyy", new Date()) : "",
           pis: value[19],
           nomeMae: value[20],
         },
