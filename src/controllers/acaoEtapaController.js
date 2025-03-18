@@ -730,8 +730,8 @@ exports.importarServicos = async (req, res) => {
           sid: value[1],
           documento: value[2],
         },
-        tipoDocumentoFiscal: parse(value[3], "dd/MM/yyyy", new Date()),
-        dataProvisaoContabil: parse(value[4], "dd/MM/yyyy", new Date()),
+        tipoDocumentoFiscal: parse(value[3], "dd/MM/yyyy", new Date()) ?? "",
+        dataProvisaoContabil: parse(value[4], "dd/MM/yyyy", new Date()) ?? "",
         dataRegistro: [5],
         competencia: {
           mes: competencia[0] ? Number(competencia[0]) : null,
@@ -841,7 +841,7 @@ exports.importarServicos = async (req, res) => {
           servico.competencia = { ...row?.competencia };
           servico.valores = { ...row?.valores };
           servico.tipoDocumentoFiscal = row?.tipoDocumentoFiscal;
-          servico.status = "pendente";
+          servico.status = "aberto";
         }
 
         if (!servico) {
@@ -851,7 +851,7 @@ exports.importarServicos = async (req, res) => {
             competencia: { ...row?.competencia },
             valores: { ...row?.valores },
             tipoDocumentoFiscal: row?.tipoDocumentoFiscal,
-            status: "pendente",
+            status: "aberto",
           });
         }
 
