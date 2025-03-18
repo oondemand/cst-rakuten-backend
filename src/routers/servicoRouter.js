@@ -5,6 +5,11 @@ const router = express.Router();
 
 router.get("/", servicoController.listarServicos);
 
+router.get(
+  "/prestador/:prestadorId",
+  servicoController.listarServicoPorPrestador
+);
+
 // Rota para criar um novo serviço e ticket
 router.get("/:id", servicoController.getServicoById);
 router.delete("/:id", servicoController.excluirServico);

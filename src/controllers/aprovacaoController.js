@@ -201,7 +201,6 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
       }
     }
 
-
     // caso de tudo certo, vincula codigo da conta o ticket, muda o status e salva
     ticket.contaPagarOmie = conta._id;
     ticket.status = "concluido";
@@ -250,10 +249,6 @@ const atualizarOuCriarFornecedor = async ({
 
     const prestador = await Prestador.findById(prestadorId);
 
-    prestador.dadosBancarios
-      ? (banco = await obterCodigoBanco(prestador.dadosBancarios.banco))
-      : (banco = "");
-
     let fornecedor = null;
 
     fornecedor = await clienteService.pesquisarPorCNPJ(
@@ -282,7 +277,7 @@ const atualizarOuCriarFornecedor = async ({
       cidade: prestador.endereco ? prestador.endereco.cidade : "",
       estado: prestador.endereco ? prestador.endereco.estado : "",
       razaoSocial: prestador.nome,
-      banco,
+      banco: prestador?.dadosBancarios?.banco ?? "",
       agencia: prestador.dadosBancarios ? prestador.dadosBancarios.agencia : "",
       conta: prestador.dadosBancarios ? prestador.dadosBancarios.conta : "",
       tipoConta: prestador.dadosBancarios
@@ -329,16 +324,16 @@ const cadastrarContaAPagar = async (baseOmie, codigoFornecedor, ticket) => {
     let observacao = `Serviços prestados SID - ${ticket.prestador.sid}\n-- Serviços --\n`;
 
     for (const id of ticket.servicos) {
-      const { valorTotal, mesCompetencia, anoCompetencia } =
+      const { valor, mesCompetencia, anoCompetencia } =
         await Servico.findById(id);
 
-      const valorTotalFormatado = valorTotal.toLocaleString("pt-BR", {
+      const valorTotalFormatado = valor.toLocaleString("pt-BR", {
         style: "currency",
         currency: "BRL",
       });
 
       observacao += `Competência: ${mesCompetencia}/${anoCompetencia} - Valor total: ${valorTotalFormatado}\n`;
-      valorTotalDaNota += valorTotal;
+      valorTotalDaNota += valor;
     }
 
     if (valorTotalDaNota === 0) {

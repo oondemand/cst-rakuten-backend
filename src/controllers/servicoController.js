@@ -202,59 +202,16 @@ exports.listarServicos = async (req, res) => {
   }
 };
 
-exports.listarServicoCompetenciaOuPrestador = async (req, res) => {
+exports.listarServicoPorPrestador = async (req, res) => {
   try {
-    const { searchTerm, pageIndex, pageSize } = req.query;
-    const schema = Servico.schema;
+    const { prestadorId } = req.params;
 
-    const prestadoresIds = await Prestador.find({
-      $or: [
-        { nome: { $regex: searchTerm, $options: "i" } },
-        { documento: searchTerm },
-        { sid: searchTerm },
-      ],
-    }).distinct("_id");
+    const servicos = await Servico.find({
+      prestador: prestadorId,
+      status: "aberto",
+    }).populate("prestador", "sid nome documento");
 
-    const condicoesBusca = [
-      filtersUtils.querySearchTerm({
-        searchTerm,
-        schema,
-        camposBusca: [
-          "competencia.mes",
-          "competencia.ano",
-          "campanha",
-          "valor",
-        ],
-      }),
-    ];
-
-    if (prestadoresIds.length) {
-      condicoesBusca.push({ prestador: { $in: prestadoresIds } });
-    }
-
-    const queryResult = { $or: condicoesBusca };
-
-    const pagina = parseInt(pageIndex) || 0;
-    const limite = parseInt(pageSize) || 10;
-    const skip = pagina * limite;
-
-    const [servicos, totalDeServicos] = await Promise.all([
-      Servico.find(queryResult)
-        .populate("prestador", "sid nome documento")
-        .skip(skip)
-        .limit(limite),
-      Servico.countDocuments(queryResult),
-    ]);
-
-    res.status(200).json({
-      servicos,
-      pagination: {
-        currentPage: pagina,
-        totalPages: Math.ceil(totalDeServicos / limite),
-        totalItems: totalDeServicos,
-        itemsPerPage: limite,
-      },
-    });
+    res.status(200).json(servicos);
   } catch (error) {
     console.error("Erro na listagem:", error);
     res
@@ -273,8 +230,6 @@ exports.excluirServico = async (req, res) => {
     );
 
     const servico = await Servico.findByIdAndDelete(servicoId);
-
-    console.log(servico);
 
     if (!servico)
       return res.status(404).json({ error: "Servico não encontrado" });

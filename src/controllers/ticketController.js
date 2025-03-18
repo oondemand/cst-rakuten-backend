@@ -3,6 +3,7 @@ const Arquivo = require("../models/Arquivo");
 const { criarNomePersonalizado } = require("../utils/formatters");
 const Prestador = require("../models/Prestador");
 const { ControleAlteracaoService } = require("../services/controleAlteracao");
+const Servico = require("../models/Servico");
 
 exports.createTicket = async (req, res) => {
   const { baseOmieId, titulo, observacao, servicosIds, prestadorId } = req.body;
@@ -420,5 +421,47 @@ exports.getArquivoPorId = async (req, res) => {
       message: "Erro ao buscar arquivo!",
       detalhes: error.message,
     });
+  }
+};
+
+exports.addServico = async (req, res) => {
+  try {
+    const { ticketId, servicoId } = req.params;
+    const servico = await Servico.findByIdAndUpdate(servicoId, {
+      status: "pendente",
+    });
+    const ticket = await Ticket.findById(ticketId);
+
+    ticket.servicos = [...ticket?.servicos, servico?._id];
+    await ticket.save();
+
+    const populatedTicket = await Ticket.findById(ticket._id).populate(
+      "servicos"
+    );
+
+    return res.status(200).json(populatedTicket);
+  } catch (error) {
+    return res.status(500).json();
+  }
+};
+
+exports.removeServico = async (req, res) => {
+  try {
+    const { ticketId, servicoId } = req.params;
+    const servico = await Servico.findByIdAndUpdate(servicoId, {
+      status: "aberto",
+    });
+
+    const ticket = await Ticket.findByIdAndUpdate(
+      ticketId,
+      {
+        $pull: { servicos: servico?._id },
+      },
+      { new: true }
+    ).populate("servicos");
+
+    return res.status(200).json(ticket);
+  } catch (error) {
+    return res.status(500).json();
   }
 };

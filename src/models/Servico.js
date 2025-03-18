@@ -56,7 +56,7 @@ const servicoSchema = new mongoose.Schema(
     valores: valoresSchema,
     status: {
       type: String,
-      enum: ["pendente", "pago-segeti", "pago-rakuten"],
+      enum: ["aberto", "pendente", "pago-segeti", "pago-rakuten"],
       default: "pendente",
     },
   },

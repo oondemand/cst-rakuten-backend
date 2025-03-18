@@ -54,4 +54,14 @@ router.patch("/:id/status", ticketController.updateStatusTicket);
 
 router.delete("/:id", ticketController.deleteTicket);
 
+router.post(
+  "/adicionar-servico/:ticketId/:servicoId/",
+  ticketController.addServico
+);
+
+router.post(
+  "/remover-servico/:ticketId/:servicoId",
+  ticketController.removeServico
+);
+
 module.exports = router;
