@@ -6,7 +6,7 @@ const valoresSchema = new mongoose.Schema(
     bonus: Number,
     ajusteComercial: Number,
     paidPlacement: Number,
-    revisionMonthProvision: Number,
+    revisionMonthProvision: { type: Date },
     revisionGrossValue: Number,
     revisionProvisionBonus: Number,
     revisionComissaoPlataforma: Number,
@@ -56,7 +56,7 @@ const servicoSchema = new mongoose.Schema(
     valores: valoresSchema,
     status: {
       type: String,
-      enum: ["aberto", "pendente", "pago-segeti", "pago-rakuten"],
+      enum: ["aberto", "pendente", "pago", "pago-externo"],
       default: "pendente",
     },
   },

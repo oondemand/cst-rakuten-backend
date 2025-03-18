@@ -8,6 +8,8 @@ const Arquivo = require("../models/Arquivo");
 const storage = multer.memoryStorage({});
 
 const fileFilter = (req, file, cb) => {
+  return cb(null, true);
+
   // Aceitar apenas certos tipos de arquivos, por exemplo, imagens e PDFs
   const allowedTypes = /jpeg|jpg|png|pdf|xml|txt/;
   const mimetype = allowedTypes.test(file.mimetype);
