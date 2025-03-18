@@ -35,6 +35,7 @@ exports.createServicoETicket = async (req, res) => {
       descricao,
       data,
       valor,
+      status: "aberto",
     });
 
     // console.log("novoServico", novoServico);
@@ -73,7 +74,7 @@ exports.createServico = async (req, res) => {
       Object.entries(req.body).filter(([_, value]) => value !== "")
     );
 
-    const novoServico = new Servico(filteredBody);
+    const novoServico = new Servico({ ...filteredBody, status: "aberto" });
     await novoServico.save();
 
     res.status(201).json({
