@@ -368,11 +368,30 @@ exports.alterarSenha = async (req, res) => {
 
 exports.enviarConvite = async (req, res) => {
   try {
-    const { userId } = req.body;
-    // console.log(userId);
+    const prestador = await Prestador.findById(req.body.prestador);
 
-    const usuario = await Usuario.findById(userId);
+    if (!prestador) {
+      return res.status(409).json({ message: "Prestador não encontrado!" });
+    }
 
+    let usuario;
+
+    if (!prestador?.usuario) {
+      usuario = new Usuario({
+        nome: prestador?.nome,
+        email: prestador?.email,
+        status: "ativo",
+        tipo: "prestador",
+        senha: "123456",
+      });
+
+      await usuario.save();
+
+      prestador.usuario = usuario?._id;
+      await prestador.save();
+    }
+
+    usuario = await Usuario.findById(prestador?.usuario);
     const token = usuario.gerarToken();
 
     const url = new URL("/first-login", process.env.BASE_URL_APP_PUBLISHER);

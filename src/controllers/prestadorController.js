@@ -5,6 +5,7 @@ const {
   sincronizarPrestador,
 } = require("../services/omie/sincronizarPrestador");
 const filtersUtils = require("../utils/filter");
+const Usuario = require("../models/Usuario");
 
 // Método para obter prestador pelo idUsuario
 exports.obterPrestadorPorIdUsuario = async (req, res) => {
@@ -185,7 +186,20 @@ exports.obterPrestador = async (req, res) => {
 // Atualizar um Prestador
 exports.atualizarPrestador = async (req, res) => {
   try {
-    const prestador = await Prestador.findByIdAndUpdate(
+    const prestador = await Prestador.findById(req.params.id);
+
+    if (!prestador) {
+      return res.status(404).json({ message: "Prestador não encontrado" });
+    }
+
+    if (req?.body?.email && prestador?.usuario) {
+      const usuario = await Usuario.findById(prestador?.usuario);
+
+      usuario.email = req.body?.email;
+      await usuario.save();
+    }
+
+    const prestadorAtualizado = await Prestador.findByIdAndUpdate(
       req.params.id,
       req.body,
       {
@@ -193,16 +207,10 @@ exports.atualizarPrestador = async (req, res) => {
       }
     );
 
-    await prestador.save();
-
     sincronizarPrestador({
-      id: prestador._id,
-      prestador,
+      id: prestadorAtualizado._id,
+      prestador: prestadorAtualizado,
     });
-
-    if (!prestador) {
-      return res.status(404).json({ message: "Prestador não encontrado" });
-    }
 
     res.status(200).json({
       message: "Prestador atualizado com sucesso!",
