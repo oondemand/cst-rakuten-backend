@@ -5,8 +5,6 @@ const contaPagarService = require("../services/omie/contaPagarService");
 const clienteService = require("../services/omie/clienteService");
 const emailUtils = require("../utils/emailUtils");
 
-const { obterCodigoBanco } = require("../utils/brasilApi");
-
 const anexoService = require("../services/omie/anexosService");
 
 const Prestador = require("../models/Prestador");
@@ -58,10 +56,34 @@ const aprovar = async (req, res) => {
       });
     }
 
-    // Passa para a próxima etapa
     ticket.etapa = etapas[currentEtapaIndex + 1].codigo;
-    ticket.status = "aguardando-inicio";
 
+    //se tive na etapa requisição
+    if (currentEtapaIndex === 0) {
+      const jaExisteServicoPago = await Servico.findOne({
+        prestador: ticket?.prestador?._id,
+        status: "pago",
+      });
+
+      if (jaExisteServicoPago) {
+        //avança 3 etapas caso seja pj ou ext
+        if (ticket?.prestador?.tipo !== "pf") {
+          ticket.etapa = etapas[currentEtapaIndex + 3].codigo;
+        }
+
+        //avança 2 etapas
+        ticket.etapa = etapas[currentEtapaIndex + 2].codigo;
+      }
+    }
+
+    // avança 2 etapas caso seja pj ou ext
+    if (currentEtapaIndex === 1) {
+      if (ticket?.prestador?.tipo !== "pf") {
+        ticket.etapa = etapas[currentEtapaIndex + 2].codigo;
+      }
+    }
+
+    ticket.status = "aguardando-inicio";
     await ticket.save();
 
     ControleAlteracaoService.registrarAlteracao({
@@ -116,6 +138,11 @@ const recusar = async (req, res) => {
     // Retrocede uma etapa e muda status para 'revisao'
     if (currentEtapaIndex > 0)
       ticket.etapa = etapas[currentEtapaIndex - 1].codigo;
+
+    if (currentEtapaIndex === 4 && ticket.prestador?.tipo !== "pf") {
+      ticket.etapa = etapas[currentEtapaIndex - 2].codigo;
+    }
+
     ticket.status = "revisao";
 
     await ticket.save();
