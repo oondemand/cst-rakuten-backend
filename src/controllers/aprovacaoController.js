@@ -139,7 +139,7 @@ const recusar = async (req, res) => {
     if (currentEtapaIndex > 0)
       ticket.etapa = etapas[currentEtapaIndex - 1].codigo;
 
-    if (currentEtapaIndex === 4 && ticket.prestador?.tipo !== "pf") {
+    if (currentEtapaIndex === 3 && ticket.prestador?.tipo !== "pf") {
       ticket.etapa = etapas[currentEtapaIndex - 2].codigo;
     }
 
