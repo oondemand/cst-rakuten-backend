@@ -119,7 +119,7 @@ exports.getAllTickets = async (req, res) => {
     const filtros = req.query;
     const tickets = await Ticket.find({
       ...filtros,
-      status: { $nin: ["arquivado", "concluido"] },
+      status: { $nin: ["arquivado"] },
     })
       .populate("prestador")
       .populate("servicos")

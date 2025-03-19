@@ -685,6 +685,39 @@ exports.importarPrestadores = async (req, res) => {
         console.log("Prestador criado via planilha:");
       }
 
+      if (prestador.email && !prestador.usuario) {
+        let usuario = await Usuario.findOne({ email: prestador.email });
+
+        if (!usuario) {
+          usuario = new Usuario({
+            email: prestador.email,
+            nome: prestador.nome,
+            tipo: "prestador",
+            senha: "123456",
+          });
+
+          await usuario.save();
+        }
+
+        prestador.usuario = usuario._id;
+        await prestador.save();
+
+        const token = usuario.gerarToken();
+
+        const url = new URL("/first-login", process.env.BASE_URL_APP_PUBLISHER);
+
+        url.searchParams.append("code", token);
+
+        //mostra url para não ter que verificar no email
+        console.log("URL", url.toString());
+
+        await emailUtils.emailLinkCadastroUsuarioPrestador({
+          email: req.usuario.email,
+          nome: prestador?.nome,
+          url: url?.toString(),
+        });
+      }
+
       await prestador.save();
     }
 
