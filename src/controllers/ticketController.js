@@ -174,7 +174,7 @@ exports.getTicketsByUsuarioPrestador = async (req, res) => {
       etapa: { $ne: "requisicao" },
     })
       .populate("servicos")
-      .populate("arquivos");
+      .populate("arquivos", "nomeOriginal size mimetype tipo");
 
     let valorTotalRecebido = 0;
     let valorTotalPendente = 0;
@@ -188,10 +188,10 @@ exports.getTicketsByUsuarioPrestador = async (req, res) => {
     for (const ticket of tickets) {
       for (const servico of ticket.servicos) {
         if (ticket.status === "concluido" && ticket.etapa === "concluido") {
-          valorTotalRecebido += servico.valorTotal;
+          valorTotalRecebido += servico.valor;
         }
         if (ticket.etapa !== "concluido" && ticket.etapa !== "requisicao") {
-          valorTotalPendente += servico.valorTotal;
+          valorTotalPendente += servico.valor;
         }
       }
     }
