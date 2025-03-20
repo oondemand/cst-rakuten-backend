@@ -1,4 +1,6 @@
 const Ticket = require("../models/Ticket");
+const Servico = require("../models/Servico");
+
 const BaseOmie = require("../models/BaseOmie");
 const { consultar } = require("../services/omie/contaPagarService");
 const ContaPagar = require("../models/ContaPagar");
@@ -101,7 +103,7 @@ const contaPagarWebHook = async (req, res) => {
           event?.[0]?.conta_a_pagar[0].codigo_lancamento_omie,
       });
 
-      await Ticket.findOneAndUpdate(
+      const ticket = await Ticket.findOneAndUpdate(
         {
           contaPagarOmie: contaPagar?._id,
         },
@@ -111,6 +113,13 @@ const contaPagarWebHook = async (req, res) => {
         },
         { new: true }
       );
+
+      if (ticket?.servicos.length > 0) {
+        await Servico.updateMany(
+          { _id: { $in: ticket?.servicos } },
+          { status: "pago" }
+        );
+      }
     }
 
     if (topic === "Financas.ContaPagar.BaixaCancelada") {
@@ -121,7 +130,7 @@ const contaPagarWebHook = async (req, res) => {
           event?.[0]?.conta_a_pagar[0].codigo_lancamento_omie,
       });
 
-      await Ticket.findOneAndUpdate(
+      const ticket = await Ticket.findOneAndUpdate(
         {
           contaPagarOmie: contaPagar?._id,
         },
@@ -131,6 +140,13 @@ const contaPagarWebHook = async (req, res) => {
         },
         { new: true }
       );
+
+      if (ticket?.servicos.length > 0) {
+        await Servico.updateMany(
+          { _id: { $in: ticket?.servicos } },
+          { status: "pendente" }
+        );
+      }
     }
 
     if (topic === "Financas.ContaPagar.Excluido") {

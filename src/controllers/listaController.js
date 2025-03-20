@@ -13,11 +13,11 @@ const createLista = async (req, res) => {
 
 const addItem = async (req, res) => {
   const { id } = req.params;
-  const { chave, valor } = req.body;
+  const { valor } = req.body;
   try {
     const lista = await Lista.findById(id);
     if (!lista) return res.status(404).json({ error: "Lista não encontrada" });
-    lista.valores.push({ chave, valor });
+    lista.valores.push({ valor });
     await lista.save();
     res.json(lista);
   } catch (err) {
@@ -56,7 +56,7 @@ const getListas = async (req, res) => {
 
 const updateItem = async (req, res) => {
   const { id } = req.params;
-  const { itemId, chave, valor } = req.body;
+  const { itemId, valor } = req.body;
 
   try {
     const lista = await Lista.findById(id);
@@ -67,7 +67,6 @@ const updateItem = async (req, res) => {
     if (index === -1)
       return res.status(404).json({ error: "Item não encontrado" });
 
-    if (chave) lista.valores[index].chave = chave;
     if (valor) lista.valores[index].valor = valor;
 
     await lista.save();
@@ -87,7 +86,7 @@ const getListaPorCodigo = async (req, res) => {
       return res.status(404).json({ mensagem: "Lista não encontrada" });
     }
 
-    lista.valores = lista.valores.filter((item) => item.chave || item.valor);
+    lista.valores = lista.valores.filter((item) => item.valor);
     res.json(lista);
   } catch (err) {
     res.status(500).json({ error: err.message });

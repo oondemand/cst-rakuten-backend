@@ -4,7 +4,6 @@ const ListaSchema = new mongoose.Schema({
   codigo: { type: String, required: true, unique: true },
   valores: [
     {
-      chave: { type: String },
       valor: { type: String },
     },
   ],

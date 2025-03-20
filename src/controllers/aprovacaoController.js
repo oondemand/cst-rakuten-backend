@@ -58,27 +58,24 @@ const aprovar = async (req, res) => {
 
     ticket.etapa = etapas[currentEtapaIndex + 1].codigo;
 
-    //se tive na etapa requisição
-    if (currentEtapaIndex === 0) {
+    if (ticket.etapa === "requisicao") {
       const jaExisteServicoPago = await Servico.findOne({
         prestador: ticket?.prestador?._id,
         status: "pago",
       });
 
       if (jaExisteServicoPago) {
-        //avança 2 etapas
-        ticket.etapa = etapas[currentEtapaIndex + 2].codigo;
-        //avança 3 etapas caso seja pj ou ext
         if (ticket?.prestador?.tipo !== "pf") {
-          ticket.etapa = etapas[currentEtapaIndex + 3].codigo;
+          ticket.etapa = "aprovacao-fiscal";
+        } else {
+          ticket.etapa = "geracao-rpa";
         }
       }
     }
 
-    // avança 2 etapas caso seja pj ou ext
-    if (currentEtapaIndex === 1) {
+    if (ticket?.etapa === "aprovacao-cadastro") {
       if (ticket?.prestador?.tipo !== "pf") {
-        ticket.etapa = etapas[currentEtapaIndex + 2].codigo;
+        ticket.etapa = "aprovacao-fiscal";
       }
     }
 
