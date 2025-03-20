@@ -180,7 +180,7 @@ exports.getTicketsByUsuarioPrestador = async (req, res) => {
     const servicosAbertos = await Servico.find({
       prestador: prestador._id,
       status: "aberto",
-      "competencia.ano": { $gte: 2014 },
+      "competencia.ano": { $gte: 2024 },
     });
 
     // Cria tickets virtuais para serviços abertos
