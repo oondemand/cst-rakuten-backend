@@ -176,16 +176,45 @@ exports.getTicketsByUsuarioPrestador = async (req, res) => {
       .populate("servicos")
       .populate("arquivos", "nomeOriginal size mimetype tipo");
 
+    // Busca serviços abertos não vinculados a tickets
+    const servicosAbertos = await Servico.find({
+      prestador: prestador._id,
+      status: "aberto",
+      "competencia.ano": { $gte: 2014 },
+    });
+
+    // Cria tickets virtuais para serviços abertos
+    const fakeTickets = servicosAbertos.map((servico) => {
+      const servicoObj = servico.toObject({ virtuals: true });
+      return {
+        _id: servico._id, // Usamos o ID do serviço para evitar conflitos
+        titulo:
+          servico.campanha ||
+          `Serviço em Aberto (${servico._id.toString().slice(-6)})`,
+        status: "aberto",
+        prestador: prestador._id,
+        servicos: [servicoObj],
+        arquivos: [],
+        data: servico.createdAt,
+        observacao: "Serviço aberto não associado a um ticket",
+        createdAt: servico.createdAt,
+        updatedAt: servico.updatedAt,
+      };
+    });
+
+    // Converte tickets reais para objetos simples e combina com os virtuais
+    const allTickets = [...tickets, ...fakeTickets];
+
     let valorTotalRecebido = 0;
     let valorTotalPendente = 0;
 
-    if (tickets.length === 0) {
+    if (allTickets.length === 0) {
       return res
         .status(200)
         .json({ valorTotalRecebido, valorTotalPendente, tickets: [] });
     }
 
-    for (const ticket of tickets) {
+    for (const ticket of allTickets) {
       for (const servico of ticket.servicos) {
         if (ticket.status === "concluido" && ticket.etapa === "concluido") {
           valorTotalRecebido += servico.valor;
@@ -196,7 +225,9 @@ exports.getTicketsByUsuarioPrestador = async (req, res) => {
       }
     }
 
-    res.status(200).json({ valorTotalRecebido, valorTotalPendente, tickets });
+    res
+      .status(200)
+      .json({ valorTotalRecebido, valorTotalPendente, tickets: allTickets });
   } catch (error) {
     // console.error("Erro ao buscar tickets:", error);
     res.status(500).json({

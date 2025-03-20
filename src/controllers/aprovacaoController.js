@@ -66,13 +66,12 @@ const aprovar = async (req, res) => {
       });
 
       if (jaExisteServicoPago) {
+        //avança 2 etapas
+        ticket.etapa = etapas[currentEtapaIndex + 2].codigo;
         //avança 3 etapas caso seja pj ou ext
         if (ticket?.prestador?.tipo !== "pf") {
           ticket.etapa = etapas[currentEtapaIndex + 3].codigo;
         }
-
-        //avança 2 etapas
-        ticket.etapa = etapas[currentEtapaIndex + 2].codigo;
       }
     }
 
@@ -245,7 +244,7 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
   } catch (error) {
     // se ocorrer qualquer erro, volta ticket para etapa de aprovação, criar obs e atualiza o status
     ticket.observacao += `\n ${error} - ${format(new Date(), "dd/MM/yyyy")}`;
-    ticket.etapa = "aprovacao-pagamento";
+    ticket.etapa = "aprovacao-fiscal";
     ticket.status = "revisao";
     await ticket.save();
 

@@ -396,7 +396,7 @@ exports.importarRPAs = async (req, res) => {
 
     ticket.arquivos.push(novoArquivoDoTicket._id);
 
-    ticket.etapa = "aprovacao-pagamento";
+    ticket.etapa = "aprovacao-fiscal";
     ticket.status = "aguardando-inicio";
 
     await ticket.save();

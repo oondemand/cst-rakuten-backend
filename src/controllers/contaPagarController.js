@@ -34,7 +34,7 @@ const obterContaPagarOmie = async (req, res) => {
 
     if (!contaPagarOmie) {
       ticket.status = "revisao";
-      ticket.etapa = "aprovacao-pagamento";
+      ticket.etapa = "aprovacao-fiscal";
       ticket.contaPagarOmie = null;
       ticket.observacao = "[CONTA A PAGAR REMOVIDA DO OMIE]";
 
@@ -146,7 +146,7 @@ const contaPagarWebHook = async (req, res) => {
         },
         {
           status: "revisao",
-          etapa: "aprovacao-pagamento",
+          etapa: "aprovacao-fiscal",
           contaPagarOmie: null,
           observacao: "[CONTA A PAGAR REMOVIDA DO OMIE]",
         }
