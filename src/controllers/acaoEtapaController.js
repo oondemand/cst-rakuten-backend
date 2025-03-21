@@ -6,6 +6,7 @@ const Prestador = require("../models/Prestador");
 const Ticket = require("../models/Ticket");
 const Arquivo = require("../models/Arquivo");
 const BaseOmie = require("../models/BaseOmie");
+const Lista = require("../models/Lista");
 
 const { max, addDays, format, getMonth, getYear } = require("date-fns");
 
@@ -610,9 +611,21 @@ exports.importarPrestadores = async (req, res) => {
     for (const [i, value] of jsonData.entries()) {
       if (i == 0) continue;
 
+      const manager = value[1];
+
+      const listaManager = await Lista.findOne({ codigo: "manager" });
+      const managerExistente = listaManager.valores.some(
+        (e) => e?.valor === manager
+      );
+
+      if (!managerExistente) {
+        listaManager.valores.push({ valor: manager });
+        await listaManager.save();
+      }
+
       const row = {
         sciUnico: value[0],
-        manager: value[1],
+        manager,
         nome: value[2],
         sid: value[3],
         tipo: value[4],
@@ -666,6 +679,7 @@ exports.importarPrestadores = async (req, res) => {
           sid: row?.sid,
           nome: row?.nome,
           status: "em-analise",
+          manager,
         });
 
         await prestador.save();
@@ -756,6 +770,17 @@ exports.importarServicos = async (req, res) => {
       if (i === 0) continue;
 
       const competencia = value[6].split("/");
+      const campanha = value[7];
+
+      const listaCampanha = await Lista.findOne({ codigo: "campanha" });
+      const campanhaExistente = listaCampanha.valores.some(
+        (e) => e?.valor === campanha
+      );
+
+      if (!campanhaExistente) {
+        listaCampanha.valores.push(campanha);
+        await listaCampanha.save();
+      }
 
       const row = {
         prestador: {
@@ -770,7 +795,7 @@ exports.importarServicos = async (req, res) => {
           mes: competencia[0] ? Number(competencia[0]) : null,
           ano: competencia[1] ? Number(competencia[1]) : null,
         },
-        campanha: value[7],
+        campanha,
 
         valores: {
           grossValue: value[8],
