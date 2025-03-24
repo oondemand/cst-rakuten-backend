@@ -182,7 +182,7 @@ exports.listarServicos = async (req, res) => {
 
     const [servicos, totalDeServicos] = await Promise.all([
       Servico.find(queryResult)
-        .populate("prestador", "sid nome documento")
+        .populate("prestador", "sid nome documento tipo")
         .skip(skip)
         .limit(limite),
       Servico.countDocuments(queryResult),
