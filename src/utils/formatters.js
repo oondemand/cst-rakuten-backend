@@ -2,7 +2,7 @@ const path = require("node:path");
 
 exports.CNPJouCPF = async (numero) => {
   if (isNaN(numero)) {
-    return { tipo: null, numero: "" };
+    return { tipo: null, numero: null };
   }
 
   let numeroStr = numero.toString();
@@ -15,7 +15,7 @@ exports.CNPJouCPF = async (numero) => {
     return { tipo: "pj", numero: numeroStr.padStart(14, "0") };
   }
 
-  return { tipo: null, numero: "" };
+  return { tipo: null, numero: null };
 };
 
 exports.criarNomePersonalizado = ({ nomeOriginal }) => {

@@ -29,6 +29,7 @@ const Usuario = require("../models/Usuario");
 const { ControleAlteracaoService } = require("../services/controleAlteracao");
 const { parse } = require("date-fns");
 const { log } = require("console");
+const { LISTA_PAISES_OMIE } = require("../utils/omie");
 
 const buscarPrestadorOmie = async ({ documento }) => {
   try {
@@ -633,6 +634,10 @@ exports.importarPrestadores = async (req, res) => {
           await listaManager.save();
         }
 
+        const pais = LISTA_PAISES_OMIE.find(
+          (e) => e.cDescricao.toLowerCase() === value[17].toLowerCase()
+        );
+
         const row = {
           sciUnico: value[0],
           manager,
@@ -654,7 +659,7 @@ exports.importarPrestadores = async (req, res) => {
             complemento: value[14],
             cidade: value[15],
             estado: value[16],
-            // pais: { nome: value[17] },
+            pais: { nome: pais?.cDescricao, cod: pais?.cCodigo },
           },
           pessoaFisica: {
             dataNascimento:
@@ -679,24 +684,6 @@ exports.importarPrestadores = async (req, res) => {
         );
 
         if (!prestador) {
-          // console.log("Prestador não encontrado, criando novo");
-          // const prestadorOmie = await buscarPrestadorOmie({
-          //   documento: numero,
-          // });
-
-          // if (prestadorOmie) {
-          //   console.log("Prestador criado via omie:");
-
-          //   prestador = new Prestador({
-          //     ...prestadorOmie,
-          //     sid: row?.sid,
-          //     nome: row?.nome,
-          //     status: "em-analise",
-          //     manager,
-          //   });
-          // }
-
-          // if (!prestadorOmie) {
           console.log("Prestador criado via planilha:");
 
           prestador = new Prestador({
@@ -705,7 +692,6 @@ exports.importarPrestadores = async (req, res) => {
             status: "em-analise",
             documento: numero,
           });
-          // }
 
           await prestador.save();
           detalhes.novosPrestadores += 1;
@@ -846,25 +832,6 @@ exports.importarServicos = async (req, res) => {
       try {
         const { numero, tipo } = CNPJouCPF(row?.prestador?.documento);
         let prestador = await Prestador.findOne({ sid: row?.prestador?.sid });
-
-        if (!prestador) {
-          const prestadorOmie = await buscarPrestadorOmie({
-            documento: numero,
-          });
-
-          if (prestadorOmie) {
-            prestador = new Prestador({
-              ...prestadorOmie,
-              sid: row?.prestador?.sid,
-              nome: row?.prestador?.nome,
-              status: "em-analise",
-            });
-
-            await prestador.save();
-            detalhes.novosPrestadores += 1;
-            console.log("Criando prestador via omie");
-          }
-        }
 
         if (!prestador) {
           prestador = new Prestador({
