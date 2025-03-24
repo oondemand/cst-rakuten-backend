@@ -612,7 +612,7 @@ exports.importarPrestadores = async (req, res) => {
     });
 
     const detalhes = {
-      totalDeLinhasLidas: jsonData.length,
+      totalDeLinhasLidas: jsonData.length - 1,
       linhasLidasComErro: 0,
       novosPrestadores: 0,
       errors: "",
@@ -773,10 +773,10 @@ exports.importarServicos = async (req, res) => {
       defval: "",
     });
 
-    console.log("[LINHAS LIDAS]:", jsonData.length);
+    console.log("[LINHAS LIDAS]:", jsonData.length - 1);
 
     const detalhes = {
-      totalDeLinhasLidas: jsonData.length,
+      totalDeLinhasLidas: jsonData.length - 1,
       linhasLidasComErro: 0,
       novosPrestadores: 0,
       novosServicos: 0,
@@ -786,15 +786,24 @@ exports.importarServicos = async (req, res) => {
     for (const [i, value] of jsonData.entries()) {
       if (i === 0) continue;
 
-      const competencia = value[6].split("/");
-      const campanha = value[7];
+      console.log(
+        "COMPETENCIA",
+        value[7],
+        converterNumeroSerieParaData(value[7])
+      );
+
+      const competencia =
+        value[7] !== "" ? converterNumeroSerieParaData(value[7]) : null;
+      const campanha = value[6];
 
       const listaCampanha = await Lista.findOne({ codigo: "campanha" });
       const campanhaExistente = listaCampanha.valores.some(
         (e) => e?.valor === campanha
       );
 
-      if (!campanhaExistente) {
+      console.log("CAMAPANHA", campanha, campanhaExistente);
+
+      if (!campanhaExistente && campanha !== "") {
         listaCampanha.valores.push(campanha);
         await listaCampanha.save();
       }
@@ -805,14 +814,16 @@ exports.importarServicos = async (req, res) => {
           sid: value[1],
           documento: value[2],
         },
-        tipoDocumentoFiscal: parse(value[3], "dd/MM/yyyy", new Date()) ?? "",
-        dataProvisaoContabil: parse(value[4], "dd/MM/yyyy", new Date()) ?? "",
-        dataRegistro: [5],
-        competencia: {
-          mes: competencia[0] ? Number(competencia[0]) : null,
-          ano: competencia[1] ? Number(competencia[1]) : null,
-        },
+        tipoDocumentoFiscal: value[3]?.toUpperCase(),
+        dataProvisaoContabil:
+          value[4] !== "" ? converterNumeroSerieParaData(value[4]) : "",
+        dataRegistro:
+          value[5] !== "" ? converterNumeroSerieParaData(value[4]) : "",
         campanha,
+        competencia: {
+          mes: competencia && competencia.getMonth() + 1,
+          ano: competencia && competencia.getFullYear(),
+        },
 
         valores: {
           grossValue: value[8],
@@ -820,18 +831,22 @@ exports.importarServicos = async (req, res) => {
           ajusteComercial: value[10],
           paidPlacement: value[11],
 
-          revisionMonthProvision: value[12],
+          revisionMonthProvision: value[13],
 
-          revisionGrossValue: value[13],
-          revisionProvisionBonus: value[14],
-          revisionComissaoPlataforma: value[15],
-          revisionPaidPlacement: value[16],
+          revisionGrossValue: value[14],
+          revisionProvisionBonus: value[15],
+          revisionComissaoPlataforma: value[16],
+          revisionPaidPlacement: value[17],
         },
       };
 
+      console.log("ROW", row);
+
       try {
-        const { numero, tipo } = CNPJouCPF(row?.prestador?.documento);
+        const { numero, tipo } = await CNPJouCPF(row?.prestador?.documento);
         let prestador = await Prestador.findOne({ sid: row?.prestador?.sid });
+
+        console.log("PRESTADOR", tipo, numero);
 
         if (!prestador) {
           prestador = new Prestador({

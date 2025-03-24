@@ -389,6 +389,8 @@ const importarServicoDetalhes = async ({ usuario, detalhes }) => {
 
     return await enviarEmail(emailFrom, emailTo, assunto, corpo);
   } catch (error) {
+    console.log("😄", error);
+
     throw new Error(
       "Erro ao enviar e-mail para detalhes de importação de serviços"
     );
