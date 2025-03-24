@@ -353,6 +353,89 @@ const emailLinkCadastroUsuarioPrestador = async ({ email, nome, url }) => {
   }
 };
 
+const importarServicoDetalhes = async ({ usuario, detalhes }) => {
+  try {
+    const emailFrom = {
+      email: process.env.SENDGRID_REMETENTE,
+      nome: "OonDemand",
+    };
+
+    const emailTo = {
+      email: usuario.email,
+      nome: usuario.nome,
+    };
+
+    const assunto = "Detalhes de importação de serviços";
+
+    // Template do corpo do e-mail com o link para recuperação de senha
+    const corpo = `<h1>Olá, ${usuario.nome}!</h1>
+    <p>Segue o relatório sobre a importação de serviços:</p>
+    <p>Linhas lidas: ${detalhes?.totalDeLinhasLidas}</p>
+    <p>Linhas com erro: ${detalhes?.linhasLidasComErro}</p>
+    <p>Linhas com sucesso: ${detalhes?.totalDeLinhasLidas - detalhes?.linhasLidasComErro}</p>
+    <p>Total de serviços criados: ${detalhes?.novosServicos}</p>
+    <p>Total novos prestadores criados: ${detalhes?.novosPrestadores}</p>`;
+
+    if (process.env.NODE_ENV === "development") {
+      // console.log(corpo);
+    }
+
+    if (detalhes.erros) {
+      const arquivoDeErros = Buffer.from(detalhes.erros).toString("base64");
+      const anexos = [{ filename: "log.txt", fileBuffer: arquivoDeErros }];
+
+      return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
+    }
+
+    return await enviarEmail(emailFrom, emailTo, assunto, corpo);
+  } catch (error) {
+    throw new Error(
+      "Erro ao enviar e-mail para detalhes de importação de serviços"
+    );
+  }
+};
+
+const importarPrestadorDetalhes = async ({ usuario, detalhes }) => {
+  try {
+    const emailFrom = {
+      email: process.env.SENDGRID_REMETENTE,
+      nome: "OonDemand",
+    };
+
+    const emailTo = {
+      email: usuario.email,
+      nome: usuario.nome,
+    };
+
+    const assunto = "Detalhes de importação de prestadores";
+
+    // Template do corpo do e-mail com o link para recuperação de senha
+    const corpo = `<h1>Olá, ${usuario.nome}!</h1>
+    <p>Segue o relatório sobre a importação de prestadores:</p>
+    <p>Linhas lidas: ${detalhes?.totalDeLinhasLidas}</p>
+    <p>Linhas com erro: ${detalhes?.linhasLidasComErro}</p>
+    <p>Linhas com sucesso: ${detalhes?.totalDeLinhasLidas - detalhes?.linhasLidasComErro}</p>
+    <p>Total novos prestadores criados: ${detalhes?.novosPrestadores}</p>`;
+
+    if (process.env.NODE_ENV === "development") {
+      // console.log(corpo);
+    }
+
+    if (detalhes.erros) {
+      const arquivoDeErros = Buffer.from(detalhes.erros).toString("base64");
+      const anexos = [{ filename: "log.txt", fileBuffer: arquivoDeErros }];
+
+      return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
+    }
+
+    return await enviarEmail(emailFrom, emailTo, assunto, corpo);
+  } catch (error) {
+    throw new Error(
+      "Erro ao enviar e-mail para detalhes de importação de prestadores"
+    );
+  }
+};
+
 module.exports = {
   confirmacaoEmailPrestador,
   emailEsqueciMinhaSenha,
@@ -363,4 +446,6 @@ module.exports = {
   emailErroIntegracaoOmie,
   emailGeralDeErro,
   emailLinkCadastroUsuarioPrestador,
+  importarServicoDetalhes,
+  importarPrestadorDetalhes,
 };

@@ -1,6 +1,6 @@
 const path = require("node:path");
 
-exports.CNPJouCPF = (numero) => {
+exports.CNPJouCPF = async (numero) => {
   if (isNaN(numero)) {
     return { tipo: null, numero: "" };
   }
@@ -11,7 +11,7 @@ exports.CNPJouCPF = (numero) => {
     return { tipo: "pf", numero: numeroStr.padStart(11, 0) };
   }
 
-  if (numeroStr.length > 11 && numero.length <= 14) {
+  if (numeroStr.length > 11 && numeroStr.length <= 14) {
     return { tipo: "pj", numero: numeroStr.padStart(14, "0") };
   }
 

@@ -34,7 +34,7 @@ const prestadorSchema = new mongoose.Schema(
       unique: true,
       match: [/^\d{7}$/, "O SID deve ter exatamente 7 dígitos."],
     },
-    tipo: { type: String, enum: ["pj", "pf", "ext"] },
+    tipo: { type: String, enum: ["pj", "pf", "ext", ""] },
     documento: {
       type: String,
       validate: {
@@ -52,7 +52,6 @@ const prestadorSchema = new mongoose.Schema(
     email: {
       type: String,
       lowercase: true,
-      unique: true,
       validate: {
         validator: function (v) {
           return v === null ? true : /\S+@\S+\.\S+/.test(v);

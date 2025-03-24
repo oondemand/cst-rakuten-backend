@@ -28,6 +28,7 @@ const clienteService = require("../services/omie/clienteService");
 const Usuario = require("../models/Usuario");
 const { ControleAlteracaoService } = require("../services/controleAlteracao");
 const { parse } = require("date-fns");
+const { log } = require("console");
 
 const buscarPrestadorOmie = async ({ documento }) => {
   try {
@@ -596,10 +597,11 @@ exports.exportarPrestadores = async (req, res) => {
 
 exports.importarPrestadores = async (req, res) => {
   console.log("[PROCESSANDO ARQUIVOS]:");
+  const arquivo = req.files[0];
+
+  if (arquivo) res.status(200).json();
 
   try {
-    const arquivo = req.files[0];
-
     const workbook = XLSX.readFile(arquivo.path);
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
@@ -608,134 +610,162 @@ exports.importarPrestadores = async (req, res) => {
       defval: "",
     });
 
+    const detalhes = {
+      totalDeLinhasLidas: jsonData.length,
+      linhasLidasComErro: 0,
+      novosPrestadores: 0,
+      errors: "",
+    };
+
     for (const [i, value] of jsonData.entries()) {
       if (i == 0) continue;
 
-      const manager = value[1];
+      try {
+        const manager = value[1];
 
-      const listaManager = await Lista.findOne({ codigo: "manager" });
-      const managerExistente = listaManager.valores.some(
-        (e) => e?.valor === manager
-      );
+        const listaManager = await Lista.findOne({ codigo: "manager" });
+        const managerExistente = listaManager.valores.some(
+          (e) => e?.valor === manager
+        );
 
-      if (!managerExistente) {
-        listaManager.valores.push({ valor: manager });
-        await listaManager.save();
-      }
-
-      const row = {
-        sciUnico: value[0],
-        manager,
-        nome: value[2],
-        sid: value[3],
-        tipo: value[4],
-        documento: value[5],
-        dadosBancarios: {
-          banco: value[6],
-          agencia: value[7],
-          conta: value[8],
-          tipoConta: value[9],
-        },
-        email: value[10],
-        endereco: {
-          cep: value[11],
-          rua: value[12],
-          numero: value[13],
-          complemento: value[14],
-          cidade: value[15],
-          estado: value[16],
-          // pais: { nome: value[17] },
-        },
-        pessoaFisica: {
-          dataNascimento:
-            value[18] !== "" ? parse(value[18], "dd/MM/yyyy", new Date()) : "",
-          pis: value[19],
-          nomeMae: value[20],
-        },
-        pessoaJuridica: { nomeFantasia: value[21] },
-      };
-
-      let prestador = await Prestador.findOneAndUpdate(
-        {
-          $or: [
-            { sciUnico: row?.sciUnico },
-            { email: row?.email },
-            { sid: row?.sid },
-            { documento: row?.documento },
-          ],
-        },
-        row
-      );
-
-      const { numero, tipo } = CNPJouCPF(row?.documento);
-
-      if (!prestador) {
-        const prestadorOmie = await buscarPrestadorOmie({
-          documento: numero,
-        });
-
-        prestador = new Prestador({
-          ...prestadorOmie,
-          sid: row?.sid,
-          nome: row?.nome,
-          status: "em-analise",
-          manager,
-        });
-
-        await prestador.save();
-        console.log("Prestador criado via omie:");
-      }
-
-      if (!prestador) {
-        prestador = new Prestador({
-          ...row,
-          sid: row.sid,
-          status: "em-analise",
-          documento: numero,
-          tipo: row?.tipo.toLowerCase() === "invoice" ? "ext" : tipo,
-        });
-
-        await prestador.save();
-        console.log("Prestador criado via planilha:");
-      }
-
-      if (prestador.email && !prestador.usuario) {
-        let usuario = await Usuario.findOne({ email: prestador.email });
-
-        if (!usuario) {
-          usuario = new Usuario({
-            email: prestador.email,
-            nome: prestador.nome,
-            tipo: "prestador",
-            senha: "123456",
-          });
-
-          await usuario.save();
+        if (!managerExistente) {
+          listaManager.valores.push({ valor: manager });
+          await listaManager.save();
         }
 
-        prestador.usuario = usuario._id;
+        const row = {
+          sciUnico: value[0],
+          manager,
+          nome: value[2],
+          sid: value[3],
+          tipo: value[4],
+          documento: value[5],
+          dadosBancarios: {
+            banco: value[6],
+            agencia: value[7],
+            conta: value[8],
+            tipoConta: value[9],
+          },
+          email: value[10] === "" ? null : value[10],
+          endereco: {
+            cep: value[11].replaceAll("-", ""),
+            rua: value[12],
+            numero: value[13],
+            complemento: value[14],
+            cidade: value[15],
+            estado: value[16],
+            // pais: { nome: value[17] },
+          },
+          pessoaFisica: {
+            dataNascimento:
+              value[18] && value[18] !== ""
+                ? parse(
+                    value[18].replace(/[^\w\/]/g, ""),
+                    "dd/MM/yyyy",
+                    new Date()
+                  )
+                : null,
+            pis: value[19],
+            nomeMae: value[20],
+          },
+          pessoaJuridica: { nomeFantasia: value[21] },
+        };
+
+        const { numero, tipo } = await CNPJouCPF(row?.documento);
+
+        let prestador = await Prestador.findOneAndUpdate(
+          { sid: row?.sid },
+          { ...row, documento: numero }
+        );
+
+        if (!prestador) {
+          console.log("Prestador não encontrado, criando novo");
+          const prestadorOmie = await buscarPrestadorOmie({
+            documento: numero,
+          });
+
+          if (prestadorOmie) {
+            console.log("Prestador criado via omie:");
+
+            prestador = new Prestador({
+              ...prestadorOmie,
+              sid: row?.sid,
+              nome: row?.nome,
+              status: "em-analise",
+              manager,
+            });
+          }
+
+          if (!prestadorOmie) {
+            console.log("Prestador criado via planilha:");
+
+            prestador = new Prestador({
+              ...row,
+              sid: row.sid,
+              status: "em-analise",
+              documento: numero,
+            });
+          }
+
+          await prestador.save();
+          detalhes.novosPrestadores += 1;
+        }
+
+        if (prestador.email && !prestador.usuario) {
+          let usuario = await Usuario.findOne({ email: prestador.email });
+
+          if (!usuario) {
+            usuario = new Usuario({
+              email: prestador.email,
+              nome: prestador.nome,
+              tipo: "prestador",
+              senha: "123456",
+            });
+
+            await usuario.save();
+          }
+
+          prestador.usuario = usuario._id;
+          await prestador.save();
+
+          const token = usuario.gerarToken();
+
+          const url = new URL(
+            "/first-login",
+            process.env.BASE_URL_APP_PUBLISHER
+          );
+
+          url.searchParams.append("code", token);
+
+          //mostra url para não ter que verificar no email
+          console.log("URL", url.toString());
+
+          await emailUtils.emailLinkCadastroUsuarioPrestador({
+            email: req.usuario.email,
+            nome: prestador?.nome,
+            url: url?.toString(),
+          });
+        }
+
         await prestador.save();
+      } catch (error) {
+        console.log(error);
+        detalhes.linhasLidasComErro += 1;
+        detalhes.errors += `❌ [ERROR AO PROCESSAR LINHA]: ${i + 1} [SID: ${value[3]} - PRESTADOR: ${value[2]}] - \nDETALHES DO ERRO: ${error}\n\n`;
 
-        const token = usuario.gerarToken();
-
-        const url = new URL("/first-login", process.env.BASE_URL_APP_PUBLISHER);
-
-        url.searchParams.append("code", token);
-
-        //mostra url para não ter que verificar no email
-        console.log("URL", url.toString());
-
-        await emailUtils.emailLinkCadastroUsuarioPrestador({
-          email: req.usuario.email,
-          nome: prestador?.nome,
-          url: url?.toString(),
-        });
+        console.log("Ouve um erro", error, "\n", detalhes.errors);
       }
-
-      await prestador.save();
     }
 
-    return res.status(200).json();
+    await emailUtils.importarPrestadorDetalhes({
+      detalhes,
+      usuario: req.usuario,
+    });
+
+    console.log("[EMAIL ENVIADO PARA]:", req.usuario.email);
+    fs.unlinkSync(arquivo.path);
+
+    return;
   } catch (error) {
     console.log(error);
     return res.status(500).json();
@@ -744,10 +774,11 @@ exports.importarPrestadores = async (req, res) => {
 
 exports.importarServicos = async (req, res) => {
   console.log("[PROCESSANDO ARQUIVOS]:");
+  const arquivo = req.files[0];
+
+  if (arquivo) res.status(200).json();
 
   try {
-    const arquivo = req.files[0];
-
     const workbook = XLSX.readFile(arquivo.path);
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
@@ -923,19 +954,14 @@ exports.importarServicos = async (req, res) => {
       }
     }
 
-    await emailUtils.importarComissõesDetalhes({
-      detalhes: {
-        linhasEncontradas: detalhes?.totalDeLinhasLidas,
-        linhasLidasComErro: detalhes?.linhasLidasComErro,
-        totalDeNovosPrestadores: detalhes?.novosPrestadores,
-        totalDeNovosTickets: detalhes?.novosServicos,
-      },
+    await emailUtils.importarServicoDetalhes({
+      detalhes,
       usuario: req.usuario,
     });
 
     console.log("[EMAIL ENVIADO PARA]:", req.usuario.email);
     fs.unlinkSync(arquivo.path);
-    return res.status(200).json();
+    return;
   } catch (error) {
     console.log(error);
     return res.status(500).json();
