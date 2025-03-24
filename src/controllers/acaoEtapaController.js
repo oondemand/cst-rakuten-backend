@@ -679,33 +679,33 @@ exports.importarPrestadores = async (req, res) => {
         );
 
         if (!prestador) {
-          console.log("Prestador não encontrado, criando novo");
-          const prestadorOmie = await buscarPrestadorOmie({
+          // console.log("Prestador não encontrado, criando novo");
+          // const prestadorOmie = await buscarPrestadorOmie({
+          //   documento: numero,
+          // });
+
+          // if (prestadorOmie) {
+          //   console.log("Prestador criado via omie:");
+
+          //   prestador = new Prestador({
+          //     ...prestadorOmie,
+          //     sid: row?.sid,
+          //     nome: row?.nome,
+          //     status: "em-analise",
+          //     manager,
+          //   });
+          // }
+
+          // if (!prestadorOmie) {
+          console.log("Prestador criado via planilha:");
+
+          prestador = new Prestador({
+            ...row,
+            sid: row.sid,
+            status: "em-analise",
             documento: numero,
           });
-
-          if (prestadorOmie) {
-            console.log("Prestador criado via omie:");
-
-            prestador = new Prestador({
-              ...prestadorOmie,
-              sid: row?.sid,
-              nome: row?.nome,
-              status: "em-analise",
-              manager,
-            });
-          }
-
-          if (!prestadorOmie) {
-            console.log("Prestador criado via planilha:");
-
-            prestador = new Prestador({
-              ...row,
-              sid: row.sid,
-              status: "em-analise",
-              documento: numero,
-            });
-          }
+          // }
 
           await prestador.save();
           detalhes.novosPrestadores += 1;
