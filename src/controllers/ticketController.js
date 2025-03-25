@@ -478,21 +478,22 @@ exports.addServico = async (req, res) => {
 
 exports.removeServico = async (req, res) => {
   try {
-    const { ticketId, servicoId } = req.params;
-    const servico = await Servico.findByIdAndUpdate(servicoId, {
-      status: "aberto",
-    });
+    const { servicoId } = req.params;
+    await Servico.findByIdAndUpdate(
+      servicoId,
+      { status: "aberto" },
+      { new: true }
+    );
 
-    const ticket = await Ticket.findByIdAndUpdate(
-      ticketId,
-      {
-        $pull: { servicos: servico?._id },
-      },
+    const ticket = await Ticket.findOneAndUpdate(
+      { servicos: servicoId }, // Busca o ticket que contém este serviço
+      { $pull: { servicos: servicoId } }, // Remove o serviço do array
       { new: true }
     ).populate("servicos");
 
     return res.status(200).json(ticket);
   } catch (error) {
+    console.log(error);
     return res.status(500).json();
   }
 };

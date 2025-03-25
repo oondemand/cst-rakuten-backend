@@ -61,9 +61,6 @@ router.post(
   ticketController.addServico
 );
 
-router.post(
-  "/remover-servico/:ticketId/:servicoId",
-  ticketController.removeServico
-);
+router.post("/remover-servico/:servicoId", ticketController.removeServico);
 
 module.exports = router;
