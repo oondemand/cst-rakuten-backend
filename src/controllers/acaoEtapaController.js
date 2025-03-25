@@ -786,12 +786,6 @@ exports.importarServicos = async (req, res) => {
     for (const [i, value] of jsonData.entries()) {
       if (i === 0) continue;
 
-      console.log(
-        "COMPETENCIA",
-        value[7],
-        converterNumeroSerieParaData(value[7])
-      );
-
       const competencia =
         value[7] !== "" ? converterNumeroSerieParaData(value[7]) : null;
       const campanha = value[6];
@@ -800,8 +794,6 @@ exports.importarServicos = async (req, res) => {
       const campanhaExistente = listaCampanha.valores.some(
         (e) => e?.valor === campanha
       );
-
-      console.log("CAMAPANHA", campanha, campanhaExistente);
 
       if (!campanhaExistente && campanha !== "") {
         listaCampanha.valores.push(campanha);
@@ -840,13 +832,9 @@ exports.importarServicos = async (req, res) => {
         },
       };
 
-      console.log("ROW", row);
-
       try {
         const { numero, tipo } = await CNPJouCPF(row?.prestador?.documento);
         let prestador = await Prestador.findOne({ sid: row?.prestador?.sid });
-
-        console.log("PRESTADOR", tipo, numero);
 
         if (!prestador) {
           prestador = new Prestador({
