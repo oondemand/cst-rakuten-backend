@@ -11,8 +11,6 @@ const valoresSchema = new mongoose.Schema(
     revisionProvisionBonus: Number,
     revisionComissaoPlataforma: Number,
     revisionPaidPlacement: Number,
-    // totalServico: Number,
-    // totalRevisao: Number,
   },
   {
     _id: false,
@@ -50,7 +48,6 @@ const servicoSchema = new mongoose.Schema(
         ano: { type: Number, required: true, min: 2000 },
       },
     },
-    // valor: { type: Number, required: true, min: 0, default: 0 },
     tipoDocumentoFiscal: { type: String },
     campanha: { type: String },
     valores: valoresSchema,
@@ -73,16 +70,5 @@ servicoSchema.index(
   { prestador: 1, "competencia.mes": 1, "competencia.ano": 1 },
   { unique: true }
 );
-
-// servicoSchema.virtual("competencia").get(function () {
-//   if (this.mesCompetencia != null && this.anoCompetencia != null) {
-//     const mes = this.mesCompetencia.toString().padStart(2, "0");
-//     const ano = this.anoCompetencia.toString();
-
-//     return `${mes}/${ano}`;
-//   }
-
-//   return "";
-// });
 
 module.exports = mongoose.model("Servico", servicoSchema);
