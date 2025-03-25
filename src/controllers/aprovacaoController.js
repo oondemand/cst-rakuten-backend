@@ -13,6 +13,7 @@ const Servico = require("../models/Servico");
 const { add, format } = require("date-fns");
 const { ControleAlteracaoService } = require("../services/controleAlteracao");
 const ContaPagar = require("../models/ContaPagar");
+const { ja } = require("date-fns/locale");
 
 // Função para aprovar um ticket
 const aprovar = async (req, res) => {
@@ -56,9 +57,21 @@ const aprovar = async (req, res) => {
       });
     }
 
-    ticket.etapa = etapas[currentEtapaIndex + 1].codigo;
+    if (!["requisicao", "aprovacao-cadastro"].includes(ticket.etapa)) {
+      ticket.etapa = etapas[currentEtapaIndex + 1].codigo;
+    }
+
+    if (ticket?.etapa === "aprovacao-cadastro") {
+      ticket.etapa = etapas[currentEtapaIndex + 1].codigo;
+
+      if (ticket?.prestador?.tipo !== "pf") {
+        ticket.etapa = "aprovacao-fiscal";
+      }
+    }
 
     if (ticket.etapa === "requisicao") {
+      ticket.etapa = etapas[currentEtapaIndex + 1].codigo;
+
       const jaExisteServicoPago = await Servico.findOne({
         prestador: ticket?.prestador?._id,
         status: "pago",
@@ -70,12 +83,6 @@ const aprovar = async (req, res) => {
         } else {
           ticket.etapa = "geracao-rpa";
         }
-      }
-    }
-
-    if (ticket?.etapa === "aprovacao-cadastro") {
-      if (ticket?.prestador?.tipo !== "pf") {
-        ticket.etapa = "aprovacao-fiscal";
       }
     }
 
@@ -135,7 +142,7 @@ const recusar = async (req, res) => {
     if (currentEtapaIndex > 0)
       ticket.etapa = etapas[currentEtapaIndex - 1].codigo;
 
-    if (currentEtapaIndex === 3 && ticket.prestador?.tipo !== "pf") {
+    if (ticket.etapa === "aprovacao-fiscal" && ticket.prestador?.tipo !== "pf") {
       ticket.etapa = etapas[currentEtapaIndex - 2].codigo;
     }
 
