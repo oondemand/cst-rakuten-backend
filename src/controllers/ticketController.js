@@ -459,7 +459,7 @@ exports.addServico = async (req, res) => {
   try {
     const { ticketId, servicoId } = req.params;
     const servico = await Servico.findByIdAndUpdate(servicoId, {
-      status: "pendente",
+      status: "processando",
     });
     const ticket = await Ticket.findById(ticketId);
 

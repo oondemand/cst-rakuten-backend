@@ -56,8 +56,8 @@ const servicoSchema = new mongoose.Schema(
     valores: valoresSchema,
     status: {
       type: String,
-      enum: ["aberto", "pendente", "pago", "pago-externo"],
-      default: "pendente",
+      enum: ["aberto", "pendente", "processando", "pago", "pago-externo"],
+      default: "aberto",
     },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }

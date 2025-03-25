@@ -144,7 +144,7 @@ const contaPagarWebHook = async (req, res) => {
       if (ticket?.servicos.length > 0) {
         await Servico.updateMany(
           { _id: { $in: ticket?.servicos } },
-          { status: "pendente" }
+          { status: "processando" }
         );
       }
     }
