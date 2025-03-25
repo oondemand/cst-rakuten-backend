@@ -50,16 +50,6 @@ exports.createTicket = async (req, res) => {
 };
 
 exports.updateTicket = async (req, res) => {
-  const {
-    baseOmieId,
-    titulo,
-    observacao,
-    etapa,
-    status,
-    servicosIds,
-    prestadorId,
-  } = req.body;
-
   try {
     const ticket = await Ticket.findByIdAndUpdate(
       req.params.id,
