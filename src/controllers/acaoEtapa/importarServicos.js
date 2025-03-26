@@ -5,7 +5,7 @@ const Usuario = require("../../models/Usuario");
 const Servico = require("../../models/Servico");
 const Lista = require("../../models/Lista");
 const { CNPJouCPF } = require("../../utils/formatters");
-const { converterNumeroSerieParaData } = require("../../utils/dateUtils");
+const emailUtils = require("../../utils/emailUtils");
 
 const arredondarValor = (valor) => {
   if (valor !== "") return Math.round(valor * 100) / 100;
@@ -218,28 +218,40 @@ const processarJsonServicos = async ({ json }) => {
 };
 
 exports.importarServico = async (req, res) => {
-  const arquivo = req.files[0];
+  try {
+    const arquivo = req.files[0];
 
-  console.log("Arquivo", arquivo);
+    const importacao = new Importacao({
+      tipo: "servico",
+      arquivoOriginal: { ...arquivo, nome: arquivo.originalname },
+    });
 
-  const importacao = new Importacao({
-    tipo: "servico",
-    arquivoOriginal: { ...arquivo, nome: arquivo.originalname },
-  });
+    await importacao.save();
 
-  await importacao.save();
+    // if (arquivo && importacao) res.status(200).json(importacao);
 
-  if (arquivo && importacao) res.status(200).json(importacao);
+    const json = excelToJson({ arquivo });
 
-  const json = excelToJson({ arquivo });
+    const { detalhes, arquivoDeErro } = await processarJsonServicos({ json });
 
-  const { detalhes, arquivoDeErro } = await processarJsonServicos({ json });
+    importacao.arquivoErro = arrayToExcelBuffer({ array: arquivoDeErro });
+    importacao.arquivoLog = Buffer.from(detalhes.errors).toString("base64");
+    importacao.detalhes = detalhes;
 
-  importacao.arquivoErro = arrayToExcelBuffer({ array: arquivoDeErro });
-  importacao.arquivoLog = Buffer.from(detalhes.errors).toString("base64");
-  importacao.detalhes = detalhes;
+    await importacao.save();
 
-  await importacao.save();
+    await emailUtils.importarServicoDetalhes({
+      detalhes,
+      usuario: req.usuario,
+    });
 
-  // console.log("IMPORTAÇÃO", importacao);
+    console.log("[EMAIL ENVIADO PARA]:", req.usuario.email);
+    fs.unlinkSync(arquivo.path);
+
+    return res.status(200).json(importacao);
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Ouve um erro ao importar arquivo" });
+  }
 };
