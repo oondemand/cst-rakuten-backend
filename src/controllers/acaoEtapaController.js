@@ -714,23 +714,23 @@ exports.importarPrestadores = async (req, res) => {
           prestador.usuario = usuario._id;
           await prestador.save();
 
-          const token = usuario.gerarToken();
+          // const token = usuario.gerarToken();
 
-          const url = new URL(
-            "/first-login",
-            process.env.BASE_URL_APP_PUBLISHER
-          );
+          // const url = new URL(
+          //   "/first-login",
+          //   process.env.BASE_URL_APP_PUBLISHER
+          // );
 
-          url.searchParams.append("code", token);
+          // url.searchParams.append("code", token);
 
-          //mostra url para não ter que verificar no email
-          console.log("URL", url.toString());
+          // //mostra url para não ter que verificar no email
+          // console.log("URL", url.toString());
 
-          await emailUtils.emailLinkCadastroUsuarioPrestador({
-            email: req.usuario.email,
-            nome: prestador?.nome,
-            url: url?.toString(),
-          });
+          // await emailUtils.emailLinkCadastroUsuarioPrestador({
+          //   email: req.usuario.email,
+          //   nome: prestador?.nome,
+          //   url: url?.toString(),
+          // });
         }
 
         await prestador.save();
@@ -870,23 +870,23 @@ exports.importarServicos = async (req, res) => {
           prestador.usuario = usuario._id;
           await prestador.save();
 
-          const token = usuario.gerarToken();
+          // const token = usuario.gerarToken();
 
-          const url = new URL(
-            "/first-login",
-            process.env.BASE_URL_APP_PUBLISHER
-          );
+          // const url = new URL(
+          //   "/first-login",
+          //   process.env.BASE_URL_APP_PUBLISHER
+          // );
 
-          url.searchParams.append("code", token);
+          // url.searchParams.append("code", token);
 
-          //mostra url para não ter que verificar no email
-          console.log("URL", url.toString());
+          // //mostra url para não ter que verificar no email
+          // console.log("URL", url.toString());
 
-          await emailUtils.emailLinkCadastroUsuarioPrestador({
-            email: req.usuario.email,
-            nome: prestador?.nome,
-            url: url?.toString(),
-          });
+          // await emailUtils.emailLinkCadastroUsuarioPrestador({
+          //   email: req.usuario.email,
+          //   nome: prestador?.nome,
+          //   url: url?.toString(),
+          // });
         }
 
         let servico = await Servico.findOne({
