@@ -64,7 +64,6 @@ const prestadorSchema = new mongoose.Schema(
     pessoaFisica: {
       dataNascimento: Date,
       pis: String,
-      nomeMae: String,
       rg: {
         numero: String,
         orgaoEmissor: String,

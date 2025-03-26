@@ -559,7 +559,7 @@ exports.exportarPrestadores = async (req, res) => {
           email: prestador.email,
           nome: prestador.nome,
           cep: prestador.endereco ? prestador.endereco.cep : "",
-          nomeMae: prestador.pessoaFisica ? prestador.pessoaFisica.nomeMae : "",
+          // nomeMae: prestador.pessoaFisica ? prestador.pessoaFisica.nomeMae : "",
           pisNis: prestador.pessoaFisica ? prestador.pessoaFisica.pis : "",
           rg: prestador.pessoaFisica ? prestador.pessoaFisica.rg.numero : "",
           orgaoEmissorRG: prestador.pessoaFisica
@@ -671,9 +671,8 @@ exports.importarPrestadores = async (req, res) => {
                   )
                 : null,
             pis: value[19],
-            nomeMae: value[20],
           },
-          pessoaJuridica: { nomeFantasia: value[21] },
+          pessoaJuridica: { nomeFantasia: value[20] },
         };
 
         const { numero, tipo } = await CNPJouCPF(row?.documento);
