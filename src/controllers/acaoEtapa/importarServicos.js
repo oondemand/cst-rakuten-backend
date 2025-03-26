@@ -85,12 +85,14 @@ const converterLinhaEmServico = async ({ row }) => {
 };
 
 const buscarServicoExistente = async ({ prestadorId, competencia }) => {
-  if (!prestadorId || competencia) return null;
-  return await Servico.findOne({
+  if (!prestadorId || !competencia) return null;
+  const servico = await Servico.findOne({
     prestador: prestadorId,
     "competencia.mes": competencia?.mes,
     "competencia.ano": competencia?.ano,
   });
+
+  return servico;
 };
 
 const buscarPrestadorPorSid = async ({ sid }) => {
@@ -161,7 +163,11 @@ const processarJsonServicos = async ({ json }) => {
   const arquivoDeErro = [];
 
   for (const [i, row] of json.entries()) {
-    if (i === 0) continue;
+    if (i === 0) {
+      arquivoDeErro.push(row);
+      continue;
+    }
+
     try {
       const servico = await converterLinhaEmServico({ row });
       let prestador = await buscarPrestadorPorSid({
@@ -193,7 +199,6 @@ const processarJsonServicos = async ({ json }) => {
 
       // Atualiza o serviço caso já exista
       if (servicoExistente) {
-        servicoExistente.competencia = servico.competencia;
         servicoExistente.valores = servico.valores;
         servicoExistente.tipoDocumentoFiscal = servico.tipoDocumentoFiscal;
 
@@ -208,9 +213,9 @@ const processarJsonServicos = async ({ json }) => {
       }
     } catch (error) {
       console.log("ERROR", error);
-      detalhes.linhasLidasComErro += 1;
-      detalhes.errors += `❌ [ERROR AO PROCESSAR LINHA]: ${i + 1} [SID: ${row?.prestador?.sid} - PRESTADOR: ${row?.prestador?.nome}] - \nDETALHES DO ERRO: ${error}\n\n`;
       arquivoDeErro.push(row);
+      detalhes.linhasLidasComErro += 1;
+      detalhes.errors += `❌ [ERROR AO PROCESSAR LINHA]: ${i + 1} [SID: ${row[1]} - PRESTADOR: ${row[0]}] - \nDETALHES DO ERRO: ${error}\n\n`;
     }
   }
 
@@ -235,7 +240,7 @@ exports.importarServico = async (req, res) => {
     const { detalhes, arquivoDeErro } = await processarJsonServicos({ json });
 
     importacao.arquivoErro = arrayToExcelBuffer({ array: arquivoDeErro });
-    importacao.arquivoLog = Buffer.from(detalhes.errors).toString("base64");
+    importacao.arquivoLog = Buffer.from(detalhes.errors);
     importacao.detalhes = detalhes;
 
     await importacao.save();
@@ -246,7 +251,6 @@ exports.importarServico = async (req, res) => {
     });
 
     console.log("[EMAIL ENVIADO PARA]:", req.usuario.email);
-    fs.unlinkSync(arquivo.path);
 
     return res.status(200).json(importacao);
   } catch (error) {
