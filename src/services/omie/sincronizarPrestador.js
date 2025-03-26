@@ -1,6 +1,5 @@
 const Prestador = require("../../models/Prestador");
 const clienteService = require("../omie/clienteService");
-const { obterCodigoBanco } = require("../../utils/brasilApi");
 
 const BaseOmie = require("../../models/BaseOmie");
 

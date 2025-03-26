@@ -2,15 +2,15 @@ const mongoose = require("mongoose");
 
 const valoresSchema = new mongoose.Schema(
   {
-    grossValue: Number,
-    bonus: Number,
-    ajusteComercial: Number,
-    paidPlacement: Number,
+    grossValue: { type: Number },
+    bonus: { type: Number },
+    ajusteComercial: { type: Number },
+    paidPlacement: { type: Number },
     revisionMonthProvision: { type: Date },
-    revisionGrossValue: Number,
-    revisionProvisionBonus: Number,
-    revisionComissaoPlataforma: Number,
-    revisionPaidPlacement: Number,
+    revisionGrossValue: { type: Number },
+    revisionProvisionBonus: { type: Number },
+    revisionComissaoPlataforma: { type: Number },
+    revisionPaidPlacement: { type: Number },
   },
   {
     _id: false,
