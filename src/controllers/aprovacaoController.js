@@ -384,6 +384,7 @@ const cadastrarContaAPagar = async (baseOmie, codigoFornecedor, ticket) => {
       observacao,
       valor: valorTotalDaNota,
       id_conta_corrente: process.env.ID_CONTA_CORRENTE,
+      dataRegistro: ticket?.servicos[0]?.dataRegistro,
       // codigo_categoria: process.env.CODIGO_CATEGORIA,
     });
 
