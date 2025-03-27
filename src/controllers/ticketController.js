@@ -448,13 +448,14 @@ exports.getArquivoPorId = async (req, res) => {
 exports.addServico = async (req, res) => {
   try {
     const { ticketId, servicoId } = req.params;
-    const servico = await Servico.findByIdAndUpdate(servicoId, {
-      status: "processando",
-    });
+    const servico = await Servico.findById(servicoId);
     const ticket = await Ticket.findById(ticketId);
 
     ticket.servicos = [...ticket?.servicos, servico?._id];
     await ticket.save();
+
+    servico.status = "processando";
+    await servico.save();
 
     const populatedTicket = await Ticket.findById(ticket._id).populate(
       "servicos"
