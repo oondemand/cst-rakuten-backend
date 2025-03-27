@@ -214,7 +214,7 @@ exports.atualizarPrestador = async (req, res) => {
 
     res.status(200).json({
       message: "Prestador atualizado com sucesso!",
-      prestador,
+      prestador: prestadorAtualizado,
     });
   } catch (error) {
     console.error("Erro ao atualizar prestador:", error);
