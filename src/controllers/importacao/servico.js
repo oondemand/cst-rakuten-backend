@@ -14,7 +14,7 @@ const {
 
 const converterLinhaEmServico = async ({ row }) => {
   const { numero, tipo } = await CNPJouCPF(row[2]);
-  const competencia = row[7];
+  const competencia = row[8];
 
   const servico = {
     prestador: {
@@ -23,27 +23,29 @@ const converterLinhaEmServico = async ({ row }) => {
       documento: numero,
       tipo,
     },
-    tipoDocumentoFiscal: row[3]?.toUpperCase(),
-    dataProvisaoContabil: row[4],
-    dataRegistro: row[5],
-    campanha: row[6],
+    notaFiscal: row[3],
+    tipoDocumentoFiscal: row[4],
+    dataProvisaoContabil: row[5],
+    dataRegistro: row[6],
+    campanha: row[7],
     competencia: {
       mes: competencia && competencia.getMonth() + 1,
       ano: competencia && competencia.getFullYear(),
     },
 
     valores: {
-      grossValue: arredondarValor(row[8]),
-      bonus: arredondarValor(row[9]),
-      ajusteComercial: arredondarValor(row[10]),
-      paidPlacement: arredondarValor(row[11]),
+      grossValue: arredondarValor(row[9]),
+      bonus: arredondarValor(row[10]),
+      ajusteComercial: arredondarValor(row[11]),
+      paidPlacement: arredondarValor(row[12]),
 
-      revisionMonthProvision: row[13],
+      revisionMonthProvision: row[14],
 
-      revisionGrossValue: arredondarValor(row[14]),
-      revisionProvisionBonus: arredondarValor(row[15]),
-      revisionComissaoPlataforma: arredondarValor(row[16]),
-      revisionPaidPlacement: arredondarValor(row[17]),
+      revisionGrossValue: arredondarValor(row[15]),
+      revisionProvisionBonus: arredondarValor(row[16]),
+      revisionComissaoPlataforma: arredondarValor(row[17]),
+      revisionPaidPlacement: arredondarValor(row[18]),
+      imposto: arredondarValor(row[20]),
     },
   };
 

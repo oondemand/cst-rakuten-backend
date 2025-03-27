@@ -11,6 +11,8 @@ const valoresSchema = new mongoose.Schema(
     revisionProvisionBonus: { type: Number },
     revisionComissaoPlataforma: { type: Number },
     revisionPaidPlacement: { type: Number },
+
+    imposto: { type: Number },
   },
   {
     _id: false,
@@ -40,6 +42,7 @@ valoresSchema.virtual("totalRevisao").get(function () {
 const servicoSchema = new mongoose.Schema(
   {
     prestador: { type: mongoose.Schema.Types.ObjectId, ref: "Prestador" },
+    notaFiscal: { type: String },
     dataProvisaoContabil: { type: Date },
     dataRegistro: { type: Date },
     competencia: {
@@ -63,7 +66,8 @@ const servicoSchema = new mongoose.Schema(
 servicoSchema.virtual("valor").get(function () {
   const totalServico = this.valores?.totalServico || 0;
   const totalRevisao = this.valores?.totalRevisao || 0;
-  return totalServico + totalRevisao;
+  const imposto = this.valores?.imposto || 0;
+  return totalServico + totalRevisao + imposto;
 });
 
 servicoSchema.index(
