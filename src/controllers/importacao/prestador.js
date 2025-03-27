@@ -167,7 +167,7 @@ exports.importarPrestador = async (req, res) => {
 
     await importacao.save();
 
-    // if (arquivo && importacao) res.status(200).json(importacao);
+    if (arquivo && importacao) res.status(200).json(importacao);
 
     const json = excelToJson({ arquivo });
 
@@ -187,8 +187,6 @@ exports.importarPrestador = async (req, res) => {
     });
 
     console.log("[EMAIL ENVIADO PARA]:", req.usuario.email);
-
-    return res.status(200).json(importacao);
   } catch (error) {
     console.log(error);
     return res
