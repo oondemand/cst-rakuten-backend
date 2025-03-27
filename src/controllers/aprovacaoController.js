@@ -142,7 +142,10 @@ const recusar = async (req, res) => {
     if (currentEtapaIndex > 0)
       ticket.etapa = etapas[currentEtapaIndex - 1].codigo;
 
-    if (ticket.etapa === "aprovacao-fiscal" && ticket.prestador?.tipo !== "pf") {
+    if (
+      ticket.etapa === "aprovacao-fiscal" &&
+      ticket.prestador?.tipo !== "pf"
+    ) {
       ticket.etapa = etapas[currentEtapaIndex - 2].codigo;
     }
 
@@ -354,15 +357,14 @@ const cadastrarContaAPagar = async (baseOmie, codigoFornecedor, ticket) => {
     let observacao = `Serviços prestados SID - ${ticket.prestador.sid}\n-- Serviços --\n`;
 
     for (const id of ticket.servicos) {
-      const { valor, mesCompetencia, anoCompetencia } =
-        await Servico.findById(id);
+      const { valor, competencia } = await Servico.findById(id);
 
       const valorTotalFormatado = valor.toLocaleString("pt-BR", {
         style: "currency",
         currency: "BRL",
       });
 
-      observacao += `Competência: ${mesCompetencia}/${anoCompetencia} - Valor total: ${valorTotalFormatado}\n`;
+      observacao += `Competência: ${competencia?.mes}/${competencia?.ano} - Valor total: ${valorTotalFormatado}\n`;
       valorTotalDaNota += valor;
     }
 
