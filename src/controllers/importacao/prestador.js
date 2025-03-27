@@ -73,7 +73,7 @@ const converterLinhaEmPrestador = async ({ row }) => {
 const criarNovoPrestador = async ({ prestador }) => {
   const novoPrestador = new Prestador({
     ...prestador,
-    status: "em-analise",
+    status: "ativo",
   });
 
   await novoPrestador.save();

@@ -74,7 +74,7 @@ const criarNovoPrestador = async ({ sid, nome, tipo, documento }) => {
     nome,
     tipo,
     documento,
-    status: "em-analise",
+    status: "ativo",
   });
 
   await prestador.save();

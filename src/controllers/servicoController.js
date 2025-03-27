@@ -70,8 +70,6 @@ exports.createServicoETicket = async (req, res) => {
 
 exports.createServico = async (req, res) => {
   try {
-    console.log("REQ_BODY", req.body);
-
     const servicoExistente = await Servico.findOne({
       prestador: req.body.prestador,
       "competencia.mes": req.body.competencia?.mes,

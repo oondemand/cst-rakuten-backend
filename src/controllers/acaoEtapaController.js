@@ -100,257 +100,257 @@ const buscarPrestadorOmie = async ({ documento }) => {
   }
 };
 
-exports.importarComissoes = async (req, res) => {
-  const arquivo = req.file;
+// exports.importarComissoes = async (req, res) => {
+//   const arquivo = req.file;
 
-  if (!arquivo) {
-    return res.status(400).json({ message: "Nenhum arquivo enviado." });
-  }
+//   if (!arquivo) {
+//     return res.status(400).json({ message: "Nenhum arquivo enviado." });
+//   }
 
-  res.status(200).json({ message: "Arquivo recebido e sendo processado" });
+//   res.status(200).json({ message: "Arquivo recebido e sendo processado" });
 
-  try {
-    console.log("[PROCESSANDO ARQUIVO...]");
+//   try {
+//     console.log("[PROCESSANDO ARQUIVO...]");
 
-    // Ler o arquivo usando XLSX
-    const workbook = XLSX.readFile(arquivo.path);
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-      header: 1,
-      defval: "",
-    });
+//     // Ler o arquivo usando XLSX
+//     const workbook = XLSX.readFile(arquivo.path);
+//     const sheetName = workbook.SheetNames[0];
+//     const worksheet = workbook.Sheets[sheetName];
+//     const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+//       header: 1,
+//       defval: "",
+//     });
 
-    // Processar os dados pela posição das colunas
-    const processedData = jsonData.reduce((result, row, i) => {
-      if (i === 0) {
-        return result;
-      }
+//     // Processar os dados pela posição das colunas
+//     const processedData = jsonData.reduce((result, row, i) => {
+//       if (i === 0) {
+//         return result;
+//       }
 
-      const data = {
-        type: row[0],
-        sid: row[3],
-        periodo: converterNumeroSerieParaData(row[5]) || "",
-        valorPrincipal: row[6] || 0,
-        valorBonus: row[7] || 0,
-        valorAjusteComercial: row[8] || 0,
-        valorHospedagemAnuncio: row[9] || 0,
-        valorTotal: row[10] || 0,
-        nomePrestador: row[20] || "",
-        documento: row[19] || "",
-      };
+//       const data = {
+//         type: row[0],
+//         sid: row[3],
+//         periodo: converterNumeroSerieParaData(row[5]) || "",
+//         valorPrincipal: row[6] || 0,
+//         valorBonus: row[7] || 0,
+//         valorAjusteComercial: row[8] || 0,
+//         valorHospedagemAnuncio: row[9] || 0,
+//         valorTotal: row[10] || 0,
+//         nomePrestador: row[20] || "",
+//         documento: row[19] || "",
+//       };
 
-      const valorTotalRevisaoDeProvisao = row[15];
+//       const valorTotalRevisaoDeProvisao = row[15];
 
-      if (valorTotalRevisaoDeProvisao) {
-        const revisaoDeProvisao = {
-          periodo: converterNumeroSerieParaData(row[11]) || "",
-          valorPrincipal: row[12] || 0,
-          valorBonus: row[13] || 0,
-          valorAjusteComercial: row[14] || 0,
-          valorTotal: valorTotalRevisaoDeProvisao,
-        };
-        data.revisaoDeProvisao = revisaoDeProvisao;
-      }
+//       if (valorTotalRevisaoDeProvisao) {
+//         const revisaoDeProvisao = {
+//           periodo: converterNumeroSerieParaData(row[11]) || "",
+//           valorPrincipal: row[12] || 0,
+//           valorBonus: row[13] || 0,
+//           valorAjusteComercial: row[14] || 0,
+//           valorTotal: valorTotalRevisaoDeProvisao,
+//         };
+//         data.revisaoDeProvisao = revisaoDeProvisao;
+//       }
 
-      // Adiciona ao resultado apenas se atender aos critérios
-      // Detalhe para o tipo "RPA", isso que vai fazer com que
-      // o cabeçalho seja pulado corretamente
-      if (data.sid && data.nomePrestador) {
-        result.push(data);
-      }
+//       // Adiciona ao resultado apenas se atender aos critérios
+//       // Detalhe para o tipo "RPA", isso que vai fazer com que
+//       // o cabeçalho seja pulado corretamente
+//       if (data.sid && data.nomePrestador) {
+//         result.push(data);
+//       }
 
-      return result;
-    }, []);
+//       return result;
+//     }, []);
 
-    let detalhes = {
-      linhasEncontradas: processedData.length,
-      linhasLidasComErro: 0,
-      totalDeNovosPrestadores: 0,
-      valorTotalLido: 0,
-      totalDeNovosTickets: 0,
-      erros: null,
-    };
+//     let detalhes = {
+//       linhasEncontradas: processedData.length,
+//       linhasLidasComErro: 0,
+//       totalDeNovosPrestadores: 0,
+//       valorTotalLido: 0,
+//       totalDeNovosTickets: 0,
+//       erros: null,
+//     };
 
-    console.log("[ARQUIVO PROCESSADO]");
-    console.log("LINHAS LIDAS:", processedData.length);
+//     console.log("[ARQUIVO PROCESSADO]");
+//     console.log("LINHAS LIDAS:", processedData.length);
 
-    // Percorrer os dados e salvar no banco
-    for (const [index, row] of processedData.entries()) {
-      try {
-        const { numero, tipo } = CNPJouCPF(row.documento);
+//     // Percorrer os dados e salvar no banco
+//     for (const [index, row] of processedData.entries()) {
+//       try {
+//         const { numero, tipo } = CNPJouCPF(row.documento);
 
-        let prestador = await Prestador.findOne({ sid: row.sid });
-        let acao = "alterar";
+//         let prestador = await Prestador.findOne({ sid: row.sid });
+//         let acao = "alterar";
 
-        if (!prestador) {
-          const prestadorOmie = await buscarPrestadorOmie({
-            documento: numero,
-          });
+//         if (!prestador) {
+//           const prestadorOmie = await buscarPrestadorOmie({
+//             documento: numero,
+//           });
 
-          if (prestadorOmie) {
-            prestador = new Prestador({
-              ...prestadorOmie,
-              sid: row.sid,
-              nome: row.nomePrestador,
-              status: "em-analise",
-            });
-            await prestador.save();
-            detalhes.totalDeNovosPrestadores += 1;
+//           if (prestadorOmie) {
+//             prestador = new Prestador({
+//               ...prestadorOmie,
+//               sid: row.sid,
+//               nome: row.nomePrestador,
+//               status: "em-analise",
+//             });
+//             await prestador.save();
+//             detalhes.totalDeNovosPrestadores += 1;
 
-            console.log("Criando prestador via omie");
-          }
+//             console.log("Criando prestador via omie");
+//           }
 
-          if (!prestadorOmie) {
-            prestador = new Prestador({
-              sid: row.sid,
-              nome: row.nomePrestador,
-              status: "em-analise",
-              documento: numero,
-              tipo: row?.type === "INVOICE" ? "ext" : tipo,
-            });
+//           if (!prestadorOmie) {
+//             prestador = new Prestador({
+//               sid: row.sid,
+//               nome: row.nomePrestador,
+//               status: "em-analise",
+//               documento: numero,
+//               tipo: row?.type === "INVOICE" ? "ext" : tipo,
+//             });
 
-            await prestador.save();
-            detalhes.totalDeNovosPrestadores += 1;
-            console.log(
-              "Criando prestador via planilha",
-              prestador.tipo,
-              row?.type
-            );
-          }
+//             await prestador.save();
+//             detalhes.totalDeNovosPrestadores += 1;
+//             console.log(
+//               "Criando prestador via planilha",
+//               prestador.tipo,
+//               row?.type
+//             );
+//           }
 
-          if (prestador.email) {
-            let usuario = await Usuario.findOne({ email: prestador.email });
+//           if (prestador.email) {
+//             let usuario = await Usuario.findOne({ email: prestador.email });
 
-            if (!usuario) {
-              usuario = new Usuario({
-                email: prestador.email,
-                nome: prestador.nome,
-                tipo: "prestador",
-                senha: "123456",
-              });
+//             if (!usuario) {
+//               usuario = new Usuario({
+//                 email: prestador.email,
+//                 nome: prestador.nome,
+//                 tipo: "prestador",
+//                 senha: "123456",
+//               });
 
-              await usuario.save();
-            }
+//               await usuario.save();
+//             }
 
-            prestador.usuario = usuario._id;
-            await prestador.save();
+//             prestador.usuario = usuario._id;
+//             await prestador.save();
 
-            const token = usuario.gerarToken();
+//             const token = usuario.gerarToken();
 
-            const url = new URL(
-              "/first-login",
-              process.env.BASE_URL_APP_PUBLISHER
-            );
-            url.searchParams.append("code", token);
+//             const url = new URL(
+//               "/first-login",
+//               process.env.BASE_URL_APP_PUBLISHER
+//             );
+//             url.searchParams.append("code", token);
 
-            //mostra url para não ter que verificar no email
-            // console.log("URL", url.toString());
+//             //mostra url para não ter que verificar no email
+//             // console.log("URL", url.toString());
 
-            await emailUtils.emailLinkCadastroUsuarioPrestador({
-              email: req.usuario.email,
-              nome: prestador.nome,
-              url: url.toString(),
-            });
-          }
-        }
+//             await emailUtils.emailLinkCadastroUsuarioPrestador({
+//               email: req.usuario.email,
+//               nome: prestador.nome,
+//               url: url.toString(),
+//             });
+//           }
+//         }
 
-        let ticket = await Ticket.findOne({
-          prestador,
-          etapa: {
-            $in: [
-              "requisicao",
-              "verificacao",
-              "aprovacao-tributaria",
-              "aprovacao-cadastro",
-            ],
-          },
-        });
+//         let ticket = await Ticket.findOne({
+//           prestador,
+//           etapa: {
+//             $in: [
+//               "requisicao",
+//               "verificacao",
+//               "aprovacao-tributaria",
+//               "aprovacao-cadastro",
+//             ],
+//           },
+//         });
 
-        if (!ticket) {
-          acao = "adicionar";
-          ticket = new Ticket({
-            prestador: prestador._id,
-            titulo: `Comissão ${prestador.nome}: ${getMonth(row.periodo) + 1}/${getYear(row.periodo)}`,
-            status: "aguardando-inicio",
-            etapa: "requisicao",
-          });
+//         if (!ticket) {
+//           acao = "adicionar";
+//           ticket = new Ticket({
+//             prestador: prestador._id,
+//             titulo: `Comissão ${prestador.nome}: ${getMonth(row.periodo) + 1}/${getYear(row.periodo)}`,
+//             status: "aguardando-inicio",
+//             etapa: "requisicao",
+//           });
 
-          await ticket.save();
-          detalhes.totalDeNovosTickets += 1;
-        }
+//           await ticket.save();
+//           detalhes.totalDeNovosTickets += 1;
+//         }
 
-        const servico = new Servico({
-          prestador: prestador._id,
-          mesCompetencia: getMonth(row.periodo) + 1, // Meses no date-fns começam a partir do 0
-          anoCompetencia: getYear(row.periodo),
-          valorPrincipal: row.valorPrincipal,
-          valorBonus: row.valorBonus,
-          valorAjusteComercial: row.valorAjusteComercial,
-          valorHospedagemAnuncio: row.valorHospedagemAnuncio,
-          valorTotal: row.valorTotal,
-          status: "ativo",
-        });
+//         const servico = new Servico({
+//           prestador: prestador._id,
+//           mesCompetencia: getMonth(row.periodo) + 1, // Meses no date-fns começam a partir do 0
+//           anoCompetencia: getYear(row.periodo),
+//           valorPrincipal: row.valorPrincipal,
+//           valorBonus: row.valorBonus,
+//           valorAjusteComercial: row.valorAjusteComercial,
+//           valorHospedagemAnuncio: row.valorHospedagemAnuncio,
+//           valorTotal: row.valorTotal,
+//           status: "ativo",
+//         });
 
-        await servico.save();
-        detalhes.valorTotalLido += row.valorTotal;
+//         await servico.save();
+//         detalhes.valorTotalLido += row.valorTotal;
 
-        ticket.servicos.push(servico._id);
-        await ticket.save();
+//         ticket.servicos.push(servico._id);
+//         await ticket.save();
 
-        if (row.revisaoDeProvisao) {
-          const servicoDeCorrecao = new Servico({
-            prestador: prestador._id,
-            mesCompetencia: getMonth(row.revisaoDeProvisao.periodo) + 1, // Meses no date-fns começam a partir do 0
-            anoCompetencia: getYear(row.revisaoDeProvisao.periodo),
-            valorPrincipal: row.revisaoDeProvisao.valorPrincipal,
-            valorBonus: row.revisaoDeProvisao.valorBonus,
-            valorAjusteComercial: row.revisaoDeProvisao.valorAjusteComercial,
-            valorHospedagemAnuncio:
-              row.revisaoDeProvisao.valorHospedagemAnuncio,
-            valorTotal: row.revisaoDeProvisao.valorTotal,
-            correcao: true,
-            status: "ativo",
-          });
-          await servicoDeCorrecao.save();
-          detalhes.valorTotalLido += row.revisaoDeProvisao.valorTotal;
+//         if (row.revisaoDeProvisao) {
+//           const servicoDeCorrecao = new Servico({
+//             prestador: prestador._id,
+//             mesCompetencia: getMonth(row.revisaoDeProvisao.periodo) + 1, // Meses no date-fns começam a partir do 0
+//             anoCompetencia: getYear(row.revisaoDeProvisao.periodo),
+//             valorPrincipal: row.revisaoDeProvisao.valorPrincipal,
+//             valorBonus: row.revisaoDeProvisao.valorBonus,
+//             valorAjusteComercial: row.revisaoDeProvisao.valorAjusteComercial,
+//             valorHospedagemAnuncio:
+//               row.revisaoDeProvisao.valorHospedagemAnuncio,
+//             valorTotal: row.revisaoDeProvisao.valorTotal,
+//             correcao: true,
+//             status: "ativo",
+//           });
+//           await servicoDeCorrecao.save();
+//           detalhes.valorTotalLido += row.revisaoDeProvisao.valorTotal;
 
-          ticket.servicos.push(servicoDeCorrecao._id);
-          await ticket.save();
-        }
+//           ticket.servicos.push(servicoDeCorrecao._id);
+//           await ticket.save();
+//         }
 
-        ControleAlteracaoService.registrarAlteracao({
-          acao,
-          dataHora: new Date(),
-          idRegistroAlterado: ticket._id,
-          origem: "importacao-payment-control",
-          dadosAtualizados: ticket,
-          tipoRegistroAlterado: "ticket",
-          usuario: req.usuario._id,
-        });
-      } catch (err) {
-        detalhes.linhasLidasComErro += 1;
-        detalhes.erros += `❌ Erro ao processar linha: ${index + 1} [SID: ${row.sid} - PRESTADOR: ${row.nomePrestador}] - \nDETALHES DO ERRO: ${err}\n\n`;
+//         ControleAlteracaoService.registrarAlteracao({
+//           acao,
+//           dataHora: new Date(),
+//           idRegistroAlterado: ticket._id,
+//           origem: "importacao-payment-control",
+//           dadosAtualizados: ticket,
+//           tipoRegistroAlterado: "ticket",
+//           usuario: req.usuario._id,
+//         });
+//       } catch (err) {
+//         detalhes.linhasLidasComErro += 1;
+//         detalhes.erros += `❌ Erro ao processar linha: ${index + 1} [SID: ${row.sid} - PRESTADOR: ${row.nomePrestador}] - \nDETALHES DO ERRO: ${err}\n\n`;
 
-        console.error(
-          `❌ Erro ao processar linha: ${index + 1} [SID: ${row.sid} - PRESTADOR: ${row.nomePrestador}] - \nDETALHES DO ERRO: ${err}\n`
-        );
-      }
-    }
+//         console.error(
+//           `❌ Erro ao processar linha: ${index + 1} [SID: ${row.sid} - PRESTADOR: ${row.nomePrestador}] - \nDETALHES DO ERRO: ${err}\n`
+//         );
+//       }
+//     }
 
-    await emailUtils.importarComissõesDetalhes({
-      detalhes,
-      usuario: req.usuario,
-    });
+//     await emailUtils.importarComissõesDetalhes({
+//       detalhes,
+//       usuario: req.usuario,
+//     });
 
-    console.log("[EMAIL ENVIADO PARA]:", req.usuario.email);
-    // Remover o arquivo após o processamento
-    fs.unlinkSync(arquivo.path);
-    console.log("🟩[PROCESSAMENTO CONCLUIDO]");
-  } catch (error) {
-    console.error("Erro ao importar comissões:", error);
-  }
-};
+//     console.log("[EMAIL ENVIADO PARA]:", req.usuario.email);
+//     // Remover o arquivo após o processamento
+//     fs.unlinkSync(arquivo.path);
+//     console.log("🟩[PROCESSAMENTO CONCLUIDO]");
+//   } catch (error) {
+//     console.error("Erro ao importar comissões:", error);
+//   }
+// };
 
 exports.importarRPAs = async (req, res) => {
   const arquivos = req.files;
@@ -574,7 +574,7 @@ exports.exportarPrestadores = async (req, res) => {
           eSocial: process.env.SCI_ESOCIAL,
         }).concat("\n\n");
 
-        prestador.status = "aguardando-codigo-sci";
+        // prestador.status = "aguardando-codigo-sci";
         prestador.dataExportacao = new Date();
         await prestador.save();
         prestadoresExportados.push(prestador._id);
@@ -688,7 +688,7 @@ exports.importarPrestadores = async (req, res) => {
           prestador = new Prestador({
             ...row,
             sid: row.sid,
-            status: "em-analise",
+            status: "ativo",
             documento: numero,
           });
 
@@ -839,7 +839,7 @@ exports.importarServicos = async (req, res) => {
           prestador = new Prestador({
             sid: row?.prestador?.sid,
             nome: row?.prestador?.nome,
-            status: "em-analise",
+            status: "ativo",
             documento: numero || null,
             tipo:
               row?.tipoDocumentoFiscal.toLowerCase() === "invoice"

@@ -44,7 +44,7 @@ exports.adicionarPrestadorECriarTicket = async (req, res) => {
   try {
     // Adicionar prestador
     const novoPrestador = new Prestador(req.body);
-    novoPrestador.status = "em-analise";
+    novoPrestador.status = "ativo";
     await novoPrestador.save();
 
     // console.log("novoPrestador", novoPrestador);

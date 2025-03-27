@@ -10,7 +10,10 @@ const enderecoSchema = new mongoose.Schema({
   complemento: String,
   cidade: String,
   estado: String,
-  pais: { type: { nome: String, cod: Number } },
+  pais: {
+    type: { nome: String, cod: Number },
+    default: { nome: "Brasil", cod: 1058 },
+  },
 });
 
 // Esquema de Dados Bancários
@@ -82,14 +85,7 @@ const prestadorSchema = new mongoose.Schema(
     comentariosRevisao: String,
     status: {
       type: String,
-      enum: [
-        "ativo",
-        "em-analise",
-        "pendente-de-revisao",
-        "inativo",
-        "arquivado",
-        "aguardando-codigo-sci",
-      ],
+      enum: ["ativo", "pendente-de-revisao", "inativo", "arquivado"],
       default: "ativo",
     },
     dataExportacao: { type: Date, default: null },
