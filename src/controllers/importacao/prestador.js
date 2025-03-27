@@ -58,7 +58,7 @@ const converterLinhaEmPrestador = async ({ row }) => {
       pais: { nome: pais?.cDescricao, cod: pais?.cCodigo },
     },
     pessoaFisica: {
-      dataNascimento:k
+      dataNascimento:
         row[18] !== ""
           ? parse(row[18].replace(/[^\w\/]/g, ""), "dd/MM/yyyy", new Date())
           : null,
