@@ -301,7 +301,7 @@ exports.alterarSenha = async (req, res) => {
   const { senhaAtual, novaSenha, confirmacao, code } = req.body;
 
   if (!token && !code) {
-    return res.status(401).json({ error: "Token inválido" });
+    return res.status(401).json();
   }
 
   if (!novaSenha) {
