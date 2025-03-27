@@ -81,8 +81,12 @@ const criarNovoPrestador = async ({ prestador }) => {
 };
 
 const buscarPrestadorPorSidEAtualizar = async ({ sid, prestador }) => {
-  if (sid || prestador) return null;
-  return await Prestador.findOneAndUpdate({ sid: sid }, prestador);
+  if (!sid || !prestador) return null;
+  const prestadorAtualizado = await Prestador.findOneAndUpdate(
+    { sid: sid },
+    prestador
+  );
+  return prestadorAtualizado;
 };
 
 const criarNovoUsuario = async ({ nome, email }) => {
