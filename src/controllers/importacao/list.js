@@ -2,7 +2,6 @@ const Importacao = require("../../models/Importacao");
 
 exports.listarImportacoes = async (req, res) => {
   try {
-    console.log("BATEU");
     const { pageIndex = 0, pageSize = 10, tipo } = req.query;
 
     const page = parseInt(pageIndex) || 0;
