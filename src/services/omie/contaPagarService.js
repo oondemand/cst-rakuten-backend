@@ -12,6 +12,7 @@ const criarConta = ({
   observacao,
   valor,
   dataRegistro,
+  notaFiscal,
   // codigo_categoria,
 }) => {
   const conta = {
@@ -24,6 +25,7 @@ const criarConta = ({
     data_vencimento: formatarDataOmie(dataVencimento),
     data_previsao: formatarDataOmie(dataVencimento),
     data_entrada: formatarDataOmie(dataRegistro),
+    numero_documento_fiscal: notaFiscal,
     // codigo_categoria,
     observacao,
   };
