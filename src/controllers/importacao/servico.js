@@ -1,4 +1,3 @@
-const XLSX = require("xlsx");
 const Importacao = require("../../models/Importacao");
 const Prestador = require("../../models/Prestador");
 const Usuario = require("../../models/Usuario");
@@ -7,44 +6,11 @@ const Lista = require("../../models/Lista");
 const { CNPJouCPF } = require("../../utils/formatters");
 const emailUtils = require("../../utils/emailUtils");
 
-const arredondarValor = (valor) => {
-  if (valor !== "") return Math.round(valor * 100) / 100;
-};
-
-const excelToJson = ({
-  arquivo,
-  pageIndex = 0,
-  emptyDefaultValue = "",
-  header = 1,
-}) => {
-  const workbook = XLSX.read(arquivo.buffer, {
-    cellDates: true,
-    type: "buffer",
-  });
-  const sheetName = workbook.SheetNames[pageIndex];
-  const worksheet = workbook.Sheets[sheetName];
-  const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-    header,
-    defval: emptyDefaultValue,
-  });
-
-  return jsonData;
-};
-
-const arrayToExcelBuffer = ({ array }) => {
-  if (!array || array.length === 0) {
-    return null;
-  }
-
-  const errorWorkbook = XLSX.utils.book_new();
-  const errorWorksheet = XLSX.utils.json_to_sheet(array);
-  XLSX.utils.book_append_sheet(errorWorkbook, errorWorksheet, "Erros");
-
-  return XLSX.write(errorWorkbook, {
-    type: "buffer",
-    bookType: "xlsx",
-  });
-};
+const {
+  arrayToExcelBuffer,
+  arredondarValor,
+  excelToJson,
+} = require("../../utils/excel.js");
 
 const converterLinhaEmServico = async ({ row }) => {
   const { numero, tipo } = await CNPJouCPF(row[2]);
@@ -163,12 +129,12 @@ const processarJsonServicos = async ({ json }) => {
   const arquivoDeErro = [];
 
   for (const [i, row] of json.entries()) {
-    if (i === 0) {
-      arquivoDeErro.push(row);
-      continue;
-    }
-
     try {
+      if (i === 0) {
+        arquivoDeErro.push(row);
+        continue;
+      }
+
       const servico = await converterLinhaEmServico({ row });
       let prestador = await buscarPrestadorPorSid({
         sid: servico?.prestador?.sid,
@@ -186,10 +152,13 @@ const processarJsonServicos = async ({ json }) => {
       }
 
       if (prestador.email && !prestador.usuario) {
-        await criarNovoUsuario({
+        const usuario = await criarNovoUsuario({
           email: prestador?.email,
           nome: prestador?.nome,
         });
+
+        prestador.usuario = usuario._id;
+        await prestador.save();
       }
 
       const servicoExistente = await buscarServicoExistente({
@@ -205,9 +174,9 @@ const processarJsonServicos = async ({ json }) => {
         await servicoExistente.save();
       }
 
-      if (!servicoExistente) {
-        await criarNovaCampanha({ campanha: servico?.campanha });
+      await criarNovaCampanha({ campanha: servico?.campanha });
 
+      if (!servicoExistente) {
         await criarNovoServico({ ...servico, prestador: prestador?._id });
         detalhes.novosServicos += 1;
       }

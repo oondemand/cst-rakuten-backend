@@ -2,11 +2,8 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const acaoEtapaController = require("../controllers/acaoEtapaController");
-
-const path = require("node:path");
-const {
-  importarServico,
-} = require("../controllers/acaoEtapa/importarServicos");
+const { importarServico } = require("../controllers/importacao/servico");
+const { importarPrestador } = require("../controllers/importacao/prestador");
 
 // Configuração do armazenamento (aqui, salvando no disco)
 const storage = multer.diskStorage({
@@ -71,12 +68,7 @@ router.post("/exportar-prestadores", acaoEtapaController.exportarPrestadores);
 // );
 
 router.post("/importar-servicos", upload.array("file"), importarServico);
-
-router.post(
-  "/importar-prestadores",
-  upload.array("file"),
-  acaoEtapaController.importarPrestadores
-);
+router.post("/importar-prestadores", upload.array("file"), importarPrestador);
 
 router.post(
   "/importar-rpas",

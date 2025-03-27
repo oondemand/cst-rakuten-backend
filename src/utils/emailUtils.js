@@ -421,8 +421,8 @@ const importarPrestadorDetalhes = async ({ usuario, detalhes }) => {
       // console.log(corpo);
     }
 
-    if (detalhes.erros) {
-      const arquivoDeErros = Buffer.from(detalhes.erros).toString("base64");
+    if (detalhes.errors) {
+      const arquivoDeErros = Buffer.from(detalhes.errors).toString("base64");
       const anexos = [{ filename: "log.txt", fileBuffer: arquivoDeErros }];
 
       return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
