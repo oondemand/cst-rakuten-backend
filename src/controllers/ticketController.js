@@ -4,6 +4,7 @@ const { criarNomePersonalizado } = require("../utils/formatters");
 const Prestador = require("../models/Prestador");
 const { ControleAlteracaoService } = require("../services/controleAlteracao");
 const Servico = require("../models/Servico");
+const { isEqual } = require("date-fns");
 
 exports.createTicket = async (req, res) => {
   const { baseOmieId, titulo, observacao, servicosIds, prestadorId } = req.body;
@@ -453,7 +454,7 @@ exports.addServico = async (req, res) => {
 
     if (
       ticket?.dataRegistro &&
-      ticket?.dataRegistro !== servico?.dataRegistro
+      !isEqual(servico?.dataRegistro, ticket?.dataRegistro)
     ) {
       return res.status(400).json({ message: "Data registro conflitante." });
     }
