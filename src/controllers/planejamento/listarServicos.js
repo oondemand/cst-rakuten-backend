@@ -50,7 +50,12 @@ exports.listarServicos = async (req, res) => {
         : [];
 
     const queryResult = {
-      $and: [filtersQuery, statusFilter, { $or: [...prestadorConditions] }],
+      $and: [
+        filtersQuery,
+        statusFilter,
+        { $or: [...prestadorConditions] },
+        { dataRegistro: { $exists: true } },
+      ],
     };
 
     let sorting = {};

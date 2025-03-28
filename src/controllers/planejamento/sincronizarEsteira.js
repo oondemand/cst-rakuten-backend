@@ -15,6 +15,7 @@ exports.sincronizarEsteira = async (req, res) => {
     ];
 
     for (const servico of servicos) {
+      if (!servico.dataRegistro) continue;
       let ticket = await Ticket.findOneAndUpdate(
         {
           prestador: servico.prestador._id,
