@@ -110,11 +110,11 @@ const criarNovoServico = async (servico) => {
 const criarNovaCampanha = async ({ campanha }) => {
   const campanhas = await Lista.findOne({ codigo: "campanha" });
   const campanhaExistente = campanhas.valores.some(
-    (e) => e?.valor.trim() === campanha.trim()
+    (e) => e?.valor?.trim() === campanha?.trim()
   );
 
   if (!campanhaExistente && campanha !== "") {
-    campanhas.valores.push(campanha.trim());
+    campanhas.valores.push(campanha?.trim());
     await campanhas.save();
   }
 };
@@ -170,10 +170,13 @@ const processarJsonServicos = async ({ json }) => {
 
       // Atualiza o serviço caso já exista
       if (servicoExistente) {
-        servicoExistente.valores = servico.valores;
-        servicoExistente.tipoDocumentoFiscal = servico.tipoDocumentoFiscal;
-
-        await servicoExistente.save();
+        throw new Error(
+          "Serviço para esse prestador com competência já cadastrada!"
+        );
+        // console.log("Serviço já existente");
+        // servicoExistente.valores = servico.valores;
+        // servicoExistente.tipoDocumentoFiscal = servico.tipoDocumentoFiscal;
+        // await servicoExistente.save();
       }
 
       await criarNovaCampanha({ campanha: servico?.campanha });
@@ -223,6 +226,8 @@ exports.importarServico = async (req, res) => {
 
     console.log("[EMAIL ENVIADO PARA]:", req.usuario.email);
   } catch (error) {
+    console.log("ERROR", error);
+
     return res
       .status(500)
       .json({ message: "Ouve um erro ao importar arquivo" });

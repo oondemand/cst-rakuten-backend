@@ -59,6 +59,8 @@ app.use("/estados", require("./routers/estadoRouter"));
 app.use("/bancos", require("./routers/bancoRouter"));
 app.use("/planejamento", require("./routers/planejamentoRouter"));
 app.use("/importacoes", require("./routers/importacaoRouter"));
+app.use("/dashboard", require("./routers/dashoboardRouter"));
+
 
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
