@@ -54,7 +54,7 @@ exports.listarServicos = async (req, res) => {
         filtersQuery,
         statusFilter,
         { $or: [...prestadorConditions] },
-        { dataRegistro: { $exists: true } },
+        { dataRegistro: { $exists: true, $ne: null } },
       ],
     };
 
