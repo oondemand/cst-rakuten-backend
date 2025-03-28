@@ -327,7 +327,7 @@ exports.alterarSenha = async (req, res) => {
       usuario.senha = novaSenha;
       await usuario.save();
       return res.status(200).json({
-        token,
+        token: code,
         usuario: {
           _id: usuario._id,
           nome: usuario.nome,
