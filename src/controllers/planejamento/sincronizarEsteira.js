@@ -15,26 +15,44 @@ exports.sincronizarEsteira = async (req, res) => {
     ];
 
     for (const servico of servicos) {
-      const ticket = await Ticket.findOneAndUpdate(
+      let ticket = await Ticket.findOneAndUpdate(
         {
           prestador: servico.prestador._id,
           etapa: { $in: etapasValidas },
+          dataRegistro: servico?.dataRegistro,
+          status: { $ne: "arquivado" },
         },
         { $push: { servicos: servico._id } },
         { new: true }
       );
 
       if (!ticket) {
-        const ticket = new Ticket({
+        ticket = await Ticket.findOneAndUpdate(
+          {
+            prestador: servico.prestador._id,
+            etapa: { $in: etapasValidas },
+            dataRegistro: { $in: [null, ""] },
+            status: { $ne: "arquivado" },
+          },
+          {
+            $push: { servicos: servico._id },
+            dataRegistro: servico?.dataRegistro,
+          },
+          { new: true }
+        );
+      }
+
+      if (!ticket) {
+        ticket = new Ticket({
           prestador: servico.prestador._id,
           titulo: `Comissão ${servico.prestador.nome}`,
           servicos: [servico._id],
           etapa: "requisicao",
+          dataRegistro: servico?.dataRegistro,
         });
-
-        await ticket.save();
       }
 
+      await ticket.save();
       servico.status = "processando";
       await servico.save();
     }

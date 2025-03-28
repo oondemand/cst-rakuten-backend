@@ -12,6 +12,7 @@ const TicketSchema = new mongoose.Schema(
     servicos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Servico" }],
     contaPagarOmie: { type: Schema.Types.ObjectId, ref: "ContaPagar" },
     arquivos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Arquivo" }],
+    dataRegistro: { type: Date },
     status: {
       type: String,
       enum: [

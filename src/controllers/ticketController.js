@@ -451,6 +451,14 @@ exports.addServico = async (req, res) => {
     const servico = await Servico.findById(servicoId);
     const ticket = await Ticket.findById(ticketId);
 
+    if (
+      ticket?.dataRegistro &&
+      ticket?.dataRegistro !== servico?.dataRegistro
+    ) {
+      return res.status(400).json({ message: "Data registro conflitante." });
+    }
+
+    ticket.dataRegistro = servico?.dataRegistro;
     ticket.servicos = [...ticket?.servicos, servico?._id];
     await ticket.save();
 
@@ -481,6 +489,11 @@ exports.removeServico = async (req, res) => {
       { $pull: { servicos: servicoId } }, // Remove o serviço do array
       { new: true }
     ).populate("servicos");
+
+    if (ticket?.servicos.length === 0) {
+      ticket.dataRegistro = null;
+      await ticket.save();
+    }
 
     return res.status(200).json(ticket);
   } catch (error) {

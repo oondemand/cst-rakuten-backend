@@ -229,10 +229,14 @@ exports.listarServicos = async (req, res) => {
 exports.listarServicoPorPrestador = async (req, res) => {
   try {
     const { prestadorId } = req.params;
+    const { dataRegistro } = req.query;
+
+    console.log("Data registro ->", dataRegistro, typeof dataRegistro);
 
     const servicos = await Servico.find({
       prestador: prestadorId,
       status: "aberto",
+      ...(dataRegistro ? { dataRegistro: dataRegistro } : {}),
     }).populate("prestador", "sid nome documento");
 
     res.status(200).json(servicos);
