@@ -1,22 +1,17 @@
 const path = require("node:path");
 
-exports.CNPJouCPF = async (numero) => {
-  if (isNaN(numero)) {
-    return { tipo: null, numero: null };
-  }
+// exports.CNPJouCPF = async (tipoDocumentoFiscal, documento) => {
+//   const tipoPessoa = tipoDocumentoFiscal === "RPA" ? "pf" : tipoDocumentoFiscal === "invoice" ? "ext" : "pj";
 
-  let numeroStr = numero.toString();
+//   if (tipoPessoa === "pf" && (documento?.length !== 11 || isNaN(documento)))
+//     documento = null;
 
-  if (numeroStr.length <= 11) {
-    return { tipo: "pf", numero: numeroStr.padStart(11, 0) };
-  }
+//   if (tipoPessoa === "pj" && (documento?.length !== 14 || isNaN(documento)))
+//     documento = null;
 
-  if (numeroStr.length > 11 && numeroStr.length <= 14) {
-    return { tipo: "pj", numero: numeroStr.padStart(14, "0") };
-  }
-
-  return { tipo: null, numero: null };
-};
+//   console.log("[CNPJouCPF]:", tipoPessoa, documento);
+//   return { tipoPessoa, documento };
+// };
 
 exports.criarNomePersonalizado = ({ nomeOriginal }) => {
   try {
