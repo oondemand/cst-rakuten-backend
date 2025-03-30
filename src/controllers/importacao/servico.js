@@ -3,7 +3,7 @@ const Prestador = require("../../models/Prestador");
 const Usuario = require("../../models/Usuario");
 const Servico = require("../../models/Servico");
 const Lista = require("../../models/Lista");
-const { CNPJouCPF } = require("../../utils/formatters");
+// const { CNPJouCPF } = require("../../utils/formatters");
 const emailUtils = require("../../utils/emailUtils");
 
 const {
@@ -13,15 +13,16 @@ const {
 } = require("../../utils/excel.js");
 
 const converterLinhaEmServico = async ({ row }) => {
-  const { numero, tipo } = await CNPJouCPF(row[2]);
+  const tipoPessoa = row[4] === "RPA" ? "pf" : row[4] === "invoice" ? "ext" : "pj";
+
   const competencia = row[8];
 
   const servico = {
     prestador: {
       nome: row[0],
       sid: row[1],
-      documento: numero,
-      tipo,
+      documento: row[2],
+      tipo: tipoPessoa,
     },
     notaFiscal: row[3],
     tipoDocumentoFiscal: row[4],
@@ -48,6 +49,8 @@ const converterLinhaEmServico = async ({ row }) => {
       imposto: arredondarValor(row[20]),
     },
   };
+
+  console.log("[SERVIÇO]:", servico);
 
   return servico;
 };
@@ -108,14 +111,20 @@ const criarNovoServico = async (servico) => {
 };
 
 const criarNovaCampanha = async ({ campanha }) => {
-  const campanhas = await Lista.findOne({ codigo: "campanha" });
-  const campanhaExistente = campanhas.valores.some(
-    (e) => e?.valor?.trim() === campanha?.trim()
-  );
+  if (!campanha || campanha.trim() === "") return;
 
-  if (!campanhaExistente && campanha !== "") {
-    campanhas.valores.push(campanha?.trim());
-    await campanhas.save();
+  try {
+    await Lista.findOneAndUpdate(
+      { codigo: "campanha" }, // Filtro para encontrar o documento com código "campanha"
+      {
+        $addToSet: {
+          valores: { valor: campanha.trim() }, // Adiciona o valor apenas se não existir
+        },
+      },
+      { upsert: true, new: true } // Cria o documento se não existir e retorna o atualizado
+    );
+  } catch (error) {
+    console.error("Erro ao adicionar nova campanha:", error);
   }
 };
 
@@ -219,12 +228,12 @@ exports.importarServico = async (req, res) => {
 
     await importacao.save();
 
-    await emailUtils.importarServicoDetalhes({
-      detalhes,
-      usuario: req.usuario,
-    });
+    // await emailUtils.importarServicoDetalhes({
+    //   detalhes,
+    //   usuario: req.usuario,
+    // });
 
-    console.log("[EMAIL ENVIADO PARA]:", req.usuario.email);
+    // console.log("[EMAIL ENVIADO PARA]:", req.usuario.email);
   } catch (error) {
     console.log("ERROR", error);
 
