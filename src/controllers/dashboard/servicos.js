@@ -1,28 +1,5 @@
 const Servico = require("../../models/Servico");
 
-exports.servicosValores = async (req, res) => {
-  try {
-    const { status } = req.query;
-
-    console.log("Status", status);
-
-    const servicos = await Servico.find({
-      status,
-    });
-
-    const somaTotalValores = servicos.reduce(
-      (cur, acc) => {
-        console.log("cur", cur);
-      },
-      [0]
-    );
-
-    return res.status(200).json();
-  } catch (error) {
-    res.status(500).json();
-  }
-};
-
 exports.valoresPorStatus = async (req, res) => {
   try {
     const aggregationPipeline = [
