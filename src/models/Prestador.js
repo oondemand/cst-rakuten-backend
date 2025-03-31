@@ -40,16 +40,16 @@ const prestadorSchema = new mongoose.Schema(
     tipo: { type: String, enum: ["pj", "pf", "ext", ""] },
     documento: {
       type: String,
-      validate: {
-        validator: function (valor) {
-          if (this.tipo === "ext") {
-            return true;
-          }
+      // validate: {
+      //   validator: function (valor) {
+      //     if (this.tipo === "ext") {
+      //       return true;
+      //     }
 
-          return /^\d{11}$|^\d{14}$/.test(valor);
-        },
-        message: "Documento inválido para o tipo selecionado.",
-      },
+      //     return /^\d{11}$|^\d{14}$/.test(valor);
+      //   },
+      //   message: "Documento inválido para o tipo selecionado.",
+      // },
     },
     dadosBancarios: dadosBancariosSchema,
     email: {
