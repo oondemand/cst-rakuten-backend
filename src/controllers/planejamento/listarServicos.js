@@ -31,7 +31,7 @@ exports.listarServicos = async (req, res) => {
       });
 
     const statusFilter =
-      status !== ""
+      status && status !== ""
         ? { status }
         : { status: { $in: ["pendente", "aberto", "processando"] } };
 
