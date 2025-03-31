@@ -8,6 +8,7 @@ const emailUtils = require("../utils/emailUtils");
 const jwt = require("jsonwebtoken");
 
 const { ControleAlteracaoService } = require("../services/controleAlteracao");
+const filtersUtils = require("../utils/filter");
 
 exports.seedUsuario = async (req, res) => {
   const { nome, email, senha, status, permissoes } = req.body;
@@ -69,6 +70,7 @@ exports.registrarUsuario = async (req, res) => {
       senha,
       status,
       permissoes,
+      tipo,
     });
 
     if (tipo && tipo === "prestador") {
@@ -131,8 +133,64 @@ exports.loginUsuario = async (req, res) => {
 
 exports.listarUsuarios = async (req, res) => {
   try {
-    const usuarios = await Usuario.find({ tipo: { $ne: "prestador" } });
-    res.json(usuarios);
+    const { sortBy, pageIndex, pageSize, searchTerm, tipo, ...rest } =
+      req.query;
+
+    const schema = Usuario.schema;
+
+    const camposBusca = ["status", "nome", "email", "tipo"];
+
+    // Monta a query para buscar serviços baseados nos demais filtros
+    const filterFromFiltros = filtersUtils.buildQuery({
+      filtros: rest,
+      schema,
+    });
+
+    // Monta a query para buscar serviços baseados no searchTerm
+    const searchTermCondition = filtersUtils.querySearchTerm({
+      searchTerm,
+      schema,
+      camposBusca,
+    });
+
+    const queryResult = {
+      $and: [
+        filterFromFiltros, // Filtros principais
+        { tipo: tipo ? tipo : { $ne: "prestador" } },
+        {
+          $or: [
+            searchTermCondition, // Busca textual
+          ],
+        },
+      ],
+    };
+
+    let sorting = {};
+
+    if (sortBy) {
+      const [campo, direcao] = sortBy.split(".");
+      const campoFormatado = campo.replaceAll("_", ".");
+      sorting[campoFormatado] = direcao === "desc" ? -1 : 1;
+    }
+
+    const page = parseInt(pageIndex) || 0;
+    const limite = parseInt(pageSize) || 10;
+    const skip = page * limite;
+
+    const [usuarios, totalDeUsuarios] = await Promise.all([
+      Usuario.find(queryResult).skip(skip).limit(limite),
+      Usuario.countDocuments(queryResult),
+    ]);
+
+    res.status(200).json({
+      usuarios,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalDeUsuarios / limite),
+        totalItems: totalDeUsuarios,
+        itemsPerPage: limite,
+      },
+    });
   } catch (error) {
     res.status(400).json({ error: "Erro ao listar usuários" });
   }
