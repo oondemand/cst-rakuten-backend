@@ -131,7 +131,7 @@ exports.loginUsuario = async (req, res) => {
 
 exports.listarUsuarios = async (req, res) => {
   try {
-    const usuarios = await Usuario.find();
+    const usuarios = await Usuario.find({ tipo: { $ne: "prestador" } });
     res.json(usuarios);
   } catch (error) {
     res.status(400).json({ error: "Erro ao listar usuários" });
