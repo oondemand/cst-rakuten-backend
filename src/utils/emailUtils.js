@@ -1,14 +1,17 @@
 const sgMail = require("@sendgrid/mail");
 const { format } = require("date-fns");
 const Usuario = require("../models/Usuario");
+const Sistema = require("../models/Sistema");
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-const enviarEmail = async (emailFrom, emailTo, assunto, corpo, anexos = []) => {
+const enviarEmail = async (emailTo, assunto, corpo, anexos = []) => {
+  const sistema = await Sistema.findOne();
+
   const message = {
     from: {
-      email: emailFrom.email,
-      name: emailFrom.nome,
+      email: sistema.remetente,
+      name: "OonDemand",
     },
     personalizations: [
       {
@@ -55,11 +58,6 @@ const confirmacaoEmailPrestador = async (usuarioId) => {
     const confirmacaoPrestadorUrl = process.env.BASE_URL_CST;
     const token = usuario.gerarToken();
 
-    const emailFrom = {
-      email: process.env.SENDGRID_REMETENTE,
-      nome: "OonDemand",
-    };
-
     const emailTo = {
       email: usuario.email,
       nome: usuario.nome,
@@ -72,7 +70,7 @@ const confirmacaoEmailPrestador = async (usuarioId) => {
     <p>Clique no link abaixo para confirmar seu e-mail:</p>
     <a href="${confirmacaoPrestadorUrl}/confirmar-email?token=${token}">Confirmar e-mail</a>`;
 
-    await enviarEmail(emailFrom, emailTo, assunto, corpo);
+    await enviarEmail(emailTo, assunto, corpo);
   } catch (error) {
     // console.error("Erro ao enviar e-mail de confirmação:", error);
     throw new Error("Erro ao enviar e-mail de confirmação");
@@ -81,11 +79,6 @@ const confirmacaoEmailPrestador = async (usuarioId) => {
 
 const emailEsqueciMinhaSenha = async ({ usuario, url }) => {
   try {
-    const emailFrom = {
-      email: process.env.SENDGRID_REMETENTE,
-      nome: "OonDemand",
-    };
-
     const emailTo = {
       email: usuario.email,
       nome: usuario.nome,
@@ -98,7 +91,7 @@ const emailEsqueciMinhaSenha = async ({ usuario, url }) => {
     <p>Clique no link abaixo darmos inicio ao processo de recuperação de senha:</p>
     <a href="${url}">Recuperar minha senha</a>`;
 
-    await enviarEmail(emailFrom, emailTo, assunto, corpo);
+    await enviarEmail(emailTo, assunto, corpo);
   } catch (error) {
     // console.error("Erro ao enviar e-mail para recuperação de senha:", error);
     throw new Error("Erro ao enviar e-mail para recuperação de senha");
@@ -111,11 +104,6 @@ const emailPrestadoresExportados = async ({
   prestadoresExportados,
 }) => {
   try {
-    const emailFrom = {
-      email: process.env.SENDGRID_REMETENTE,
-      nome: "OonDemand",
-    };
-
     const emailTo = {
       email: usuario.email,
       nome: usuario.nome,
@@ -136,7 +124,7 @@ const emailPrestadoresExportados = async ({
       },
     ];
 
-    return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
+    return await enviarEmail(emailTo, assunto, corpo, anexos);
   } catch (error) {
     // console.error("Erro ao enviar e-mail de prestadores exportados:", error);
     throw new Error("Erro ao enviar e-mail de prestadores exportados:");
@@ -149,11 +137,6 @@ const emailServicosExportados = async ({
   servicosExportados,
 }) => {
   try {
-    const emailFrom = {
-      email: process.env.SENDGRID_REMETENTE,
-      nome: "OonDemand",
-    };
-
     const emailTo = {
       email: usuario.email,
       nome: usuario.nome,
@@ -174,7 +157,7 @@ const emailServicosExportados = async ({
       },
     ];
 
-    return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
+    return await enviarEmail(emailTo, assunto, corpo, anexos);
   } catch (error) {
     // console.error("Erro ao enviar e-mail de serviços exportados:", error);
     throw new Error("Erro ao enviar e-mail de serviços exportados:");
@@ -183,11 +166,6 @@ const emailServicosExportados = async ({
 
 const emailImportarRpas = async ({ usuario, detalhes }) => {
   try {
-    const emailFrom = {
-      email: process.env.SENDGRID_REMETENTE,
-      nome: "OonDemand",
-    };
-
     const emailTo = {
       email: usuario.email,
       nome: usuario.nome,
@@ -213,10 +191,10 @@ const emailImportarRpas = async ({ usuario, detalhes }) => {
         },
       ];
 
-      return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
+      return await enviarEmail(emailTo, assunto, corpo, anexos);
     }
 
-    return await enviarEmail(emailFrom, emailTo, assunto, corpo);
+    return await enviarEmail(emailTo, assunto, corpo);
   } catch (error) {
     // console.error("Erro ao enviar e-mail de serviços exportados:", error);
     throw new Error("Erro ao enviar e-mail de serviços exportados:");
@@ -225,11 +203,6 @@ const emailImportarRpas = async ({ usuario, detalhes }) => {
 
 const importarComissõesDetalhes = async ({ usuario, detalhes }) => {
   try {
-    const emailFrom = {
-      email: process.env.SENDGRID_REMETENTE,
-      nome: "OonDemand",
-    };
-
     const emailTo = {
       email: usuario.email,
       nome: usuario.nome,
@@ -256,10 +229,10 @@ const importarComissõesDetalhes = async ({ usuario, detalhes }) => {
       const arquivoDeErros = Buffer.from(detalhes.erros).toString("base64");
       const anexos = [{ filename: "log.txt", fileBuffer: arquivoDeErros }];
 
-      return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
+      return await enviarEmail(emailTo, assunto, corpo, anexos);
     }
 
-    return await enviarEmail(emailFrom, emailTo, assunto, corpo);
+    return await enviarEmail(emailTo, assunto, corpo);
   } catch (error) {
     // console.error(
     //   "Erro ao enviar e-mail para detalhes de importação de comissões:",
@@ -289,7 +262,7 @@ const emailErroIntegracaoOmie = async ({ usuario, error }) => {
     <p>Ouve um erro na integração com o omie.</p>
     <p>Detalhes do erro: ${error}</p>`;
 
-    await enviarEmail(emailFrom, emailTo, assunto, corpo);
+    await enviarEmail(emailTo, assunto, corpo);
   } catch (error) {
     // console.error("Erro ao enviar e-mail para erro integração omie:", error);
     throw new Error("Erro ao enviar e-mail para erro integração omie");
@@ -298,11 +271,6 @@ const emailErroIntegracaoOmie = async ({ usuario, error }) => {
 
 const emailGeralDeErro = async ({ usuario, documento, tipoDeErro }) => {
   try {
-    const emailFrom = {
-      email: process.env.SENDGRID_REMETENTE,
-      nome: "OonDemand",
-    };
-
     const emailTo = {
       email: usuario.email,
       nome: usuario.nome,
@@ -321,7 +289,7 @@ const emailGeralDeErro = async ({ usuario, documento, tipoDeErro }) => {
       },
     ];
 
-    return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
+    return await enviarEmail(emailTo, assunto, corpo, anexos);
   } catch (error) {
     // console.error("Erro ao enviar e-mail de serviços exportados:", error);
     throw new Error("Erro ao enviar e-mail de serviços exportados:");
@@ -330,11 +298,6 @@ const emailGeralDeErro = async ({ usuario, documento, tipoDeErro }) => {
 
 const emailLinkCadastroUsuarioPrestador = async ({ email, nome, url }) => {
   try {
-    const emailFrom = {
-      email: process.env.SENDGRID_REMETENTE,
-      nome: "OonDemand",
-    };
-
     const emailTo = {
       email,
       nome,
@@ -346,7 +309,7 @@ const emailLinkCadastroUsuarioPrestador = async ({ email, nome, url }) => {
     <p>Segue o link para acessar o seu app publisher:</p>
     <a href="${url}">Acessar app publisher</a>`;
 
-    return await enviarEmail(emailFrom, emailTo, assunto, corpo);
+    return await enviarEmail(emailTo, assunto, corpo);
   } catch (error) {
     // console.error("Erro ao enviar e-mail de serviços exportados:", error);
     throw new Error("Erro ao enviar e-mail de serviços exportados:");
@@ -355,11 +318,6 @@ const emailLinkCadastroUsuarioPrestador = async ({ email, nome, url }) => {
 
 const importarServicoDetalhes = async ({ usuario, detalhes }) => {
   try {
-    const emailFrom = {
-      email: process.env.SENDGRID_REMETENTE,
-      nome: "OonDemand",
-    };
-
     const emailTo = {
       email: usuario.email,
       nome: usuario.nome,
@@ -384,10 +342,10 @@ const importarServicoDetalhes = async ({ usuario, detalhes }) => {
       const arquivoDeErros = Buffer.from(detalhes.errors).toString("base64");
       const anexos = [{ filename: "log.txt", fileBuffer: arquivoDeErros }];
 
-      return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
+      return await enviarEmail(emailTo, assunto, corpo, anexos);
     }
 
-    return await enviarEmail(emailFrom, emailTo, assunto, corpo);
+    return await enviarEmail(emailTo, assunto, corpo);
   } catch (error) {
     throw new Error(
       "Erro ao enviar e-mail para detalhes de importação de serviços"
@@ -397,11 +355,6 @@ const importarServicoDetalhes = async ({ usuario, detalhes }) => {
 
 const importarPrestadorDetalhes = async ({ usuario, detalhes }) => {
   try {
-    const emailFrom = {
-      email: process.env.SENDGRID_REMETENTE,
-      nome: "OonDemand",
-    };
-
     const emailTo = {
       email: usuario.email,
       nome: usuario.nome,
@@ -425,10 +378,10 @@ const importarPrestadorDetalhes = async ({ usuario, detalhes }) => {
       const arquivoDeErros = Buffer.from(detalhes.errors).toString("base64");
       const anexos = [{ filename: "log.txt", fileBuffer: arquivoDeErros }];
 
-      return await enviarEmail(emailFrom, emailTo, assunto, corpo, anexos);
+      return await enviarEmail(emailTo, assunto, corpo, anexos);
     }
 
-    return await enviarEmail(emailFrom, emailTo, assunto, corpo);
+    return await enviarEmail(emailTo, assunto, corpo);
   } catch (error) {
     throw new Error(
       "Erro ao enviar e-mail para detalhes de importação de prestadores"
@@ -438,11 +391,6 @@ const importarPrestadorDetalhes = async ({ usuario, detalhes }) => {
 
 const emailTeste = async ({ email }) => {
   try {
-    const emailFrom = {
-      email: process.env.SENDGRID_REMETENTE,
-      nome: "OonDemand",
-    };
-
     const emailTo = {
       email: email,
       nome: email,
@@ -451,7 +399,7 @@ const emailTeste = async ({ email }) => {
     const assunto = "Teste envio de email";
     const corpo = `Se voce recebeu esse email o envio de email esta funcionando corretamente!`;
 
-    return await enviarEmail(emailFrom, emailTo, assunto, corpo);
+    return await enviarEmail(emailTo, assunto, corpo);
   } catch (error) {
     throw new Error(
       "Erro ao enviar e-mail para detalhes de importação de prestadores"
