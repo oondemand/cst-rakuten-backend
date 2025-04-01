@@ -14,6 +14,7 @@ const { add, format } = require("date-fns");
 const { ControleAlteracaoService } = require("../services/controleAlteracao");
 const ContaPagar = require("../models/ContaPagar");
 const { ja } = require("date-fns/locale");
+const Sistema = require("../models/Sistema");
 
 // Função para aprovar um ticket
 const aprovar = async (req, res) => {
@@ -357,6 +358,8 @@ const cadastrarContaAPagar = async (baseOmie, codigoFornecedor, ticket) => {
     let observacao = `Serviços prestados SID - ${ticket.prestador.sid}\n-- Serviços --\n`;
     let notaFiscalOmie = "";
 
+    const config = await Sistema.findOne();
+
     for (const id of ticket.servicos) {
       const { valor, competencia, notaFiscal } = await Servico.findById(id);
 
@@ -385,10 +388,12 @@ const cadastrarContaAPagar = async (baseOmie, codigoFornecedor, ticket) => {
       dataVencimento: add(dataDaEmissão, { hours: 24 }), // 24 horas a mais
       observacao,
       valor: valorTotalDaNota,
-      id_conta_corrente: process.env.ID_CONTA_CORRENTE,
+      id_conta_corrente:
+        config?.omie?.id_conta_corrente ?? process.env.ID_CONTA_CORRENTE,
       dataRegistro: ticket?.servicos[0]?.dataRegistro,
       notaFiscal: notaFiscalOmie?.replace("/", ""),
-      // codigo_categoria: process.env.CODIGO_CATEGORIA,
+      codigo_categoria:
+        config?.omie?.codigo_categoria ?? process.env.CODIGO_CATEGORIA,
     });
 
     const contaPagarOmie = await contaPagarService.incluir(

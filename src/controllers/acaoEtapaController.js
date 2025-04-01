@@ -30,6 +30,7 @@ const { ControleAlteracaoService } = require("../services/controleAlteracao");
 const { parse } = require("date-fns");
 const { log } = require("console");
 const { LISTA_PAISES_OMIE } = require("../utils/omie");
+const Sistema = require("../models/Sistema");
 
 const buscarPrestadorOmie = async ({ documento }) => {
   try {
@@ -464,6 +465,8 @@ exports.exportarServicos = async (req, res) => {
     let documento = "";
     const prestadoresComTicketsExportados = [];
 
+    const config = await Sistema.findOne();
+
     for (const ticket of tickets) {
       const { prestador, servicos } = ticket;
       if (
@@ -481,11 +484,20 @@ exports.exportarServicos = async (req, res) => {
         if (valorTotalDoTicket > 0) {
           documento += criarServicoParaExportacao({
             codAutonomo: prestador.sciUnico,
-            codCentroDeCustos: process.env.SCI_CODIGO_CENTRO_CUSTO,
-            codEmpresa: process.env.SCI_CODIGO_EMPRESA,
-            porcentualIss: process.env.SCI_PORCENTAGEM_ISS,
+            codCentroDeCustos:
+              config?.sci?.codigo_centro_custo ??
+              process.env.SCI_CODIGO_CENTRO_CUSTO,
+            codEmpresa:
+              config?.sci?.codigo_empresa ?? process.env.SCI_CODIGO_EMPRESA,
+            porcentualIss:
+              config?.sci?.porcentagem_iss ?? process.env.SCI_PORCENTAGEM_ISS,
             dataDePagamento: format(
-              addDays(new Date(), Number(process.env.SCI_DIAS_PAGAMENTO)),
+              addDays(
+                new Date(),
+                Number(
+                  config?.sci?.dias_pagamento ?? process.env.SCI_DIAS_PAGAMENTO
+                )
+              ),
               "ddMMyyyy"
             ),
             dataDeRealizacao: format(new Date(), "ddMMyyyy"),
@@ -546,6 +558,8 @@ exports.exportarPrestadores = async (req, res) => {
     const prestadoresExportados = [];
     let documento = "";
 
+    const config = await Sistema.findOne();
+
     for (const { prestador } of tickets) {
       if (
         !prestador.sciUnico &&
@@ -569,9 +583,9 @@ exports.exportarPrestadores = async (req, res) => {
             dataNascimento instanceof Date
               ? format(dataNascimento, "dd/MM/yyyy")
               : "",
-          CBO: process.env.SCI_CBO,
-          CFIP: process.env.SCI_CFIP,
-          eSocial: process.env.SCI_ESOCIAL,
+          CBO: config?.sci?.cbo ?? process.env.SCI_CBO,
+          CFIP: config?.sci?.cfip ?? process.env.SCI_CFIP,
+          eSocial: config?.sci?.e_social ?? process.env.SCI_ESOCIAL,
         }).concat("\n\n");
 
         // prestador.status = "aguardando-codigo-sci";

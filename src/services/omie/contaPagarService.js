@@ -13,7 +13,7 @@ const criarConta = ({
   valor,
   dataRegistro,
   notaFiscal,
-  // codigo_categoria,
+  codigo_categoria,
 }) => {
   const conta = {
     codigo_lancamento_integracao: crypto.randomUUID(),
@@ -26,7 +26,7 @@ const criarConta = ({
     data_previsao: formatarDataOmie(dataVencimento),
     data_entrada: formatarDataOmie(dataRegistro),
     numero_documento_fiscal: notaFiscal,
-    // codigo_categoria,
+    codigo_categoria: codigo_categoria ?? "",
     observacao,
   };
 
