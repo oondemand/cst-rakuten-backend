@@ -421,7 +421,7 @@ exports.getArchivedTickets = async (req, res) => {
       ["prestador.tipo"]: prestadorTipo,
       ["prestador.documento"]: prestadorDocumento,
       status,
-      searchTerm,
+      searchTerm = "",
       sortBy,
       pageIndex,
       pageSize,
