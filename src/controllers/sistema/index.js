@@ -1,4 +1,5 @@
 const Sistema = require("../../models/Sistema");
+const { emailTeste } = require("../../utils/emailUtils");
 
 exports.listarSistemaConfig = async (req, res) => {
   try {
@@ -38,5 +39,20 @@ exports.atualizarSistemaConfig = async (req, res) => {
       mensagem: "Erro ao atualizar configuração",
       erro: error.message,
     });
+  }
+};
+
+exports.testeEmail = async (req, res) => {
+  try {
+    console.log("BODY:", req.body);
+
+    await emailTeste({ email: req.body.email });
+    res.status(200).json();
+  } catch (error) {
+    console.log(error);
+
+    res
+      .status(500)
+      .json({ mensagem: "Erro enviar email", erro: error.message });
   }
 };

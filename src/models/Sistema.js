@@ -4,8 +4,8 @@ const sciSchema = new mongoose.Schema(
   {
     codigo_empresa: { type: String },
     codigo_centro_custo: { type: String },
-    porcentagem_iss: Number,
-    dias_pagamento: { type: String },
+    porcentagem_iss: { type: Number },
+    dias_pagamento: { type: Number },
     cbo: { type: String },
     cfip: { type: String },
     e_social: { type: String },

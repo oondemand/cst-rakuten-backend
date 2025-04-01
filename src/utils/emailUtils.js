@@ -436,7 +436,31 @@ const importarPrestadorDetalhes = async ({ usuario, detalhes }) => {
   }
 };
 
+const emailTeste = async ({ email }) => {
+  try {
+    const emailFrom = {
+      email: process.env.SENDGRID_REMETENTE,
+      nome: "OonDemand",
+    };
+
+    const emailTo = {
+      email: email,
+      nome: email,
+    };
+
+    const assunto = "Teste envio de email";
+    const corpo = `Se voce recebeu esse email o envio de email esta funcionando corretamente!`;
+
+    return await enviarEmail(emailFrom, emailTo, assunto, corpo);
+  } catch (error) {
+    throw new Error(
+      "Erro ao enviar e-mail para detalhes de importação de prestadores"
+    );
+  }
+};
+
 module.exports = {
+  emailTeste,
   confirmacaoEmailPrestador,
   emailEsqueciMinhaSenha,
   emailPrestadoresExportados,
