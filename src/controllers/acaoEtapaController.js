@@ -21,7 +21,7 @@ const Sistema = require("../models/Sistema");
 const { listZipContentsFromBuffer } = require("../utils/zip");
 const Importacao = require("../models/Importacao");
 
-const anexarArquivoAoTicket = async (arquivo) => {
+const anexarArquivoAoTicket = async ({ arquivo, usuario }) => {
   const sciUnico = arquivo.originalname.replace(".pdf", "").split("_")[2];
 
   if (!sciUnico || isNaN(sciUnico)) {
@@ -35,13 +35,15 @@ const anexarArquivoAoTicket = async (arquivo) => {
   }
 
   const ticket = await Ticket.findOne({
-    etapa: "integracao-unico",
-    prestador,
+    etapa: "geracao-rpa",
+    prestador: prestador?._id,
     status: "trabalhando",
   });
 
+  console.log("Prestador", prestador, ticket);
+
   if (!ticket) {
-    throw `Erro ao fazer upload de arquivo ${arquivo.originalname} - Não foi encontrado um ticket aberto e com status trabalhando referente ao prestador ${prestador.name} - sciUnico: ${prestador.sciUnico}`;
+    throw `Erro ao fazer upload de arquivo ${arquivo.originalname} - Não foi encontrado um ticket aberto e com status trabalhando referente ao prestador ${prestador.nome} - sciUnico: ${prestador.sciUnico}`;
   }
 
   const novoArquivoDoTicket = new Arquivo({
@@ -69,13 +71,13 @@ const anexarArquivoAoTicket = async (arquivo) => {
     origem: "integracao-sci",
     dadosAtualizados: ticket,
     tipoRegistroAlterado: "ticket",
-    usuario: req.usuario._id,
+    usuario: usuario._id,
   });
 
   return ticket;
 };
 
-const processarArquivos = async ({ arquivos }) => {
+const processarArquivos = async ({ arquivos, usuario }) => {
   const detalhes = {
     totalDeArquivosEncontrados: arquivos.length,
     arquivosComErro: 0,
@@ -86,7 +88,7 @@ const processarArquivos = async ({ arquivos }) => {
 
   for (const arquivo of arquivos) {
     try {
-      await anexarArquivoAoTicket(arquivo);
+      await anexarArquivoAoTicket({ arquivo, usuario });
     } catch (error) {
       arquivoDeErro.push(arquivo);
       detalhes.arquivosComErro += 1;
@@ -119,7 +121,10 @@ exports.importarRPAs = async (req, res) => {
 
     if (zipMimeTypes.includes(arquivo?.mimetype)) {
       const arquivos = listZipContentsFromBuffer(arquivo.buffer);
-      const { detalhes } = await processarArquivos({ arquivos });
+      const { detalhes } = await processarArquivos({
+        arquivos,
+        usuario: req.usuario,
+      });
 
       importacao.arquivoLog = Buffer.from(detalhes.errors);
       importacao.detalhes = detalhes;
@@ -130,6 +135,7 @@ exports.importarRPAs = async (req, res) => {
     if (pdfMimeType.includes(arquivo?.mimetype)) {
       const { detalhes } = await processarArquivos({
         arquivos: [arquivo],
+        usuario: req.usuario,
       });
 
       importacao.arquivoLog = Buffer.from(detalhes.errors);
@@ -259,7 +265,7 @@ exports.exportarPrestadores = async (req, res) => {
     for (const { prestador } of tickets) {
       const { sciUnico } = prestador;
 
-      if (sciUnico && !prestadoresJaExportados.has(prestador._id)) {
+      if (!sciUnico && !prestadoresJaExportados.has(prestador._id)) {
         const dataNascimento = prestador.pessoaFisica?.dataNascimento;
 
         documento += criarPrestadorParaExportacao({
