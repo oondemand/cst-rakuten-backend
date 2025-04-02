@@ -67,6 +67,16 @@ const updateItem = async (req, res) => {
     if (index === -1)
       return res.status(404).json({ error: "Item não encontrado" });
 
+    const trimmedValor = valor.trim();
+
+    const valorExistente = lista.valores.some(
+      (item) => item.valor === trimmedValor
+    );
+
+    if (valorExistente) {
+      return res.status(400).json({ error: "Este valor já existe na lista" });
+    }
+
     if (valor) lista.valores[index].valor = valor;
 
     await lista.save();

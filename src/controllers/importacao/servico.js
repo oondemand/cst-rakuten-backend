@@ -13,7 +13,8 @@ const {
 } = require("../../utils/excel.js");
 
 const converterLinhaEmServico = async ({ row }) => {
-  const tipoPessoa = row[4] === "RPA" ? "pf" : row[4] === "invoice" ? "ext" : "pj";
+  const tipoPessoa =
+    row[4] === "RPA" ? "pf" : row[4] === "invoice" ? "ext" : "pj";
 
   const competencia = row[8];
 
@@ -113,15 +114,18 @@ const criarNovoServico = async (servico) => {
 const criarNovaCampanha = async ({ campanha }) => {
   if (!campanha || campanha.trim() === "") return;
 
+  const trimmedCampanha = campanha.trim();
+
   try {
     await Lista.findOneAndUpdate(
-      { codigo: "campanha" }, // Filtro para encontrar o documento com código "campanha"
       {
-        $addToSet: {
-          valores: { valor: campanha.trim() }, // Adiciona o valor apenas se não existir
-        },
+        codigo: "campanha",
+        "valores.valor": { $ne: trimmedCampanha },
       },
-      { upsert: true, new: true } // Cria o documento se não existir e retorna o atualizado
+      {
+        $push: { valores: { valor: trimmedCampanha } },
+      },
+      { upsert: true, new: true }
     );
   } catch (error) {
     console.error("Erro ao adicionar nova campanha:", error);
