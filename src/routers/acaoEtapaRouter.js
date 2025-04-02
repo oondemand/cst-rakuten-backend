@@ -43,8 +43,14 @@ const upload = multer({
 
 // Filtrando arquivos (opcional)
 const rpasFileFilter = (req, file, cb) => {
-  // Aceitar apenas arquivos pdf
-  if (file.mimetype === "application/pdf") {
+  // Aceitar apenas arquivos pdf ou zip
+  const allowedTipes = [
+    "application/zip",
+    "application/x-zip-compressed",
+    "application/pdf",
+  ];
+
+  if (allowedTipes.includes(file.mimetype)) {
     cb(null, true);
   } else {
     cb(new Error("Tipo de arquivo não suportado"), false);
@@ -55,17 +61,11 @@ const rpasFileFilter = (req, file, cb) => {
 const uploadRpas = multer({
   storage: inMemoryStorage,
   fileFilter: rpasFileFilter,
-  limits: { fileSize: 1 * 1024 * 1024 }, // Limite de 1MB por arquivo
+  limits: { fileSize: 10 * 1024 * 1024 }, // Limite de 10MB por arquivo
 });
 
 router.post("/exportar-servicos", acaoEtapaController.exportarServicos);
 router.post("/exportar-prestadores", acaoEtapaController.exportarPrestadores);
-
-// router.post(
-//   "/importar-comissoes",
-//   upload.single("file"),
-//   acaoEtapaController.importarComissoes
-// );
 
 router.post("/importar-servicos", upload.array("file"), importarServico);
 router.post("/importar-prestadores", upload.array("file"), importarPrestador);

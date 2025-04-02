@@ -5,21 +5,15 @@ const ArquivoSchema = new mongoose.Schema({
   mimetype: { type: String, required: true },
   size: { type: Number, required: true },
   buffer: { type: Buffer },
-  path: { type: String },
 });
 
 const ImportacaoSchema = new mongoose.Schema(
   {
-    tipo: { type: String, enum: ["prestador", "servico"] },
+    tipo: { type: String, enum: ["prestador", "servico", "rpa"] },
     arquivoOriginal: ArquivoSchema,
     arquivoErro: { type: Buffer },
     arquivoLog: { type: Buffer },
-    detalhes: {
-      totalDeLinhasLidas: Number,
-      linhasLidasComErro: Number,
-      novosPrestadores: Number,
-      novosServicos: Number,
-    },
+    detalhes: { type: Object },
   },
   { timestamps: true }
 );
