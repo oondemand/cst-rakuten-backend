@@ -15,7 +15,7 @@ const sciSchema = new mongoose.Schema(
 
 const omieSchema = new mongoose.Schema(
   {
-    id_conta_corrente: { type: String },
+    id_conta_corrente: { type: Number },
     codigo_categoria: { type: String },
   },
   { _id: false }
