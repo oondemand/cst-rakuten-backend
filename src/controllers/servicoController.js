@@ -267,3 +267,24 @@ exports.excluirServico = async (req, res) => {
     res.status(400).json({ error: "Erro ao excluir servico" });
   }
 };
+
+exports.atualizarStatus = async (req, res) => {
+  const { ids, status } = req.body;
+
+  try {
+    const result = await Servico.updateMany(
+      { _id: { $in: ids } },
+      { $set: { status: status } }
+    );
+
+    res.status(200).json({
+      message: "Serviço atualizado com sucesso!",
+      servicos: result,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Erro ao atualizar serviço",
+      detalhes: error.message,
+    });
+  }
+};

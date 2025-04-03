@@ -20,5 +20,6 @@ router.post(
   servicoController.createServicoETicket
 );
 router.patch("/:id", servicoController.updateServico);
+router.patch("/", servicoController.atualizarStatus);
 
 module.exports = router;
