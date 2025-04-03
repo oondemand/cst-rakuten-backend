@@ -1,5 +1,9 @@
 const Sistema = require("../../models/Sistema");
+const BaseOmie = require("../../models/BaseOmie");
+
 const { emailTeste } = require("../../utils/emailUtils");
+const CategoriasService = require("../../services/omie/categoriasService");
+const ContaCorrenteService = require("../../services/omie/contaCorrenteService");
 
 exports.listarSistemaConfig = async (req, res) => {
   try {
@@ -54,5 +58,33 @@ exports.testeEmail = async (req, res) => {
     res
       .status(500)
       .json({ mensagem: "Erro enviar email", erro: error.message });
+  }
+};
+
+exports.listarCategoriasOmie = async (req, res) => {
+  try {
+    const baseOmie = await BaseOmie.findOne();
+    const data = await CategoriasService.listarCategorias({ baseOmie });
+
+    return res
+      .status(200)
+      .json(data?.categoria_cadastro.filter((e) => e.nao_exibir != "S"));
+  } catch (error) {
+    console.error("Erro ao listar categorias:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.listarContaCorrente = async (req, res) => {
+  try {
+    const baseOmie = await BaseOmie.findOne();
+    const data = await ContaCorrenteService.obterContaAdiamentoCliente({
+      baseOmie,
+    });
+
+    return res.status(200).json(data?.ListarContasCorrentes);
+  } catch (error) {
+    console.error("Erro ao listar categorias:", error.message);
+    res.status(500).json({ error: error.message });
   }
 };
