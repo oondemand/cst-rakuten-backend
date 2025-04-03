@@ -567,7 +567,11 @@ exports.getTicketsPago = async (req, res) => {
     const queryResult = {
       $and: [
         filtersQuery,
-        { status: { $in: ["pago", "pago-externo"] } },
+        {
+          status: "concluido",
+          etapa: "concluido",
+          // "contaPagarOmie.status_titulo": "pago",
+        },
         { $or: [...prestadorConditions] },
       ],
     };
