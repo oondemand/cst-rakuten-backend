@@ -98,10 +98,14 @@ const contaPagarWebHook = async (req, res) => {
     if (topic === "Financas.ContaPagar.BaixaRealizada") {
       console.log("🟨 Baixa realizada no omie");
 
-      const contaPagar = await ContaPagar.findOne({
-        codigo_lancamento_omie:
-          event?.[0]?.conta_a_pagar[0].codigo_lancamento_omie,
-      });
+      const contaPagar = await ContaPagar.findOneAndUpdate(
+        {
+          codigo_lancamento_omie:
+            event?.[0]?.conta_a_pagar[0].codigo_lancamento_omie,
+        },
+        { ...event?.[0]?.conta_a_pagar[0], status_titulo: "pago" },
+        { new: true }
+      );
 
       const ticket = await Ticket.findOneAndUpdate(
         {
@@ -125,10 +129,14 @@ const contaPagarWebHook = async (req, res) => {
     if (topic === "Financas.ContaPagar.BaixaCancelada") {
       console.log("🟧 Baixa cancelada no omie");
 
-      const contaPagar = await ContaPagar.findOne({
-        codigo_lancamento_omie:
-          event?.[0]?.conta_a_pagar[0].codigo_lancamento_omie,
-      });
+      const contaPagar = await ContaPagar.findOneAndUpdate(
+        {
+          codigo_lancamento_omie:
+            event?.[0]?.conta_a_pagar[0].codigo_lancamento_omie,
+        },
+        { ...event?.[0]?.conta_a_pagar[0], status_titulo: "A vencer" },
+        { new: true }
+      );
 
       const ticket = await Ticket.findOneAndUpdate(
         {

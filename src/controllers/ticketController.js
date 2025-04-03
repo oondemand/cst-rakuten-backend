@@ -570,7 +570,6 @@ exports.getTicketsPago = async (req, res) => {
         {
           status: "concluido",
           etapa: "concluido",
-          // "contaPagarOmie.status_titulo": "pago",
         },
         { $or: [...prestadorConditions] },
       ],
