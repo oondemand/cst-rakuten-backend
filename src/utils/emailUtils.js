@@ -6,12 +6,12 @@ const Sistema = require("../models/Sistema");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const enviarEmail = async (emailTo, assunto, corpo, anexos = []) => {
-  const sistema = await Sistema.findOne();
+  const config = await Sistema.findOne();
 
   const message = {
     from: {
-      email: sistema.remetente,
-      name: "OonDemand",
+      email: config?.remetente?.email,
+      name: config?.remetente?.nome ?? config?.remetente?.email,
     },
     personalizations: [
       {
