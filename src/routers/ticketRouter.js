@@ -43,6 +43,8 @@ router.post("/", ticketController.createTicket);
 
 router.get("/", ticketController.getAllTickets);
 router.get("/arquivados", ticketController.getArchivedTickets);
+router.get("/pagos", ticketController.getTicketsPago);
+
 router.get("/base-omie/:baseOmieId", ticketController.getAllByBaseOmie);
 router.get("/prestador/:prestadorId", ticketController.getTicketsByPrestadorId);
 router.get(

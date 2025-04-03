@@ -514,6 +514,107 @@ exports.getArchivedTickets = async (req, res) => {
   }
 };
 
+exports.getTicketsPago = async (req, res) => {
+  try {
+    const {
+      ["prestador.sid"]: prestadorSid,
+      ["prestador.nome"]: prestadorNome,
+      ["prestador.tipo"]: prestadorTipo,
+      ["prestador.documento"]: prestadorDocumento,
+      status,
+      searchTerm = "",
+      sortBy,
+      pageIndex,
+      pageSize,
+      ...rest
+    } = req.query;
+
+    const schema = Servico.schema;
+    const prestadorQuery = [];
+
+    if (prestadorSid && prestadorSid !== "")
+      prestadorQuery.push({ sid: Number(prestadorSid) });
+    if (prestadorTipo && prestadorTipo !== "")
+      prestadorQuery.push({ tipo: prestadorTipo });
+    if (prestadorNome && prestadorNome !== "")
+      prestadorQuery.push({ nome: { $regex: prestadorNome, $options: "i" } });
+    if (prestadorDocumento && prestadorDocumento !== "")
+      prestadorQuery.push({
+        documento: { $regex: prestadorDocumento, $options: "i" },
+      });
+
+    if (!isNaN(Number(searchTerm))) {
+      prestadorQuery.push({ documento: Number(searchTerm) });
+      prestadorQuery.push({ sid: Number(searchTerm) });
+    }
+
+    prestadorQuery.push({ nome: { $regex: searchTerm, $options: "i" } });
+
+    const prestadoresIds = await Prestador.find({
+      $or: prestadorQuery,
+    }).select("_id");
+
+    const filtersQuery = filterUtils.buildQuery({
+      filtros: rest,
+      schema,
+    });
+
+    const prestadorConditions =
+      prestadoresIds.length > 0
+        ? [{ prestador: { $in: prestadoresIds.map((e) => e._id) } }]
+        : [];
+
+    const queryResult = {
+      $and: [
+        filtersQuery,
+        { status: { $in: ["pago", "pago-externo"] } },
+        { $or: [...prestadorConditions] },
+      ],
+    };
+
+    let sorting = {};
+
+    if (sortBy) {
+      const [campo, direcao] = sortBy.split(".");
+      const campoFormatado = campo.replaceAll("_", ".");
+      sorting[campoFormatado] = direcao === "desc" ? -1 : 1;
+    }
+
+    const page = parseInt(pageIndex) || 0;
+    const limite = parseInt(pageSize) || 10;
+    const skip = page * limite;
+
+    const [tickets, totalDeTickets] = await Promise.all([
+      Ticket.find(queryResult)
+        .populate("prestador", "sid nome documento")
+        .populate({
+          path: "servicos",
+          options: { virtuals: true },
+        })
+        .skip(skip)
+        .limit(limite),
+      Ticket.countDocuments(queryResult),
+    ]);
+
+    res.status(200).json({
+      tickets,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalDeTickets / limite),
+        totalItems: totalDeTickets,
+        itemsPerPage: limite,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      message: "Erro ao buscar tickets arquivados",
+      detalhes: error.message,
+    });
+  }
+};
+
 exports.getArquivoPorId = async (req, res) => {
   try {
     const arquivo = await Arquivo.findById(req.params.id);
