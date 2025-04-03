@@ -22,7 +22,6 @@ const criarFornecedor = ({
   pessoaFisica,
   dataNascimento,
   pis,
-  nomeMae,
   numeroRg,
   orgaoEmissorRg,
   razaoSocial,

@@ -1,6 +1,11 @@
 // src/controllers/prestadorController.js
 const Prestador = require("../models/Prestador");
 const Ticket = require("../models/Ticket");
+const {
+  sincronizarPrestador,
+} = require("../services/omie/sincronizarPrestador");
+const filtersUtils = require("../utils/filter");
+const Usuario = require("../models/Usuario");
 
 // Método para obter prestador pelo idUsuario
 exports.obterPrestadorPorIdUsuario = async (req, res) => {
@@ -39,7 +44,7 @@ exports.adicionarPrestadorECriarTicket = async (req, res) => {
   try {
     // Adicionar prestador
     const novoPrestador = new Prestador(req.body);
-    novoPrestador.status = "em-analise";
+    novoPrestador.status = "ativo";
     await novoPrestador.save();
 
     // console.log("novoPrestador", novoPrestador);
@@ -95,7 +100,7 @@ exports.criarPrestador = async (req, res) => {
       prestador,
     });
   } catch (error) {
-    // console.error("Erro ao criar prestador:", error);
+    console.error("Erro ao criar prestador:", error);
     res.status(500).json({
       message: "Erro ao criar prestador",
       detalhes: error.message,
@@ -106,9 +111,62 @@ exports.criarPrestador = async (req, res) => {
 // Listar todos os Prestadores
 exports.listarPrestadores = async (req, res) => {
   try {
-    const prestadores = await Prestador.find();
-    res.status(200).json(prestadores);
+    const { sortBy, pageIndex, pageSize, searchTerm, ...rest } = req.query;
+
+    const schema = Prestador.schema;
+
+    const camposBusca = [
+      "email",
+      "nome",
+      "sid",
+      "sciUnico",
+      "documento",
+      "campanha",
+      "status",
+      "grossValue",
+      "bonus",
+    ];
+
+    const queryResult = filtersUtils.buildQuery({
+      filtros: rest,
+      searchTerm,
+      schema,
+      camposBusca,
+    });
+
+    let sorting = {};
+
+    if (sortBy) {
+      const [campo, direcao] = sortBy.split(".");
+      const campoFormatado = campo.replaceAll("_", ".");
+      sorting[campoFormatado] = direcao === "desc" ? -1 : 1;
+    }
+
+    const page = parseInt(pageIndex) || 0;
+    const limit = parseInt(pageSize) || 10;
+
+    const prestadores = await Prestador.find(queryResult)
+      .sort(sorting)
+      .skip(page * limit)
+      .limit(limit);
+
+    const totalDePrestadores = await Prestador.countDocuments(queryResult);
+
+    const totalPages = Math.ceil(totalDePrestadores / limit);
+
+    const response = {
+      prestadores,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: totalDePrestadores,
+        itemsPerPage: limit,
+      },
+    };
+
+    res.status(200).json(response);
   } catch (error) {
+    console.log("ERROR", error);
     res.status(400).json({ error: "Erro ao listar prestadores" });
   }
 };
@@ -128,42 +186,38 @@ exports.obterPrestador = async (req, res) => {
 // Atualizar um Prestador
 exports.atualizarPrestador = async (req, res) => {
   try {
-    const usuario = req.usuario;
-
-    // Verificar se o tipo de usuário é "prestador"
-    // if (usuario.tipo === "prestador") req.body.status = "em-analise";
-
     const prestador = await Prestador.findById(req.params.id);
 
     if (!prestador) {
       return res.status(404).json({ message: "Prestador não encontrado" });
     }
 
-    if (req.body?.sciUnico) {
-      const sci = await Prestador.findOne({
-        sciUnico: req.body.sciUnico,
-      });
+    if (req?.body?.email && prestador?.usuario) {
+      const usuario = await Usuario.findById(prestador?.usuario);
 
-      if (sci && sci._id.toString() !== prestador._id.toString()) {
-        return res.status(409).json({
-          message: "Já existe um prestador com esse sciUnico registrado",
-        });
-      }
+      usuario.email = req.body?.email;
+      await usuario.save();
     }
 
-    // Atualiza apenas os campos fornecidos no corpo da requisição
-    Object.keys(req.body).forEach((key) => {
-      prestador[key] = req.body[key];
-    });
+    const prestadorAtualizado = await Prestador.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+      }
+    );
 
-    await prestador.save();
+    sincronizarPrestador({
+      id: prestadorAtualizado._id,
+      prestador: prestadorAtualizado,
+    });
 
     res.status(200).json({
       message: "Prestador atualizado com sucesso!",
-      prestador,
+      prestador: prestadorAtualizado,
     });
   } catch (error) {
-    // console.error("Erro ao atualizar prestador:", error);
+    console.error("Erro ao atualizar prestador:", error);
     res.status(500).json({
       message: "Erro ao atualizar prestador",
       detalhes: error.message,
@@ -229,5 +283,62 @@ exports.obterPrestadorPorPis = async (req, res) => {
       message: "Erro ao obter prestador",
       detalhes: error.message,
     });
+  }
+};
+
+exports.prestadorWebHook = async (req, res) => {
+  try {
+    console.log("--", req.body);
+
+    const { event, ping, topic } = req.body;
+    if (ping === "omie") return res.status(200).json({ message: "pong" });
+
+    if (topic === "ClienteFornecedor.Alterado") {
+      const documento = event?.cnpj_cpf
+        ? Number(event.cnpj_cpf.replaceAll(".", "").replaceAll("-", ""))
+        : null;
+
+      const prestadorOmie = {
+        nome: event.razao_social,
+        tipo:
+          event?.pessoa_fisica === "S"
+            ? "pf"
+            : event?.pessoa_fisica === "pf"
+              ? "pf"
+              : "ext",
+        documento,
+        dadosBancarios: {
+          banco: event?.dadosBancarios?.codigo_banco ?? "",
+          agencia: event?.dadosBancarios?.agencia ?? "",
+          conta: event?.dadosBancarios?.conta_corrente ?? "",
+        },
+        email: event?.email ?? "",
+        endereco: {
+          cep: event?.cep ?? "",
+          rua: event?.endereco ?? "",
+          numero: event?.endereco_numero ? Number(event?.endereco_numero) : "",
+          complemento: event?.complemento ?? complemento,
+          cidade: event?.cidade ?? "",
+          estado: event?.estado ?? "",
+        },
+      };
+
+      const prestador = await Prestador.findOneAndUpdate(
+        {
+          $or: [{ documento }, { email: event.email }],
+        },
+        { ...prestadorOmie }
+      );
+
+      await prestador.save();
+      console.log("Prestador", prestador);
+    }
+
+    res
+      .status(200)
+      .json({ message: "Webhook recebido. Dados sendo atualizados." });
+  } catch (error) {
+    console.error("Erro ao processar o webhook:", error);
+    res.status(500).json({ error: "Erro ao processar o webhook." });
   }
 };

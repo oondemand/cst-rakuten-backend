@@ -10,7 +10,10 @@ const enderecoSchema = new mongoose.Schema({
   complemento: String,
   cidade: String,
   estado: String,
-  pais: { type: { nome: String, cod: Number } },
+  pais: {
+    type: { nome: String, cod: Number },
+    default: { nome: "Brasil", cod: 1058 },
+  },
 });
 
 // Esquema de Dados Bancários
@@ -26,6 +29,7 @@ const prestadorSchema = new mongoose.Schema(
   {
     sciUnico: { type: Number, match: /^\d{5,}$/ },
     usuario: { type: mongoose.Schema.Types.ObjectId, ref: "Usuario" },
+    manager: { type: String },
     nome: { type: String, required: true },
     sid: {
       type: Number,
@@ -33,19 +37,19 @@ const prestadorSchema = new mongoose.Schema(
       unique: true,
       match: [/^\d{7}$/, "O SID deve ter exatamente 7 dígitos."],
     },
-    tipo: { type: String, enum: ["pj", "pf", "ext"] },
+    tipo: { type: String, enum: ["pj", "pf", "ext", ""] },
     documento: {
       type: String,
-      validate: {
-        validator: function (valor) {
-          if (this.tipo === "ext") {
-            return true;
-          }
+      // validate: {
+      //   validator: function (valor) {
+      //     if (this.tipo === "ext") {
+      //       return true;
+      //     }
 
-          return /^\d{11}$|^\d{14}$/.test(valor);
-        },
-        message: "Documento inválido para o tipo selecionado.",
-      },
+      //     return /^\d{11}$|^\d{14}$/.test(valor);
+      //   },
+      //   message: "Documento inválido para o tipo selecionado.",
+      // },
     },
     dadosBancarios: dadosBancariosSchema,
     email: {
@@ -63,7 +67,6 @@ const prestadorSchema = new mongoose.Schema(
     pessoaFisica: {
       dataNascimento: Date,
       pis: String,
-      nomeMae: String,
       rg: {
         numero: String,
         orgaoEmissor: String,
@@ -82,14 +85,7 @@ const prestadorSchema = new mongoose.Schema(
     comentariosRevisao: String,
     status: {
       type: String,
-      enum: [
-        "ativo",
-        "em-analise",
-        "pendente-de-revisao",
-        "inativo",
-        "arquivado",
-        "aguardando-codigo-sci",
-      ],
+      enum: ["ativo", "pendente-de-revisao", "inativo", "arquivado"],
       default: "ativo",
     },
     dataExportacao: { type: Date, default: null },

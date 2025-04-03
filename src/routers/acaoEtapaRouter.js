@@ -2,8 +2,8 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const acaoEtapaController = require("../controllers/acaoEtapaController");
-
-const path = require("node:path");
+const { importarServico } = require("../controllers/importacao/servico");
+const { importarPrestador } = require("../controllers/importacao/prestador");
 
 // Configuração do armazenamento (aqui, salvando no disco)
 const storage = multer.diskStorage({
@@ -14,6 +14,9 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}-${file.originalname}`);
   },
 });
+
+// Configuração de armazenamento para a rota `importar-rpas`
+const inMemoryStorage = multer.memoryStorage({});
 
 // Filtrando arquivos (opcional)
 const fileFilter = (req, file, cb) => {
@@ -33,43 +36,44 @@ const fileFilter = (req, file, cb) => {
 
 // Inicializando o upload
 const upload = multer({
-  storage: storage,
+  storage: inMemoryStorage,
   fileFilter: fileFilter,
   limits: { fileSize: 20 * 1024 * 1024 }, // Limite de 10MB
 });
 
 // Filtrando arquivos (opcional)
 const rpasFileFilter = (req, file, cb) => {
-  // Aceitar apenas arquivos pdf
-  if (file.mimetype === "application/pdf") {
+  // Aceitar apenas arquivos pdf ou zip
+  const allowedTipes = [
+    "application/zip",
+    "application/x-zip-compressed",
+    "application/pdf",
+  ];
+
+  if (allowedTipes.includes(file.mimetype)) {
     cb(null, true);
   } else {
     cb(new Error("Tipo de arquivo não suportado"), false);
   }
 };
 
-// Configuração de armazenamento para a rota `importar-rpas`
-const rpasStorage = multer.memoryStorage({});
-
 // Inicializando o upload com configuração específica para `importar-rpas`
 const uploadRpas = multer({
-  storage: rpasStorage,
+  storage: inMemoryStorage,
   fileFilter: rpasFileFilter,
-  limits: { fileSize: 1 * 1024 * 1024 }, // Limite de 1MB por arquivo
+  limits: { fileSize: 10 * 1024 * 1024 }, // Limite de 10MB por arquivo
 });
 
-router.post(
-  "/importar-comissoes",
-  upload.single("file"),
-  acaoEtapaController.importarComissoes,
-);
 router.post("/exportar-servicos", acaoEtapaController.exportarServicos);
 router.post("/exportar-prestadores", acaoEtapaController.exportarPrestadores);
-router.post("/importar-prestadores", acaoEtapaController.importarPrestadores);
+
+router.post("/importar-servicos", upload.array("file"), importarServico);
+router.post("/importar-prestadores", upload.array("file"), importarPrestador);
+
 router.post(
   "/importar-rpas",
   uploadRpas.array("file", 50),
-  acaoEtapaController.importarRPAs,
+  acaoEtapaController.importarRPAs
 );
 
 module.exports = router;

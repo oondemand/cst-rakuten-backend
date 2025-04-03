@@ -1,0 +1,81 @@
+name: Deploy adn publish backend homolog
+
+on:
+  push:
+    branches:
+      - homolog
+
+jobs:
+  build_and_publish:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # Permissão para o workflow criar tags
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Config git
+        run: |
+          git config user.name "${GITHUB_ACTOR}"
+          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+
+      - name: Instalar dependências
+        run: npm install
+
+      - name: Criar release com release-it
+        run: npm run release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Obter tag da release
+        id: extract_tag
+        run: |
+          TAG=$(git describe --tags --abbrev=0)
+          echo "TAG=$TAG" >> $GITHUB_ENV
+
+      - name: Construir e publicar imagem
+        run: |
+          docker login --username ${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.GH_PAT }} ghcr.io
+          docker build -f ./infra/docker/Dockerfile.prod --build-arg SERVICE_VERSION=${{ env.TAG }} --tag ghcr.io/oondemand/cst-rakuten-backend:${{ env.TAG }}-homolog .
+          docker push ghcr.io/oondemand/cst-rakuten-backend:${{ env.TAG }}-homolog
+
+      - name: Criar kubeconfig
+        run: |
+          mkdir -p "${HOME}/.kube"
+          curl -s -H "Authorization: Bearer ${{secrets.DO_ACCESS_TOKEN_HOMOLOG}}" "${{secrets.DO_CLUSTER_AUTHENTICATION_URL_HOMOLOG}}" > "$HOME/.kube/config"
+
+      - name: Usar contexto do cluster
+        run: |
+          kubectl config use-context ${{ secrets.CLUSTER_HOMOLOG }}
+
+      - name: 🚀 Substituir variáveis no deployment-homolog.yml e aplicar no cluster
+        run: |
+          envsubst < infra/kubernetes/deployment-homolog.yaml | kubectl apply -f -
+
+        env:
+          IMAGE_TAG: ${{ env.TAG }}
+          NODE_ENV: ${{ secrets.NODE_ENV }}
+          SERVICE_NAME: ${{ secrets.SERVICE_NAME }}
+          PORT: ${{ secrets.PORT }}
+          DB_SERVER: ${{ secrets.DB_SERVER_HOMOLOG }}
+          DB_USER: ${{ secrets.DB_USER_HOMOLOG }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD_HOMOLOG }}
+          DB_NAME: ${{ secrets.DB_NAME_HOMOLOG }}
+          DB_AUTH_SOURCE: ${{ secrets.DB_AUTH_SOURCE }}
+          DB_REPLICA_SET: ${{ secrets.DB_REPLICA_SET_HOMOLOG }}
+          DB_TSL: ${{ secrets.DB_TSL_HOMOLOG }}
+          API_OMIE: ${{ secrets.API_OMIE }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SENDGRID_REMETENTE: ${{ secrets.SENDGRID_REMETENTE }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          BASE_URL_CST: ${{ secrets.BASE_URL_CST_HOMOLOG }}
+          BASE_URL_APP_PUBLISHER: ${{ secrets.BASE_URL_APP_PUBLISHER_HOMOLOG }}
+          SCI_CODIGO_EMPRESA: ${{ secrets.SCI_CODIGO_EMPRESA }}
+          SCI_CODIGO_CENTRO_CUSTO: ${{ secrets.SCI_CODIGO_CENTRO_CUSTO }}
+          SCI_PORCENTAGEM_ISS: ${{ secrets.SCI_PORCENTAGEM_ISS }}
+          SCI_DIAS_PAGAMENTO: ${{ secrets.SCI_DIAS_PAGAMENTO }}
+          SCI_CBO: ${{ secrets.SCI_CBO }}
+          SCI_CFIP: ${{ secrets.SCI_CFIP }}
+          SCI_ESOCIAL: ${{ secrets.SCI_ESOCIAL }}
+          ID_CONTA_CORRENTE: ${{ secrets.ID_CONTA_CORRENTE }}
+          CODIGO_CATEGORIA: ${{ secrets.CODIGO_CATEGORIA }}

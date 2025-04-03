@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cst-rakuten-backend
+  namespace: rakuten
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cst-rakuten-backend
+  template:
+    metadata:
+      labels:
+        app: cst-rakuten-backend
+    spec:
+      containers:
+        - name: cst-rakuten-backend-container
+          image: ghcr.io/oondemand/cst-rakuten-backend:${IMAGE_TAG}-homolog
+          ports:
+            - containerPort: 4000
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "0.5"
+            limits:
+              memory: "2048Mi"
+              cpu: "2"
+          env:
+            - name: NODE_ENV
+              value: "${NODE_ENV}"
+            - name: SERVICE_NAME
+              value: "${SERVICE_NAME}"
+            - name: PORT
+              value: "${PORT}"
+            - name: DB_SERVER
+              value: "${DB_SERVER}"
+            - name: DB_USER
+              value: "${DB_USER}"
+            - name: DB_PASSWORD
+              value: "${DB_PASSWORD}"
+            - name: DB_NAME
+              value: "${DB_NAME}"
+            - name: DB_AUTH_SOURCE
+              value: "${DB_AUTH_SOURCE}"
+            - name: DB_REPLICA_SET
+              value: "${DB_REPLICA_SET}"
+            - name: DB_TSL
+              value: "${DB_TSL}"
+            - name: API_OMIE
+              value: "${API_OMIE}"
+            - name: JWT_SECRET
+              value: "${JWT_SECRET}"
+            - name: SENDGRID_REMETENTE
+              value: "${SENDGRID_REMETENTE}"
+            - name: SENDGRID_API_KEY
+              value: "${SENDGRID_API_KEY}"
+            - name: BASE_URL_CST
+              value: "${BASE_URL_CST}"
+            - name: BASE_URL_APP_PUBLISHER
+              value: "${BASE_URL_APP_PUBLISHER}"
+            - name: SCI_CODIGO_EMPRESA
+              value: "${SCI_CODIGO_EMPRESA}"
+            - name: SCI_CODIGO_CENTRO_CUSTO
+              value: "${SCI_CODIGO_CENTRO_CUSTO}"
+            - name: SCI_PORCENTAGEM_ISS
+              value: "${SCI_PORCENTAGEM_ISS}"
+            - name: SCI_DIAS_PAGAMENTO
+              value: "${SCI_DIAS_PAGAMENTO}"
+            - name: SCI_CBO
+              value: "${SCI_CBO}"
+            - name: SCI_CFIP
+              value: "${SCI_CFIP}"
+            - name: SCI_ESOCIAL
+              value: "${SCI_ESOCIAL}"
+            - name: ID_CONTA_CORRENTE
+              value: "${ID_CONTA_CORRENTE}"
+            - name: CODIGO_CATEGORIA
+              value: "${CODIGO_CATEGORIA}"

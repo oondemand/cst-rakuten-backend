@@ -1,13 +1,8 @@
-const XLSX = require("xlsx");
-const fs = require("fs");
-
-const Servico = require("../models/Servico");
 const Prestador = require("../models/Prestador");
 const Ticket = require("../models/Ticket");
 const Arquivo = require("../models/Arquivo");
-const BaseOmie = require("../models/BaseOmie");
 
-const { max, addDays, format, getMonth, getYear } = require("date-fns");
+const { addDays, format } = require("date-fns");
 
 const {
   criarPrestadorParaExportacao,
@@ -18,337 +13,146 @@ const {
 } = require("../services/integracaoRPAs/exportarServicos");
 
 const emailUtils = require("../utils/emailUtils");
-const { CNPJouCPF } = require("../utils/formatters");
-const { converterNumeroSerieParaData } = require("../utils/dateUtils");
 
 const { criarNomePersonalizado } = require("../utils/formatters");
 
-const clienteService = require("../services/omie/clienteService");
-const Usuario = require("../models/Usuario");
 const { ControleAlteracaoService } = require("../services/controleAlteracao");
+const Sistema = require("../models/Sistema");
+const { listZipContentsFromBuffer } = require("../utils/zip");
+const Importacao = require("../models/Importacao");
 
-const buscarPrestadorOmie = async ({ documento }) => {
-  try {
-    const baseOmie = await BaseOmie.findOne({ status: "ativo" });
+const anexarArquivoAoTicket = async ({ arquivo, usuario }) => {
+  const sciUnico = arquivo.originalname.replace(".pdf", "").split("_")[2];
 
-    const cliente = await clienteService.pesquisarPorCNPJ(
-      baseOmie.appKey,
-      baseOmie.appSecret,
-      documento
-    );
-
-    if (!cliente) {
-      throw new Error("Cliente não encontrado");
-    }
-
-    const {
-      cep,
-      cidade,
-      cnpj_cpf,
-      complemento,
-      endereco,
-      email,
-      endereco_numero,
-      estado,
-      pessoa_fisica,
-      razao_social,
-      dadosBancarios,
-    } = cliente;
-
-    const { agencia, codigo_banco, conta_corrente } = dadosBancarios || {};
-
-    const prestadorOmie = {
-      nome: razao_social,
-      tipo: pessoa_fisica === "S" ? "pf" : "pj",
-      documento: cnpj_cpf.replaceAll(".", "").replaceAll("-", ""),
-      dadosBancarios: {
-        agencia: agencia,
-        conta: conta_corrente,
-      },
-      email: email,
-      endereco: {
-        cep: cep,
-        rua: endereco,
-        numero: endereco_numero,
-        complemento: complemento,
-        cidade: cidade,
-        estado: estado,
-      },
-      pessoaFisica: {
-        rg: {
-          numero:
-            pessoa_fisica === "S" &&
-            cnpj_cpf.replaceAll(".", "").replaceAll("-", ""),
-        },
-      },
-      pessoaJuridica: {
-        razaoSocial: pessoa_fisica !== "S" && razao_social,
-        nomeFantasia: pessoa_fisica !== "S" && razao_social,
-      },
-    };
-
-    return prestadorOmie;
-  } catch (error) {
-    return;
+  if (!sciUnico || isNaN(sciUnico)) {
+    throw `Erro ao fazer upload de arquivo ${arquivo.originalname}; sciUnico não encontrado no nome do arquivo ou não é um número válido`;
   }
+
+  const prestador = await Prestador.findOne({ sciUnico: sciUnico });
+
+  if (!prestador) {
+    throw `Erro ao fazer upload de arquivo ${arquivo.originalname} - Não foi encontrado um prestador com sciUnico: ${sciUnico}`;
+  }
+
+  const ticket = await Ticket.findOne({
+    etapa: "geracao-rpa",
+    prestador: prestador?._id,
+    status: "trabalhando",
+  });
+
+  console.log("Prestador", prestador, ticket);
+
+  if (!ticket) {
+    throw `Erro ao fazer upload de arquivo ${arquivo.originalname} - Não foi encontrado um ticket aberto e com status trabalhando referente ao prestador ${prestador.nome} - sciUnico: ${prestador.sciUnico}`;
+  }
+
+  const novoArquivoDoTicket = new Arquivo({
+    nome: criarNomePersonalizado({ nomeOriginal: arquivo.originalname }),
+    nomeOriginal: arquivo.originalname,
+    mimetype: arquivo.mimetype,
+    size: arquivo.size,
+    ticket: ticket._id,
+    buffer: arquivo.buffer,
+    tipo: "rpa",
+  });
+  await novoArquivoDoTicket.save();
+
+  ticket.arquivos.push(novoArquivoDoTicket._id);
+
+  ticket.etapa = "aprovacao-fiscal";
+  ticket.status = "aguardando-inicio";
+
+  await ticket.save();
+
+  ControleAlteracaoService.registrarAlteracao({
+    acao: "alterar",
+    dataHora: new Date(),
+    idRegistroAlterado: ticket._id,
+    origem: "integracao-sci",
+    dadosAtualizados: ticket,
+    tipoRegistroAlterado: "ticket",
+    usuario: usuario._id,
+  });
+
+  return ticket;
 };
 
-exports.importarComissoes = async (req, res) => {
-  const arquivo = req.file;
+const processarArquivos = async ({ arquivos, usuario }) => {
+  const detalhes = {
+    totalDeArquivosEncontrados: arquivos.length,
+    arquivosComErro: 0,
+    errors: "",
+  };
 
-  if (!arquivo) {
-    return res.status(400).json({ message: "Nenhum arquivo enviado." });
+  const arquivoDeErro = [];
+
+  for (const arquivo of arquivos) {
+    try {
+      await anexarArquivoAoTicket({ arquivo, usuario });
+    } catch (error) {
+      arquivoDeErro.push(arquivo);
+      detalhes.arquivosComErro += 1;
+      detalhes.errors += `❌ [ERROR AO ANEXAR ARQUIVO]: NOME DO ARQUIVO: ${arquivo?.nome} \nDETALHES DO ERRO: ${error}\n\n`;
+    }
   }
 
-  res.status(200).json({ message: "Arquivo recebido e sendo processado" });
+  return { detalhes, arquivoDeErro };
+};
 
+exports.importarRPAs = async (req, res) => {
   try {
-    console.log("[PROCESSANDO ARQUIVO...]");
+    const arquivo = req.files[0];
 
-    // Ler o arquivo usando XLSX
-    const workbook = XLSX.readFile(arquivo.path);
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-      header: 1,
-      defval: "",
-    });
+    const zipMimeTypes = ["application/zip", "application/x-zip-compressed"];
+    const pdfMimeType = ["application/pdf"];
 
-    // Processar os dados pela posição das colunas
-    const processedData = jsonData.reduce((result, row, i) => {
-      if (i === 0) {
-        return result;
-      }
-
-      const data = {
-        type: row[0],
-        sid: row[3],
-        periodo: converterNumeroSerieParaData(row[5]) || "",
-        valorPrincipal: row[6] || 0,
-        valorBonus: row[7] || 0,
-        valorAjusteComercial: row[8] || 0,
-        valorHospedagemAnuncio: row[9] || 0,
-        valorTotal: row[10] || 0,
-        nomePrestador: row[20] || "",
-        documento: row[19] || "",
-      };
-
-      const valorTotalRevisaoDeProvisao = row[15];
-
-      if (valorTotalRevisaoDeProvisao) {
-        const revisaoDeProvisao = {
-          periodo: converterNumeroSerieParaData(row[11]) || "",
-          valorPrincipal: row[12] || 0,
-          valorBonus: row[13] || 0,
-          valorAjusteComercial: row[14] || 0,
-          valorTotal: valorTotalRevisaoDeProvisao,
-        };
-        data.revisaoDeProvisao = revisaoDeProvisao;
-      }
-
-      // Adiciona ao resultado apenas se atender aos critérios
-      // Detalhe para o tipo "RPA", isso que vai fazer com que
-      // o cabeçalho seja pulado corretamente
-      if (data.sid && data.nomePrestador) {
-        result.push(data);
-      }
-
-      return result;
-    }, []);
-
-    let detalhes = {
-      linhasEncontradas: processedData.length,
-      linhasLidasComErro: 0,
-      totalDeNovosPrestadores: 0,
-      valorTotalLido: 0,
-      totalDeNovosTickets: 0,
-      erros: null,
-    };
-
-    console.log("[ARQUIVO PROCESSADO]");
-    console.log("LINHAS LIDAS:", processedData.length);
-
-    // Percorrer os dados e salvar no banco
-    for (const [index, row] of processedData.entries()) {
-      try {
-        const { numero, tipo } = CNPJouCPF(row.documento);
-
-        let prestador = await Prestador.findOne({ sid: row.sid });
-        let acao = "alterar";
-
-        if (!prestador) {
-          const prestadorOmie = await buscarPrestadorOmie({
-            documento: numero,
-          });
-
-          if (prestadorOmie) {
-            prestador = new Prestador({
-              ...prestadorOmie,
-              sid: row.sid,
-              nome: row.nomePrestador,
-              status: "em-analise",
-            });
-            await prestador.save();
-            detalhes.totalDeNovosPrestadores += 1;
-
-            console.log("Criando prestador via omie");
-          }
-
-          if (!prestadorOmie) {
-            prestador = new Prestador({
-              sid: row.sid,
-              nome: row.nomePrestador,
-              status: "em-analise",
-              documento: numero,
-              tipo: row?.type === "INVOICE" ? "ext" : tipo,
-            });
-
-            await prestador.save();
-            detalhes.totalDeNovosPrestadores += 1;
-            console.log(
-              "Criando prestador via planilha",
-              prestador.tipo,
-              row?.type
-            );
-          }
-
-          if (prestador.email) {
-            let usuario = await Usuario.findOne({ email: prestador.email });
-
-            if (!usuario) {
-              usuario = new Usuario({
-                email: prestador.email,
-                nome: prestador.nome,
-                tipo: "prestador",
-                senha: "123456",
-              });
-
-              await usuario.save();
-            }
-
-            prestador.usuario = usuario._id;
-            await prestador.save();
-
-            const token = usuario.gerarToken();
-
-            const url = new URL(
-              "/first-login",
-              process.env.BASE_URL_APP_PUBLISHER
-            );
-            url.searchParams.append("code", token);
-
-            //mostra url para não ter que verificar no email
-            // console.log("URL", url.toString());
-
-            await emailUtils.emailLinkCadastroUsuarioPrestador({
-              email: req.usuario.email,
-              nome: prestador.nome,
-              url: url.toString(),
-            });
-          }
-        }
-
-        let ticket = await Ticket.findOne({
-          prestador,
-          etapa: {
-            $in: [
-              "requisicao",
-              "verificacao",
-              "aprovacao-tributaria",
-              "aprovacao-cadastro",
-            ],
-          },
-        });
-
-        if (!ticket) {
-          acao = "adicionar";
-          ticket = new Ticket({
-            prestador: prestador._id,
-            titulo: `Comissão ${prestador.nome}: ${getMonth(row.periodo) + 1}/${getYear(row.periodo)}`,
-            status: "aguardando-inicio",
-            etapa: "requisicao",
-          });
-
-          await ticket.save();
-          detalhes.totalDeNovosTickets += 1;
-        }
-
-        const servico = new Servico({
-          prestador: prestador._id,
-          mesCompetencia: getMonth(row.periodo) + 1, // Meses no date-fns começam a partir do 0
-          anoCompetencia: getYear(row.periodo),
-          valorPrincipal: row.valorPrincipal,
-          valorBonus: row.valorBonus,
-          valorAjusteComercial: row.valorAjusteComercial,
-          valorHospedagemAnuncio: row.valorHospedagemAnuncio,
-          valorTotal: row.valorTotal,
-          status: "ativo",
-        });
-
-        await servico.save();
-        detalhes.valorTotalLido += row.valorTotal;
-
-        ticket.servicos.push(servico._id);
-        await ticket.save();
-
-        if (row.revisaoDeProvisao) {
-          const servicoDeCorrecao = new Servico({
-            prestador: prestador._id,
-            mesCompetencia: getMonth(row.revisaoDeProvisao.periodo) + 1, // Meses no date-fns começam a partir do 0
-            anoCompetencia: getYear(row.revisaoDeProvisao.periodo),
-            valorPrincipal: row.revisaoDeProvisao.valorPrincipal,
-            valorBonus: row.revisaoDeProvisao.valorBonus,
-            valorAjusteComercial: row.revisaoDeProvisao.valorAjusteComercial,
-            valorHospedagemAnuncio:
-              row.revisaoDeProvisao.valorHospedagemAnuncio,
-            valorTotal: row.revisaoDeProvisao.valorTotal,
-            correcao: true,
-            status: "ativo",
-          });
-          await servicoDeCorrecao.save();
-          detalhes.valorTotalLido += row.revisaoDeProvisao.valorTotal;
-
-          ticket.servicos.push(servicoDeCorrecao._id);
-          await ticket.save();
-        }
-
-        ControleAlteracaoService.registrarAlteracao({
-          acao,
-          dataHora: new Date(),
-          idRegistroAlterado: ticket._id,
-          origem: "importacao-payment-control",
-          dadosAtualizados: ticket,
-          tipoRegistroAlterado: "ticket",
-          usuario: req.usuario._id,
-        });
-      } catch (err) {
-        detalhes.linhasLidasComErro += 1;
-        detalhes.erros += `❌ Erro ao processar linha: ${index + 1} [SID: ${row.sid} - PRESTADOR: ${row.nomePrestador}] - \nDETALHES DO ERRO: ${err}\n\n`;
-
-        console.error(
-          `❌ Erro ao processar linha: ${index + 1} [SID: ${row.sid} - PRESTADOR: ${row.nomePrestador}] - \nDETALHES DO ERRO: ${err}\n`
-        );
-      }
+    if (!arquivo) {
+      return res.status(400).json({ message: "Nenhum arquivo foi fornecido!" });
     }
 
-    await emailUtils.importarComissõesDetalhes({
-      detalhes,
-      usuario: req.usuario,
+    const importacao = new Importacao({
+      tipo: "rpa",
+      arquivoOriginal: { ...arquivo, nome: arquivo.originalname },
     });
 
-    console.log("[EMAIL ENVIADO PARA]:", req.usuario.email);
-    // Remover o arquivo após o processamento
-    fs.unlinkSync(arquivo.path);
-    console.log("🟩[PROCESSAMENTO CONCLUIDO]");
+    await importacao.save();
+
+    if (importacao) res.status(200).json(importacao);
+
+    if (zipMimeTypes.includes(arquivo?.mimetype)) {
+      const arquivos = listZipContentsFromBuffer(arquivo.buffer);
+      const { detalhes } = await processarArquivos({
+        arquivos,
+        usuario: req.usuario,
+      });
+
+      importacao.arquivoLog = Buffer.from(detalhes.errors);
+      importacao.detalhes = detalhes;
+
+      await importacao.save();
+    }
+
+    if (pdfMimeType.includes(arquivo?.mimetype)) {
+      const { detalhes } = await processarArquivos({
+        arquivos: [arquivo],
+        usuario: req.usuario,
+      });
+
+      importacao.arquivoLog = Buffer.from(detalhes.errors);
+      importacao.detalhes = detalhes;
+
+      await importacao.save();
+    }
   } catch (error) {
-    console.error("Erro ao importar comissões:", error);
+    res.status(500).json();
+    console.error(error);
   }
 };
 
 exports.exportarServicos = async (req, res) => {
   try {
     const tickets = await Ticket.find({
-      etapa: "integracao-unico",
+      etapa: "geracao-rpa",
       status: { $ne: "concluido" },
     })
       .populate("servicos")
@@ -360,35 +164,42 @@ exports.exportarServicos = async (req, res) => {
       });
     }
 
-    res
-      .status(200)
-      .json({ mensagem: "Serviços sendo processados e exportados" });
-
     let documento = "";
-    const prestadoresComTicketsExportados = [];
+    const prestadoresComTicketsExportados = new Set();
+
+    const config = await Sistema.findOne();
 
     for (const ticket of tickets) {
       const { prestador, servicos } = ticket;
+
       if (
         prestador.sciUnico &&
         servicos.length > 0 &&
-        !prestadoresComTicketsExportados.includes(prestador._id) &&
+        !prestadoresComTicketsExportados.has(prestador._id) &&
         prestador.status === "ativo"
       ) {
-        let valorTotalDoTicket = 0;
-
-        for (const { valorTotal } of servicos) {
-          valorTotalDoTicket += valorTotal;
-        }
+        const valorTotalDoTicket = servicos.reduce((acc, curr) => {
+          acc = acc + curr.valor;
+          return acc;
+        }, 0);
 
         if (valorTotalDoTicket > 0) {
           documento += criarServicoParaExportacao({
             codAutonomo: prestador.sciUnico,
-            codCentroDeCustos: process.env.SCI_CODIGO_CENTRO_CUSTO,
-            codEmpresa: process.env.SCI_CODIGO_EMPRESA,
-            porcentualIss: process.env.SCI_PORCENTAGEM_ISS,
+            codCentroDeCustos:
+              config?.sci?.codigo_centro_custo ??
+              process.env.SCI_CODIGO_CENTRO_CUSTO,
+            codEmpresa:
+              config?.sci?.codigo_empresa ?? process.env.SCI_CODIGO_EMPRESA,
+            porcentualIss:
+              config?.sci?.porcentagem_iss ?? process.env.SCI_PORCENTAGEM_ISS,
             dataDePagamento: format(
-              addDays(new Date(), Number(process.env.SCI_DIAS_PAGAMENTO)),
+              addDays(
+                new Date(),
+                Number(
+                  config?.sci?.dias_pagamento ?? process.env.SCI_DIAS_PAGAMENTO
+                )
+              ),
               "ddMMyyyy"
             ),
             dataDeRealizacao: format(new Date(), "ddMMyyyy"),
@@ -409,16 +220,17 @@ exports.exportarServicos = async (req, res) => {
             usuario: req.usuario._id,
           });
 
-          prestadoresComTicketsExportados.push(prestador._id);
+          prestadoresComTicketsExportados.add(prestador._id);
         }
       }
     }
 
-    emailUtils.emailServicosExportados({
-      documento,
-      usuario: req.usuario,
-      servicosExportados: prestadoresComTicketsExportados.length,
-    });
+    // emailUtils.emailServicosExportados({
+    //   documento,
+    //   usuario: req.usuario,
+    //   servicosExportados: prestadoresComTicketsExportados.length,
+    // });
+    res.status(200).json({ arquivo: Buffer.from(documento) });
   } catch (error) {
     console.error(error);
     emailUtils.emailGeralDeErro({
@@ -426,15 +238,18 @@ exports.exportarServicos = async (req, res) => {
       usuario: req.usuario,
       tipoDeErro: "exportar serviços",
     });
+    res.status(500).json();
   }
 };
 
 exports.exportarPrestadores = async (req, res) => {
   try {
-    const tickets = await Ticket.find({
-      etapa: "integracao-unico",
+    const query = {
+      etapa: "geracao-rpa",
       status: { $ne: "concluido" },
-    }).populate("prestador");
+    };
+
+    const tickets = await Ticket.find(query).populate("prestador");
 
     if (!tickets) {
       return res.status(400).json({
@@ -442,18 +257,15 @@ exports.exportarPrestadores = async (req, res) => {
       });
     }
 
-    res
-      .status(200)
-      .json({ mensagem: "Prestadores sendo processados e exportados" });
+    const prestadoresJaExportados = new Set();
+    const config = await Sistema.findOne();
 
-    const prestadoresExportados = [];
     let documento = "";
 
     for (const { prestador } of tickets) {
-      if (
-        !prestador.sciUnico &&
-        !prestadoresExportados.includes(prestador._id)
-      ) {
+      const { sciUnico } = prestador;
+
+      if (!sciUnico && !prestadoresJaExportados.has(prestador._id)) {
         const dataNascimento = prestador.pessoaFisica?.dataNascimento;
 
         documento += criarPrestadorParaExportacao({
@@ -461,135 +273,36 @@ exports.exportarPrestadores = async (req, res) => {
           bairro: prestador.bairro,
           email: prestador.email,
           nome: prestador.nome,
-          cep: prestador.endereco ? prestador.endereco.cep : "",
-          nomeMae: prestador.pessoaFisica ? prestador.pessoaFisica.nomeMae : "",
-          pisNis: prestador.pessoaFisica ? prestador.pessoaFisica.pis : "",
-          rg: prestador.pessoaFisica ? prestador.pessoaFisica.rg.numero : "",
-          orgaoEmissorRG: prestador.pessoaFisica
-            ? prestador.pessoaFisica.rg.orgaoEmissor
-            : "",
+          cep: prestador?.endereco?.cep ?? "",
+          nomeMae: "",
+          pisNis: prestador?.pessoaFisica?.pis ?? "",
+          rg: prestador?.pessoaFisica?.rg?.numero ?? "",
+          orgaoEmissorRG: prestador?.pessoaFisica?.rg?.orgaoEmissor ?? "",
           dataNascimento:
             dataNascimento instanceof Date
               ? format(dataNascimento, "dd/MM/yyyy")
               : "",
-          CBO: process.env.SCI_CBO,
-          CFIP: process.env.SCI_CFIP,
-          eSocial: process.env.SCI_ESOCIAL,
+          CBO: config?.sci?.cbo ?? process.env.SCI_CBO,
+          CFIP: config?.sci?.cfip ?? process.env.SCI_CFIP,
+          eSocial: config?.sci?.e_social ?? process.env.SCI_ESOCIAL,
         }).concat("\n\n");
 
-        prestador.status = "aguardando-codigo-sci";
-        prestador.dataExportacao = new Date();
-        await prestador.save();
-        prestadoresExportados.push(prestador._id);
+        prestadoresJaExportados.add(prestador._id);
       }
     }
 
-    emailUtils.emailPrestadoresExportados({
-      documento,
-      usuario: req.usuario,
-      prestadoresExportados: prestadoresExportados.length,
-    });
+    // emailUtils.emailPrestadoresExportados({
+    //   documento,
+    //   usuario: req.usuario,
+    //   prestadoresExportados: prestadoresJaExportados.size,
+    // });
+    res.status(200).json({ arquivo: Buffer.from(documento) });
   } catch (error) {
-    console.error(error);
     emailUtils.emailGeralDeErro({
       documento: `Ouve um erro ao exportar prestadores: ${error}\n\n`,
       usuario: req.usuario,
       tipoDeErro: "exportar prestadores",
     });
-  }
-};
-
-exports.importarPrestadores = async (req, res) => {
-  // console.log("Importar prestadores");
-  res.send("Importar prestadores");
-};
-
-exports.importarRPAs = async (req, res) => {
-  const arquivos = req.files;
-
-  if (arquivos === 0) {
-    return res.status(400).json({ message: "Nenhum arquivo enviado." });
-  }
-
-  res.status(200).json({ message: "Arquivos recebidos e sendo processados!" });
-
-  const anexarArquivoAoTicket = async (arquivo) => {
-    const detalhes = {};
-    const sciUnico = arquivo.originalname.replace(".pdf", "").split("_")[2];
-
-    if (!sciUnico || isNaN(sciUnico)) {
-      throw `Erro ao fazer upload de arquivo ${arquivo.originalname}; sciUnico não encontrado no nome do arquivo ou não é um número válido`;
-    }
-
-    const prestador = await Prestador.findOne({ sciUnico: sciUnico });
-
-    if (!prestador) {
-      throw `Erro ao fazer upload de arquivo ${arquivo.originalname} - Não foi encontrado um prestador com sciUnico: ${sciUnico}`;
-    }
-
-    const ticket = await Ticket.findOne({
-      etapa: "integracao-unico",
-      prestador,
-      status: "trabalhando",
-    });
-
-    if (!ticket) {
-      throw `Erro ao fazer upload de arquivo ${arquivo.originalname} - Não foi encontrado um ticket aberto e com status trabalhando referente ao prestador ${prestador.name} - sciUnico: ${prestador.sciUnico}`;
-    }
-
-    const novoArquivoDoTicket = new Arquivo({
-      nome: criarNomePersonalizado({ nomeOriginal: arquivo.originalname }),
-      nomeOriginal: arquivo.originalname,
-      path: arquivo.path,
-      mimetype: arquivo.mimetype,
-      size: arquivo.size,
-      ticket: ticket._id,
-      buffer: arquivo.buffer,
-      tipo: "rpa",
-    });
-    await novoArquivoDoTicket.save();
-
-    ticket.arquivos.push(novoArquivoDoTicket._id);
-
-    ticket.etapa = "aprovacao-pagamento";
-    ticket.status = "aguardando-inicio";
-
-    await ticket.save();
-
-    ControleAlteracaoService.registrarAlteracao({
-      acao: "alterar",
-      dataHora: new Date(),
-      idRegistroAlterado: ticket._id,
-      origem: "integracao-sci",
-      dadosAtualizados: ticket,
-      tipoRegistroAlterado: "ticket",
-      usuario: req.usuario._id,
-    });
-
-    return ticket;
-  };
-
-  try {
-    let detalhes = {
-      erros: { quantidade: 0, logs: "" },
-      sucesso: 0,
-    };
-
-    for (const arquivo of arquivos) {
-      try {
-        const ticket = await anexarArquivoAoTicket(arquivo);
-        if (ticket) {
-          detalhes.sucesso += 1;
-        }
-      } catch (error) {
-        detalhes.erros.quantidade += 1;
-        detalhes.erros.logs += JSON.stringify(error).concat("\n\n");
-        console.error(error);
-      }
-    }
-
-    await emailUtils.emailImportarRpas({ detalhes, usuario: req.usuario });
-  } catch (error) {
-    console.error(error);
+    res.status(500).json();
   }
 };

@@ -5,8 +5,6 @@ const contaPagarService = require("../services/omie/contaPagarService");
 const clienteService = require("../services/omie/clienteService");
 const emailUtils = require("../utils/emailUtils");
 
-const { obterCodigoBanco } = require("../utils/brasilApi");
-
 const anexoService = require("../services/omie/anexosService");
 
 const Prestador = require("../models/Prestador");
@@ -15,6 +13,8 @@ const Servico = require("../models/Servico");
 const { add, format } = require("date-fns");
 const { ControleAlteracaoService } = require("../services/controleAlteracao");
 const ContaPagar = require("../models/ContaPagar");
+const { ja } = require("date-fns/locale");
+const Sistema = require("../models/Sistema");
 
 // Função para aprovar um ticket
 const aprovar = async (req, res) => {
@@ -58,10 +58,36 @@ const aprovar = async (req, res) => {
       });
     }
 
-    // Passa para a próxima etapa
-    ticket.etapa = etapas[currentEtapaIndex + 1].codigo;
-    ticket.status = "aguardando-inicio";
+    if (!["requisicao", "aprovacao-cadastro"].includes(ticket.etapa)) {
+      ticket.etapa = etapas[currentEtapaIndex + 1].codigo;
+    }
 
+    if (ticket?.etapa === "aprovacao-cadastro") {
+      ticket.etapa = etapas[currentEtapaIndex + 1].codigo;
+
+      if (ticket?.prestador?.tipo !== "pf") {
+        ticket.etapa = "aprovacao-fiscal";
+      }
+    }
+
+    if (ticket.etapa === "requisicao") {
+      ticket.etapa = etapas[currentEtapaIndex + 1].codigo;
+
+      const jaExisteServicoPago = await Servico.findOne({
+        prestador: ticket?.prestador?._id,
+        status: "pago",
+      });
+
+      if (jaExisteServicoPago) {
+        if (ticket?.prestador?.tipo !== "pf") {
+          ticket.etapa = "aprovacao-fiscal";
+        } else {
+          ticket.etapa = "geracao-rpa";
+        }
+      }
+    }
+
+    ticket.status = "aguardando-inicio";
     await ticket.save();
 
     ControleAlteracaoService.registrarAlteracao({
@@ -116,6 +142,14 @@ const recusar = async (req, res) => {
     // Retrocede uma etapa e muda status para 'revisao'
     if (currentEtapaIndex > 0)
       ticket.etapa = etapas[currentEtapaIndex - 1].codigo;
+
+    if (
+      ticket.etapa === "aprovacao-fiscal" &&
+      ticket.prestador?.tipo !== "pf"
+    ) {
+      ticket.etapa = etapas[currentEtapaIndex - 2].codigo;
+    }
+
     ticket.status = "revisao";
 
     await ticket.save();
@@ -201,7 +235,6 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
       }
     }
 
-
     // caso de tudo certo, vincula codigo da conta o ticket, muda o status e salva
     ticket.contaPagarOmie = conta._id;
     ticket.status = "concluido";
@@ -219,7 +252,7 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
   } catch (error) {
     // se ocorrer qualquer erro, volta ticket para etapa de aprovação, criar obs e atualiza o status
     ticket.observacao += `\n ${error} - ${format(new Date(), "dd/MM/yyyy")}`;
-    ticket.etapa = "aprovacao-pagamento";
+    ticket.etapa = "aprovacao-fiscal";
     ticket.status = "revisao";
     await ticket.save();
 
@@ -250,10 +283,6 @@ const atualizarOuCriarFornecedor = async ({
 
     const prestador = await Prestador.findById(prestadorId);
 
-    prestador.dadosBancarios
-      ? (banco = await obterCodigoBanco(prestador.dadosBancarios.banco))
-      : (banco = "");
-
     let fornecedor = null;
 
     fornecedor = await clienteService.pesquisarPorCNPJ(
@@ -282,7 +311,7 @@ const atualizarOuCriarFornecedor = async ({
       cidade: prestador.endereco ? prestador.endereco.cidade : "",
       estado: prestador.endereco ? prestador.endereco.estado : "",
       razaoSocial: prestador.nome,
-      banco,
+      banco: prestador?.dadosBancarios?.banco ?? "",
       agencia: prestador.dadosBancarios ? prestador.dadosBancarios.agencia : "",
       conta: prestador.dadosBancarios ? prestador.dadosBancarios.conta : "",
       tipoConta: prestador.dadosBancarios
@@ -327,18 +356,21 @@ const cadastrarContaAPagar = async (baseOmie, codigoFornecedor, ticket) => {
   try {
     let valorTotalDaNota = 0;
     let observacao = `Serviços prestados SID - ${ticket.prestador.sid}\n-- Serviços --\n`;
+    let notaFiscalOmie = "";
+
+    const config = await Sistema.findOne();
 
     for (const id of ticket.servicos) {
-      const { valorTotal, mesCompetencia, anoCompetencia } =
-        await Servico.findById(id);
+      const { valor, competencia, notaFiscal } = await Servico.findById(id);
 
-      const valorTotalFormatado = valorTotal.toLocaleString("pt-BR", {
+      const valorTotalFormatado = valor.toLocaleString("pt-BR", {
         style: "currency",
         currency: "BRL",
       });
 
-      observacao += `Competência: ${mesCompetencia}/${anoCompetencia} - Valor total: ${valorTotalFormatado}\n`;
-      valorTotalDaNota += valorTotal;
+      observacao += `Competência: ${competencia?.mes}/${competencia?.ano} - Valor total: ${valorTotalFormatado}\n`;
+      valorTotalDaNota += valor;
+      notaFiscalOmie += `/${notaFiscal}`;
     }
 
     if (valorTotalDaNota === 0) {
@@ -356,8 +388,12 @@ const cadastrarContaAPagar = async (baseOmie, codigoFornecedor, ticket) => {
       dataVencimento: add(dataDaEmissão, { hours: 24 }), // 24 horas a mais
       observacao,
       valor: valorTotalDaNota,
-      id_conta_corrente: process.env.ID_CONTA_CORRENTE,
-      // codigo_categoria: process.env.CODIGO_CATEGORIA,
+      id_conta_corrente:
+        config?.omie?.id_conta_corrente ?? process.env.ID_CONTA_CORRENTE,
+      dataRegistro: ticket?.servicos[0]?.dataRegistro,
+      notaFiscal: notaFiscalOmie?.replace("/", ""),
+      codigo_categoria:
+        config?.omie?.codigo_categoria ?? process.env.CODIGO_CATEGORIA,
     });
 
     const contaPagarOmie = await contaPagarService.incluir(

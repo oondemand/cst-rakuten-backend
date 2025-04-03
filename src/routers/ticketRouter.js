@@ -8,6 +8,8 @@ const Arquivo = require("../models/Arquivo");
 const storage = multer.memoryStorage({});
 
 const fileFilter = (req, file, cb) => {
+  return cb(null, true);
+
   // Aceitar apenas certos tipos de arquivos, por exemplo, imagens e PDFs
   const allowedTypes = /jpeg|jpg|png|pdf|xml|txt/;
   const mimetype = allowedTypes.test(file.mimetype);
@@ -35,11 +37,14 @@ router.post(
 
 router.get("/:id/arquivos", ticketController.listFilesFromTicket);
 router.delete("/arquivo/:id", ticketController.deleteFileFromTicket);
+router.get("/arquivo/:id", ticketController.getArquivoPorId);
 
 router.post("/", ticketController.createTicket);
 
 router.get("/", ticketController.getAllTickets);
 router.get("/arquivados", ticketController.getArchivedTickets);
+router.get("/pagos", ticketController.getTicketsPago);
+
 router.get("/base-omie/:baseOmieId", ticketController.getAllByBaseOmie);
 router.get("/prestador/:prestadorId", ticketController.getTicketsByPrestadorId);
 router.get(
@@ -52,5 +57,12 @@ router.patch("/:id", ticketController.updateTicket);
 router.patch("/:id/status", ticketController.updateStatusTicket);
 
 router.delete("/:id", ticketController.deleteTicket);
+
+router.post(
+  "/adicionar-servico/:ticketId/:servicoId/",
+  ticketController.addServico
+);
+
+router.post("/remover-servico/:servicoId", ticketController.removeServico);
 
 module.exports = router;

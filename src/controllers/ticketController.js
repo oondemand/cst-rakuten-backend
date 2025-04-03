@@ -3,6 +3,9 @@ const Arquivo = require("../models/Arquivo");
 const { criarNomePersonalizado } = require("../utils/formatters");
 const Prestador = require("../models/Prestador");
 const { ControleAlteracaoService } = require("../services/controleAlteracao");
+const Servico = require("../models/Servico");
+const { isEqual } = require("date-fns");
+const filterUtils = require("../utils/filter");
 
 exports.createTicket = async (req, res) => {
   const { baseOmieId, titulo, observacao, servicosIds, prestadorId } = req.body;
@@ -49,28 +52,10 @@ exports.createTicket = async (req, res) => {
 };
 
 exports.updateTicket = async (req, res) => {
-  const {
-    baseOmieId,
-    titulo,
-    observacao,
-    etapa,
-    status,
-    servicosIds,
-    prestadorId,
-  } = req.body;
-
   try {
     const ticket = await Ticket.findByIdAndUpdate(
       req.params.id,
-      {
-        baseOmie: baseOmieId,
-        titulo,
-        observacao,
-        etapa,
-        status,
-        servicos: servicosIds,
-        prestador: prestadorId,
-      },
+      { ...req.body },
       { new: true, runValidators: true }
     );
 
@@ -98,7 +83,7 @@ exports.updateTicket = async (req, res) => {
       ticket: ticketPopulado,
     });
   } catch (error) {
-    // console.error("Erro ao atualizar ticket:", error);
+    console.error("Erro ao atualizar ticket:", error);
     res.status(500).json({
       message: "Erro ao atualizar ticket",
       detalhes: error.message,
@@ -126,17 +111,12 @@ exports.getAllTickets = async (req, res) => {
     const filtros = req.query;
     const tickets = await Ticket.find({
       ...filtros,
-      status: { $ne: "arquivado" },
+      status: { $nin: ["arquivado"] },
     })
-      .populate("prestador", "nome documento sid sciUnico")
-      .populate({
-        path: "servicos",
-        select: "mesCompetencia anoCompetencia competencia valorTotal",
-        options: { virtuals: true },
-      })
+      .populate("prestador")
+      .populate("servicos")
+      .populate("arquivos", "nomeOriginal size mimetype tipo")
       .populate("contaPagarOmie");
-
-    // console.log(tickets);
 
     res.status(200).json(tickets);
   } catch (error) {
@@ -186,29 +166,60 @@ exports.getTicketsByUsuarioPrestador = async (req, res) => {
       etapa: { $ne: "requisicao" },
     })
       .populate("servicos")
-      .populate("arquivos");
+      .populate("arquivos", "nomeOriginal size mimetype tipo");
+
+    // Busca serviços abertos não vinculados a tickets
+    const servicosAbertos = await Servico.find({
+      prestador: prestador._id,
+      status: "aberto",
+      "competencia.ano": { $gte: 2024 },
+    });
+
+    // Cria tickets virtuais para serviços abertos
+    const fakeTickets = servicosAbertos.map((servico) => {
+      const servicoObj = servico.toObject({ virtuals: true });
+      return {
+        _id: servico._id, // Usamos o ID do serviço para evitar conflitos
+        titulo:
+          servico.campanha ||
+          `Serviço em Aberto (${servico._id.toString().slice(-6)})`,
+        status: "aberto",
+        prestador: prestador._id,
+        servicos: [servicoObj],
+        arquivos: [],
+        data: servico.createdAt,
+        observacao: "Serviço aberto não associado a um ticket",
+        createdAt: servico.createdAt,
+        updatedAt: servico.updatedAt,
+      };
+    });
+
+    // Converte tickets reais para objetos simples e combina com os virtuais
+    const allTickets = [...tickets, ...fakeTickets];
 
     let valorTotalRecebido = 0;
     let valorTotalPendente = 0;
 
-    if (tickets.length === 0) {
+    if (allTickets.length === 0) {
       return res
         .status(200)
         .json({ valorTotalRecebido, valorTotalPendente, tickets: [] });
     }
 
-    for (const ticket of tickets) {
+    for (const ticket of allTickets) {
       for (const servico of ticket.servicos) {
         if (ticket.status === "concluido" && ticket.etapa === "concluido") {
-          valorTotalRecebido += servico.valorTotal;
+          valorTotalRecebido += servico.valor;
         }
         if (ticket.etapa !== "concluido" && ticket.etapa !== "requisicao") {
-          valorTotalPendente += servico.valorTotal;
+          valorTotalPendente += servico.valor;
         }
       }
     }
 
-    res.status(200).json({ valorTotalRecebido, valorTotalPendente, tickets });
+    res
+      .status(200)
+      .json({ valorTotalRecebido, valorTotalPendente, tickets: allTickets });
   } catch (error) {
     // console.error("Erro ao buscar tickets:", error);
     res.status(500).json({
@@ -404,22 +415,274 @@ exports.uploadFiles = async (req, res) => {
 
 exports.getArchivedTickets = async (req, res) => {
   try {
-    const ticketsArquivados = await Ticket.find({
-      status: "arquivado", // Filtra apenas por status arquivado
-    })
-      .populate("prestador", "nome documento sid")
-      .populate({
-        path: "servicos",
-        options: { virtuals: true },
+    const {
+      ["prestador.sid"]: prestadorSid,
+      ["prestador.nome"]: prestadorNome,
+      ["prestador.tipo"]: prestadorTipo,
+      ["prestador.documento"]: prestadorDocumento,
+      status,
+      searchTerm = "",
+      sortBy,
+      pageIndex,
+      pageSize,
+      ...rest
+    } = req.query;
+
+    const schema = Servico.schema;
+    const prestadorQuery = [];
+
+    if (prestadorSid && prestadorSid !== "")
+      prestadorQuery.push({ sid: Number(prestadorSid) });
+    if (prestadorTipo && prestadorTipo !== "")
+      prestadorQuery.push({ tipo: prestadorTipo });
+    if (prestadorNome && prestadorNome !== "")
+      prestadorQuery.push({ nome: { $regex: prestadorNome, $options: "i" } });
+    if (prestadorDocumento && prestadorDocumento !== "")
+      prestadorQuery.push({
+        documento: { $regex: prestadorDocumento, $options: "i" },
       });
 
-    console.log(ticketsArquivados);
+    if (!isNaN(Number(searchTerm))) {
+      prestadorQuery.push({ documento: Number(searchTerm) });
+      prestadorQuery.push({ sid: Number(searchTerm) });
+    }
 
-    res.status(200).json(ticketsArquivados);
+    prestadorQuery.push({ nome: { $regex: searchTerm, $options: "i" } });
+
+    const prestadoresIds = await Prestador.find({
+      $or: prestadorQuery,
+    }).select("_id");
+
+    const filtersQuery = filterUtils.buildQuery({
+      filtros: rest,
+      schema,
+    });
+
+    const prestadorConditions =
+      prestadoresIds.length > 0
+        ? [{ prestador: { $in: prestadoresIds.map((e) => e._id) } }]
+        : [];
+
+    const queryResult = {
+      $and: [
+        filtersQuery,
+        { status: "arquivado" },
+        { $or: [...prestadorConditions] },
+      ],
+    };
+
+    let sorting = {};
+
+    if (sortBy) {
+      const [campo, direcao] = sortBy.split(".");
+      const campoFormatado = campo.replaceAll("_", ".");
+      sorting[campoFormatado] = direcao === "desc" ? -1 : 1;
+    }
+
+    const page = parseInt(pageIndex) || 0;
+    const limite = parseInt(pageSize) || 10;
+    const skip = page * limite;
+
+    const [tickets, totalDeTickets] = await Promise.all([
+      Ticket.find(queryResult)
+        .populate("prestador", "sid nome documento")
+        .populate({
+          path: "servicos",
+          options: { virtuals: true },
+        })
+        .skip(skip)
+        .limit(limite),
+      Ticket.countDocuments(queryResult),
+    ]);
+
+    res.status(200).json({
+      tickets,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalDeTickets / limite),
+        totalItems: totalDeTickets,
+        itemsPerPage: limite,
+      },
+    });
   } catch (error) {
+    console.log(error);
+
     res.status(500).json({
       message: "Erro ao buscar tickets arquivados",
       detalhes: error.message,
     });
+  }
+};
+
+exports.getTicketsPago = async (req, res) => {
+  try {
+    const {
+      ["prestador.sid"]: prestadorSid,
+      ["prestador.nome"]: prestadorNome,
+      ["prestador.tipo"]: prestadorTipo,
+      ["prestador.documento"]: prestadorDocumento,
+      status,
+      searchTerm = "",
+      sortBy,
+      pageIndex,
+      pageSize,
+      ...rest
+    } = req.query;
+
+    const schema = Servico.schema;
+    const prestadorQuery = [];
+
+    if (prestadorSid && prestadorSid !== "")
+      prestadorQuery.push({ sid: Number(prestadorSid) });
+    if (prestadorTipo && prestadorTipo !== "")
+      prestadorQuery.push({ tipo: prestadorTipo });
+    if (prestadorNome && prestadorNome !== "")
+      prestadorQuery.push({ nome: { $regex: prestadorNome, $options: "i" } });
+    if (prestadorDocumento && prestadorDocumento !== "")
+      prestadorQuery.push({
+        documento: { $regex: prestadorDocumento, $options: "i" },
+      });
+
+    if (!isNaN(Number(searchTerm))) {
+      prestadorQuery.push({ documento: Number(searchTerm) });
+      prestadorQuery.push({ sid: Number(searchTerm) });
+    }
+
+    prestadorQuery.push({ nome: { $regex: searchTerm, $options: "i" } });
+
+    const prestadoresIds = await Prestador.find({
+      $or: prestadorQuery,
+    }).select("_id");
+
+    const filtersQuery = filterUtils.buildQuery({
+      filtros: rest,
+      schema,
+    });
+
+    const prestadorConditions =
+      prestadoresIds.length > 0
+        ? [{ prestador: { $in: prestadoresIds.map((e) => e._id) } }]
+        : [];
+
+    const queryResult = {
+      $and: [
+        filtersQuery,
+        {
+          status: "concluido",
+          etapa: "concluido",
+        },
+        { $or: [...prestadorConditions] },
+      ],
+    };
+
+    let sorting = {};
+
+    if (sortBy) {
+      const [campo, direcao] = sortBy.split(".");
+      const campoFormatado = campo.replaceAll("_", ".");
+      sorting[campoFormatado] = direcao === "desc" ? -1 : 1;
+    }
+
+    const page = parseInt(pageIndex) || 0;
+    const limite = parseInt(pageSize) || 10;
+    const skip = page * limite;
+
+    const [tickets, totalDeTickets] = await Promise.all([
+      Ticket.find(queryResult)
+        .populate("prestador", "sid nome documento")
+        .populate({
+          path: "servicos",
+          options: { virtuals: true },
+        })
+        .skip(skip)
+        .limit(limite),
+      Ticket.countDocuments(queryResult),
+    ]);
+
+    res.status(200).json({
+      tickets,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalDeTickets / limite),
+        totalItems: totalDeTickets,
+        itemsPerPage: limite,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      message: "Erro ao buscar tickets arquivados",
+      detalhes: error.message,
+    });
+  }
+};
+
+exports.getArquivoPorId = async (req, res) => {
+  try {
+    const arquivo = await Arquivo.findById(req.params.id);
+    res.status(200).json(arquivo);
+  } catch (error) {
+    res.status(500).json({
+      message: "Erro ao buscar arquivo!",
+      detalhes: error.message,
+    });
+  }
+};
+
+exports.addServico = async (req, res) => {
+  try {
+    const { ticketId, servicoId } = req.params;
+    const servico = await Servico.findById(servicoId);
+    const ticket = await Ticket.findById(ticketId);
+
+    if (
+      ticket?.dataRegistro &&
+      !isEqual(servico?.dataRegistro, ticket?.dataRegistro)
+    ) {
+      return res.status(400).json({ message: "Data registro conflitante." });
+    }
+
+    ticket.dataRegistro = servico?.dataRegistro;
+    ticket.servicos = [...ticket?.servicos, servico?._id];
+    await ticket.save();
+
+    servico.status = "processando";
+    await servico.save();
+
+    const populatedTicket = await Ticket.findById(ticket._id).populate(
+      "servicos"
+    );
+
+    return res.status(200).json(populatedTicket);
+  } catch (error) {
+    return res.status(500).json();
+  }
+};
+
+exports.removeServico = async (req, res) => {
+  try {
+    const { servicoId } = req.params;
+    await Servico.findByIdAndUpdate(
+      servicoId,
+      { status: "aberto" },
+      { new: true }
+    );
+
+    const ticket = await Ticket.findOneAndUpdate(
+      { servicos: servicoId }, // Busca o ticket que contém este serviço
+      { $pull: { servicos: servicoId } }, // Remove o serviço do array
+      { new: true }
+    ).populate("servicos");
+
+    if (ticket?.servicos.length === 0) {
+      ticket.dataRegistro = null;
+      await ticket.save();
+    }
+
+    return res.status(200).json(ticket);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json();
   }
 };

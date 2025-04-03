@@ -8,6 +8,7 @@ const emailUtils = require("../utils/emailUtils");
 const jwt = require("jsonwebtoken");
 
 const { ControleAlteracaoService } = require("../services/controleAlteracao");
+const filtersUtils = require("../utils/filter");
 
 exports.seedUsuario = async (req, res) => {
   const { nome, email, senha, status, permissoes } = req.body;
@@ -69,6 +70,7 @@ exports.registrarUsuario = async (req, res) => {
       senha,
       status,
       permissoes,
+      tipo,
     });
 
     if (tipo && tipo === "prestador") {
@@ -131,8 +133,64 @@ exports.loginUsuario = async (req, res) => {
 
 exports.listarUsuarios = async (req, res) => {
   try {
-    const usuarios = await Usuario.find();
-    res.json(usuarios);
+    const { sortBy, pageIndex, pageSize, searchTerm, tipo, ...rest } =
+      req.query;
+
+    const schema = Usuario.schema;
+
+    const camposBusca = ["status", "nome", "email", "tipo"];
+
+    // Monta a query para buscar serviços baseados nos demais filtros
+    const filterFromFiltros = filtersUtils.buildQuery({
+      filtros: rest,
+      schema,
+    });
+
+    // Monta a query para buscar serviços baseados no searchTerm
+    const searchTermCondition = filtersUtils.querySearchTerm({
+      searchTerm,
+      schema,
+      camposBusca,
+    });
+
+    const queryResult = {
+      $and: [
+        filterFromFiltros, // Filtros principais
+        { tipo: tipo ? tipo : { $ne: "prestador" } },
+        {
+          $or: [
+            searchTermCondition, // Busca textual
+          ],
+        },
+      ],
+    };
+
+    let sorting = {};
+
+    if (sortBy) {
+      const [campo, direcao] = sortBy.split(".");
+      const campoFormatado = campo.replaceAll("_", ".");
+      sorting[campoFormatado] = direcao === "desc" ? -1 : 1;
+    }
+
+    const page = parseInt(pageIndex) || 0;
+    const limite = parseInt(pageSize) || 10;
+    const skip = page * limite;
+
+    const [usuarios, totalDeUsuarios] = await Promise.all([
+      Usuario.find(queryResult).skip(skip).limit(limite),
+      Usuario.countDocuments(queryResult),
+    ]);
+
+    res.status(200).json({
+      usuarios,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalDeUsuarios / limite),
+        totalItems: totalDeUsuarios,
+        itemsPerPage: limite,
+      },
+    });
   } catch (error) {
     res.status(400).json({ error: "Erro ao listar usuários" });
   }
@@ -301,7 +359,7 @@ exports.alterarSenha = async (req, res) => {
   const { senhaAtual, novaSenha, confirmacao, code } = req.body;
 
   if (!token && !code) {
-    return res.status(401).json({ error: "Token inválido" });
+    return res.status(401).json();
   }
 
   if (!novaSenha) {
@@ -327,7 +385,7 @@ exports.alterarSenha = async (req, res) => {
       usuario.senha = novaSenha;
       await usuario.save();
       return res.status(200).json({
-        token,
+        token: code,
         usuario: {
           _id: usuario._id,
           nome: usuario.nome,
@@ -368,18 +426,37 @@ exports.alterarSenha = async (req, res) => {
 
 exports.enviarConvite = async (req, res) => {
   try {
-    const { userId } = req.body;
-    // console.log(userId);
+    const prestador = await Prestador.findById(req.body.prestador);
 
-    const usuario = await Usuario.findById(userId);
+    if (!prestador) {
+      return res.status(409).json({ message: "Prestador não encontrado!" });
+    }
 
+    let usuario;
+
+    if (!prestador?.usuario) {
+      usuario = new Usuario({
+        nome: prestador?.nome,
+        email: prestador?.email,
+        status: "ativo",
+        tipo: "prestador",
+        senha: "123456",
+      });
+
+      await usuario.save();
+
+      prestador.usuario = usuario?._id;
+      await prestador.save();
+    }
+
+    usuario = await Usuario.findById(prestador?.usuario);
     const token = usuario.gerarToken();
 
     const url = new URL("/first-login", process.env.BASE_URL_APP_PUBLISHER);
     url.searchParams.append("code", token);
 
     //mostra url para não ter que verificar no email
-    // console.log("URL", url.toString());
+    console.log("URL", url.toString());
 
     if (usuario.tipo && usuario.tipo === "prestador") {
       await emailUtils.emailLinkCadastroUsuarioPrestador({

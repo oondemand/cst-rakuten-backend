@@ -17,9 +17,10 @@ const rastreabilidadeMiddleware = require("./middlewares/rastreabilidadeMiddlewa
 const app = express();
 
 // Middlewares globais
-app.use(express.json());
 app.use(cors({ origin: "*" }));
 app.use(helmet());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
 if (process.env.NODE_ENV === "development") app.use(morgan("dev"));
@@ -53,6 +54,13 @@ app.use("/prestadores", require("./routers/prestadorRouter"));
 app.use("/servicos", require("./routers/servicoRouter"));
 app.use("/acoes-etapas", require("./routers/acaoEtapaRouter"));
 app.use("/registros", require("./routers/controleAlteracao"));
+app.use("/listas", require("./routers/listaRouter"));
+app.use("/estados", require("./routers/estadoRouter"));
+app.use("/bancos", require("./routers/bancoRouter"));
+app.use("/planejamento", require("./routers/planejamentoRouter"));
+app.use("/importacoes", require("./routers/importacaoRouter"));
+app.use("/dashboard", require("./routers/dashoboardRouter"));
+app.use("/sistema", require("./routers/sistemaRouter"));
 
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 

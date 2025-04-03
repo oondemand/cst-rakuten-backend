@@ -1,4 +1,6 @@
 const Ticket = require("../models/Ticket");
+const Servico = require("../models/Servico");
+
 const BaseOmie = require("../models/BaseOmie");
 const { consultar } = require("../services/omie/contaPagarService");
 const ContaPagar = require("../models/ContaPagar");
@@ -34,7 +36,7 @@ const obterContaPagarOmie = async (req, res) => {
 
     if (!contaPagarOmie) {
       ticket.status = "revisao";
-      ticket.etapa = "aprovacao-pagamento";
+      ticket.etapa = "aprovacao-fiscal";
       ticket.contaPagarOmie = null;
       ticket.observacao = "[CONTA A PAGAR REMOVIDA DO OMIE]";
 
@@ -96,12 +98,16 @@ const contaPagarWebHook = async (req, res) => {
     if (topic === "Financas.ContaPagar.BaixaRealizada") {
       console.log("🟨 Baixa realizada no omie");
 
-      const contaPagar = await ContaPagar.findOne({
-        codigo_lancamento_omie:
-          event?.[0]?.conta_a_pagar[0].codigo_lancamento_omie,
-      });
+      const contaPagar = await ContaPagar.findOneAndUpdate(
+        {
+          codigo_lancamento_omie:
+            event?.[0]?.conta_a_pagar[0].codigo_lancamento_omie,
+        },
+        { ...event?.[0]?.conta_a_pagar[0], status_titulo: "pago" },
+        { new: true }
+      );
 
-      await Ticket.findOneAndUpdate(
+      const ticket = await Ticket.findOneAndUpdate(
         {
           contaPagarOmie: contaPagar?._id,
         },
@@ -111,17 +117,28 @@ const contaPagarWebHook = async (req, res) => {
         },
         { new: true }
       );
+
+      if (ticket?.servicos.length > 0) {
+        await Servico.updateMany(
+          { _id: { $in: ticket?.servicos } },
+          { status: "pago" }
+        );
+      }
     }
 
     if (topic === "Financas.ContaPagar.BaixaCancelada") {
       console.log("🟧 Baixa cancelada no omie");
 
-      const contaPagar = await ContaPagar.findOne({
-        codigo_lancamento_omie:
-          event?.[0]?.conta_a_pagar[0].codigo_lancamento_omie,
-      });
+      const contaPagar = await ContaPagar.findOneAndUpdate(
+        {
+          codigo_lancamento_omie:
+            event?.[0]?.conta_a_pagar[0].codigo_lancamento_omie,
+        },
+        { ...event?.[0]?.conta_a_pagar[0], status_titulo: "A vencer" },
+        { new: true }
+      );
 
-      await Ticket.findOneAndUpdate(
+      const ticket = await Ticket.findOneAndUpdate(
         {
           contaPagarOmie: contaPagar?._id,
         },
@@ -131,6 +148,13 @@ const contaPagarWebHook = async (req, res) => {
         },
         { new: true }
       );
+
+      if (ticket?.servicos.length > 0) {
+        await Servico.updateMany(
+          { _id: { $in: ticket?.servicos } },
+          { status: "processando" }
+        );
+      }
     }
 
     if (topic === "Financas.ContaPagar.Excluido") {
@@ -146,7 +170,7 @@ const contaPagarWebHook = async (req, res) => {
         },
         {
           status: "revisao",
-          etapa: "aprovacao-pagamento",
+          etapa: "aprovacao-fiscal",
           contaPagarOmie: null,
           observacao: "[CONTA A PAGAR REMOVIDA DO OMIE]",
         }
