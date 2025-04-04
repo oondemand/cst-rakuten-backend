@@ -590,6 +590,7 @@ exports.getTicketsPago = async (req, res) => {
     const [tickets, totalDeTickets] = await Promise.all([
       Ticket.find(queryResult)
         .populate("prestador", "sid nome documento")
+        .populate("arquivos", "nomeOriginal size mimetype tipo")
         .populate({
           path: "servicos",
           options: { virtuals: true },
