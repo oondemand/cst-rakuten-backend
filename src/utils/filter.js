@@ -9,7 +9,9 @@ const {
 
 const criarFiltroPorTipoDeCampo = ({ tipo, campo, valor }) => {
   const FILTRO_NUMERO = () => {
-    const n = Number(valor);
+    const n = Number(
+      valor.replaceAll(".", "-").replaceAll(",", ".").replaceAll("-", "")
+    );
     return !isNaN(n) ? { [campo]: n } : null;
   };
 
