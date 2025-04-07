@@ -194,6 +194,8 @@ exports.listarServicos = async (req, res) => {
       ],
     };
 
+    console.log("Importante", queryResult);
+
     let sorting = {};
 
     if (sortBy) {

@@ -124,10 +124,46 @@ const criarFiltroPorTipoDeCampo = ({ tipo, campo, valor }) => {
     return { [campo]: valor };
   };
 
+  const FILTRO_COMPETENCIA = () => {
+    const operadores = [">", "<"];
+    const operador = operadores.find((op) => valor.startsWith(op));
+
+    const competencia = operador ? valor.slice(1) : valor;
+
+    const mes = Number(competencia?.split(/[\/-]/)[0]);
+    const ano = Number(competencia?.split(/[\/-]/)[1]);
+
+    const operadoresMongo = {
+      ">": "$gt",
+      "<": "$lt",
+      "=": "$eq",
+    };
+
+    if (operador) {
+      return {
+        $or: [
+          { "competencia.ano": { [operadoresMongo[operador]]: ano } },
+          {
+            $and: [
+              { "competencia.ano": { [`${operadoresMongo[operador]}e`]: ano } },
+              { "competencia.mes": { [`${operadoresMongo[operador]}e`]: mes } },
+            ],
+          },
+        ],
+      };
+    }
+
+    return {
+      "competencia.mes": mes,
+      "competencia.ano": ano,
+    };
+  };
+
   const tipoFiltroMap = {
     Number: FILTRO_NUMERO,
     String: FILTRO_STRING,
     Date: FILTRO_DATE,
+    CompetenciaType: FILTRO_COMPETENCIA,
     default: DEFAULT,
   };
 
@@ -138,8 +174,6 @@ const queryFiltros = ({ filtros, schema }) => {
   const query = {};
   for (const [campo, valor] of Object.entries(filtros)) {
     const campoSchema = schema.path(campo);
-    console.log("Schema", campoSchema, campo, valor);
-
     if (!valor || !campoSchema) continue;
 
     const filtro = criarFiltroPorTipoDeCampo({
