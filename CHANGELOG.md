@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.0 (2025-04-04)
+
+### Features
+
+* enhance ticket retrieval by populating 'arquivos' field with additional details ([6341c85](https://github.com/oondemand/cst-rakuten-backend/commit/6341c85af0f151786e6aa5fbc66d4b01dc7a2103))
+
 ## 1.3.47 (2025-04-03)
 
 ## 1.3.46 (2025-04-03)
