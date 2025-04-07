@@ -141,6 +141,11 @@ exports.listarServicos = async (req, res) => {
     // Busca ids de prestadores com base nas condições criadas de acordo ao search term
     const prestadoresIds = await Prestador.find(prestadoresQuery).select("_id");
 
+    const prestadorConditions =
+      prestadoresIds.length > 0
+        ? [{ prestador: { $in: prestadoresIds.map((e) => e._id) } }]
+        : [];
+
     // Monta a query para buscar serviços baseados nos demais filtros
     const filterFromFiltros = filtersUtils.queryFiltros({
       filtros: rest,
@@ -170,11 +175,6 @@ exports.listarServicos = async (req, res) => {
         "valor",
       ],
     });
-
-    const prestadorConditions =
-      prestadoresIds.length > 0
-        ? [{ prestador: { $in: prestadoresIds.map((e) => e._id) } }]
-        : [];
 
     const queryResult = {
       $and: [
