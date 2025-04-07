@@ -444,9 +444,16 @@ exports.getArchivedTickets = async (req, res) => {
       camposBusca: ["nome", "tipo", "documento", "sid"],
     });
 
-    const prestadoresIds = await Prestador.find({
-      $and: [prestadorFiltersQuery, { $or: [prestadoresQuerySearchTerm] }],
-    }).select("_id");
+    let prestadoresIds = [];
+
+    if (
+      Object.keys(prestadorFiltersQuery).length > 0 ||
+      Object.keys(prestadoresQuerySearchTerm).length > 0
+    ) {
+      prestadoresIds = await Prestador.find({
+        $and: [prestadorFiltersQuery, { $or: [prestadoresQuerySearchTerm] }],
+      }).select("_id");
+    }
 
     const prestadorConditions =
       prestadoresIds.length > 0
@@ -468,7 +475,14 @@ exports.getArchivedTickets = async (req, res) => {
       $and: [
         filtersQuery,
         { status: "arquivado" },
-        { $or: [searchTermCondition, ...prestadorConditions] },
+        {
+          $or: [
+            ...(Object.keys(searchTermCondition).length > 0
+              ? [searchTermCondition]
+              : []),
+            ...prestadorConditions,
+          ],
+        },
       ],
     };
 
