@@ -15,8 +15,6 @@ const listarTodosRegistros = async (req, res) => {
       ...rest
     } = req.query;
 
-    console.log(rest, usuarioNome, searchTerm);
-
     const usuarioFiltersQuery = filtersUtils.queryFiltros({
       filtros: { nome: usuarioNome },
       schema: Usuario.schema,
