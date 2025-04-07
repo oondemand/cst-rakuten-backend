@@ -428,7 +428,7 @@ exports.getArchivedTickets = async (req, res) => {
       ...rest
     } = req.query;
 
-    const schema = Servico.schema;
+    const schema = Ticket.schema;
     const prestadorQuery = [];
 
     if (prestadorSid && prestadorSid !== "")
@@ -529,7 +529,7 @@ exports.getTicketsPago = async (req, res) => {
       ...rest
     } = req.query;
 
-    const schema = Servico.schema;
+    const schema = Ticket.schema;
     const prestadorQuery = [];
 
     if (prestadorSid && prestadorSid !== "")
@@ -554,7 +554,7 @@ exports.getTicketsPago = async (req, res) => {
       $or: prestadorQuery,
     }).select("_id");
 
-    const filtersQuery = filterUtils.buildQuery({
+    const filtersQuery = filterUtils.queryFiltros({
       filtros: rest,
       schema,
     });
@@ -564,13 +564,15 @@ exports.getTicketsPago = async (req, res) => {
         ? [{ prestador: { $in: prestadoresIds.map((e) => e._id) } }]
         : [];
 
+    console.log("QUERY", filtersQuery);
+
     const queryResult = {
       $and: [
-        filtersQuery,
         {
           status: "concluido",
           etapa: "concluido",
         },
+        filtersQuery,
         { $or: [...prestadorConditions] },
       ],
     };

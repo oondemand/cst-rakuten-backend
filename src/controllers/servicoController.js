@@ -143,7 +143,10 @@ exports.listarServicos = async (req, res) => {
       "valor",
       "campanha",
       "status",
+      "dataRegistro",
     ];
+
+    console.log("Rest ->", rest);
 
     const orConditions = [];
 
@@ -162,7 +165,7 @@ exports.listarServicos = async (req, res) => {
     }).select("_id");
 
     // Monta a query para buscar serviços baseados nos demais filtros
-    const filterFromFiltros = filtersUtils.buildQuery({
+    const filterFromFiltros = filtersUtils.queryFiltros({
       filtros: rest,
       schema,
     });
