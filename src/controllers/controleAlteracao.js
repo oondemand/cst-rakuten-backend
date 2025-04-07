@@ -28,12 +28,6 @@ const listarTodosRegistros = async (req, res) => {
       camposBusca: ["nome"],
     });
 
-    console.log(
-      "usuarioQuerySearchTerm",
-      usuarioQuerySearchTerm,
-      usuarioFiltersQuery
-    );
-
     const usuariosIds = await Usuario.find({
       $and: [usuarioFiltersQuery, { $or: [usuarioQuerySearchTerm] }],
     }).select("_id");
@@ -42,8 +36,6 @@ const listarTodosRegistros = async (req, res) => {
       usuariosIds.length > 0
         ? [{ usuario: { $in: usuariosIds.map((e) => e._id) } }]
         : [];
-
-    console.log("Important", usuariosIds, usuariosConditions);
 
     // Monta a query para buscar serviços baseados nos demais filtros
     const filterFromFiltros = filtersUtils.queryFiltros({
@@ -58,14 +50,14 @@ const listarTodosRegistros = async (req, res) => {
       camposBusca: ["status", "dataHora"],
     });
 
-    console.log("Condition", searchTermCondition);
-
     const queryResult = {
       $and: [
         filterFromFiltros,
         {
           $or: [
-            ...(searchTerm !== "" ? searchTermCondition : []),
+            ...(searchTerm !== "" && Object.keys(searchTermCondition).length > 0
+              ? searchTermCondition
+              : []),
             ...usuariosConditions,
           ],
         },
