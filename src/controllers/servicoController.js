@@ -132,49 +132,43 @@ exports.listarServicos = async (req, res) => {
   try {
     const { sortBy, pageIndex, pageSize, searchTerm, ...rest } = req.query;
 
-    const schema = Servico.schema;
-
-    const camposBusca = [
-      "tipoDocumentoFiscal",
-      "valores.grossValue",
-      "competencia.mes",
-      "competencia.ano",
-      "valores.bonus",
-      "valor",
-      "campanha",
-      "status",
-      "dataRegistro",
-    ];
-
-    console.log("Rest ->", rest);
-
-    const orConditions = [];
-
-    // Verifica se o searchTerm é numérico para adicionar documento e sid
-    if (!isNaN(Number(searchTerm))) {
-      orConditions.push({ documento: Number(searchTerm) });
-      orConditions.push({ sid: Number(searchTerm) });
-    }
-
-    // Sempre busca por correspondência no nome (case-insensitive)
-    orConditions.push({ nome: { $regex: searchTerm, $options: "i" } });
+    const prestadoresQuery = filtersUtils.querySearchTerm({
+      searchTerm,
+      schema: Prestador.schema,
+      camposBusca: ["sid", "documento", "nome"],
+    });
 
     // Busca ids de prestadores com base nas condições criadas de acordo ao search term
-    const prestadoresIds = await Prestador.find({
-      $or: orConditions,
-    }).select("_id");
+    const prestadoresIds = await Prestador.find(prestadoresQuery).select("_id");
 
     // Monta a query para buscar serviços baseados nos demais filtros
     const filterFromFiltros = filtersUtils.queryFiltros({
       filtros: rest,
-      schema,
+      schema: Servico.schema,
     });
 
     // Monta a query para buscar serviços baseados no searchTerm
     const searchTermCondition = filtersUtils.querySearchTerm({
       searchTerm,
-      schema,
-      camposBusca,
+      schema: Servico.schema,
+      camposBusca: [
+        "notaFiscal",
+        "dataProvisaoContabil",
+        "dataRegistro",
+        "campanha",
+        "tipoDocumentoFiscal",
+        "competencia",
+        "valores.grossValue",
+        "valores.bonus",
+        "valores.ajusteComercial",
+        "valores.paidPlacement",
+        "valores.revisionMonthProvision",
+        "valores.revisionGrossValue",
+        "valores.revisionProvisionBonus",
+        "valores.revisionComissaoPlataforma",
+        "valores.revisionPaidPlacement",
+        "valor",
+      ],
     });
 
     const prestadorConditions =
@@ -184,17 +178,10 @@ exports.listarServicos = async (req, res) => {
 
     const queryResult = {
       $and: [
-        filterFromFiltros, // Filtros principais
-        {
-          $or: [
-            searchTermCondition, // Busca textual
-            ...prestadorConditions, // Filtro por IDs (se houver)
-          ],
-        },
+        filterFromFiltros,
+        { $or: [searchTermCondition, ...prestadorConditions] },
       ],
     };
-
-    console.log("Importante", queryResult);
 
     let sorting = {};
 
@@ -212,7 +199,8 @@ exports.listarServicos = async (req, res) => {
       Servico.find(queryResult)
         .populate("prestador", "sid nome documento tipo")
         .skip(skip)
-        .limit(limite),
+        .limit(limite)
+        .sort(sorting),
       Servico.countDocuments(queryResult),
     ]);
 
