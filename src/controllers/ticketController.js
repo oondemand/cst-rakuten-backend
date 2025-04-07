@@ -543,12 +543,14 @@ exports.getTicketsPago = async (req, res) => {
         documento: { $regex: prestadorDocumento, $options: "i" },
       });
 
-    if (!isNaN(Number(searchTerm))) {
-      prestadorQuery.push({ documento: Number(searchTerm) });
-      prestadorQuery.push({ sid: Number(searchTerm) });
-    }
+    if (searchTerm && searchTerm !== "") {
+      if (!isNaN(Number(searchTerm))) {
+        prestadorQuery.push({ documento: Number(searchTerm) });
+        prestadorQuery.push({ sid: Number(searchTerm) });
+      }
 
-    prestadorQuery.push({ nome: { $regex: searchTerm, $options: "i" } });
+      prestadorQuery.push({ nome: { $regex: searchTerm, $options: "i" } });
+    }
 
     const prestadoresIds = await Prestador.find({
       $or: prestadorQuery,
@@ -563,8 +565,6 @@ exports.getTicketsPago = async (req, res) => {
       prestadoresIds.length > 0
         ? [{ prestador: { $in: prestadoresIds.map((e) => e._id) } }]
         : [];
-
-    console.log("QUERY", filtersQuery);
 
     const queryResult = {
       $and: [
