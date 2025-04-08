@@ -3,7 +3,6 @@ const Prestador = require("../../models/Prestador");
 const Usuario = require("../../models/Usuario");
 const Servico = require("../../models/Servico");
 const Lista = require("../../models/Lista");
-const { CNPJouCPF } = require("../../utils/formatters");
 const emailUtils = require("../../utils/emailUtils");
 const { parse } = require("date-fns");
 
@@ -28,8 +27,6 @@ const criarNovoManager = async ({ manager }) => {
 };
 
 const converterLinhaEmPrestador = async ({ row }) => {
-  const { numero } = await CNPJouCPF(row[5]);
-
   const pais = LISTA_PAISES_OMIE.find(
     (e) => e.cDescricao.toLowerCase() === row[17].toLowerCase()
   );
@@ -40,7 +37,7 @@ const converterLinhaEmPrestador = async ({ row }) => {
     nome: row[2],
     sid: row[3],
     tipo: row[4],
-    documento: numero,
+    documento: row[5],
     dadosBancarios: {
       banco: row[6],
       agencia: row[7],

@@ -13,7 +13,6 @@ const Servico = require("../models/Servico");
 const { add, format } = require("date-fns");
 const { ControleAlteracaoService } = require("../services/controleAlteracao");
 const ContaPagar = require("../models/ContaPagar");
-const { ja } = require("date-fns/locale");
 const Sistema = require("../models/Sistema");
 
 // Função para aprovar um ticket
