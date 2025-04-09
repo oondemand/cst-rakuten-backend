@@ -1,34 +1,62 @@
 const ControleAlteracao = require("../models/ControleAlteracao");
+const Usuario = require("../models/Usuario");
+
 const filtersUtils = require("../utils/filter");
 
 const listarTodosRegistros = async (req, res) => {
   try {
-    const { sortBy, pageIndex, pageSize, searchTerm, tipo, ...rest } =
-      req.query;
+    const {
+      sortBy,
+      pageIndex,
+      pageSize,
+      searchTerm = "",
+      tipo,
+      ["usuario.nome"]: usuarioNome,
+      ...rest
+    } = req.query;
 
-    const schema = ControleAlteracao.schema;
+    const usuarioFiltersQuery = filtersUtils.queryFiltros({
+      filtros: { nome: usuarioNome },
+      schema: Usuario.schema,
+    });
 
-    const camposBusca = ["status", "nome", "email", "tipo"];
+    const usuarioQuerySearchTerm = filtersUtils.querySearchTerm({
+      schema: Usuario.schema,
+      searchTerm,
+      camposBusca: ["nome"],
+    });
+
+    const usuariosIds = await Usuario.find({
+      $and: [usuarioFiltersQuery, { $or: [usuarioQuerySearchTerm] }],
+    }).select("_id");
+
+    const usuariosConditions =
+      usuariosIds.length > 0
+        ? [{ usuario: { $in: usuariosIds.map((e) => e._id) } }]
+        : [];
 
     // Monta a query para buscar serviços baseados nos demais filtros
-    const filterFromFiltros = filtersUtils.buildQuery({
+    const filterFromFiltros = filtersUtils.queryFiltros({
       filtros: rest,
-      schema,
+      schema: ControleAlteracao.schema,
     });
 
     // Monta a query para buscar serviços baseados no searchTerm
     const searchTermCondition = filtersUtils.querySearchTerm({
       searchTerm,
-      schema,
-      camposBusca,
+      schema: ControleAlteracao.schema,
+      camposBusca: ["status", "dataHora"],
     });
 
     const queryResult = {
       $and: [
-        filterFromFiltros, // Filtros principais
+        filterFromFiltros,
         {
           $or: [
-            searchTermCondition, // Busca textual
+            ...(searchTerm !== "" && Object.keys(searchTermCondition).length > 0
+              ? searchTermCondition
+              : []),
+            ...usuariosConditions,
           ],
         },
       ],
@@ -64,15 +92,6 @@ const listarTodosRegistros = async (req, res) => {
         itemsPerPage: limite,
       },
     });
-    // const controleAlteracao = await ControleAlteracao.find()
-    //   .sort({ dataHora: -1 })
-    //   .populate("usuario");
-
-    // if (controleAlteracao.length === 0) {
-    //   return res.status(404).json({ message: "Nenhum registro encontrado!" });
-    // }
-
-    // res.status(200).json(controleAlteracao);
   } catch (error) {
     res.status(500).json({
       message: "Erro ao buscar registros",

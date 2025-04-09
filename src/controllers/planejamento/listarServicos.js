@@ -1,6 +1,6 @@
 const Servico = require("../../models/Servico");
 const Prestador = require("../../models/Prestador");
-const { buildQuery } = require("../../utils/filter");
+const { queryFiltros, buildQuery } = require("../../utils/filter");
 
 exports.listarServicos = async (req, res) => {
   try {
@@ -16,32 +16,28 @@ exports.listarServicos = async (req, res) => {
       ...rest
     } = req.query;
 
-    const schema = Servico.schema;
-    const prestadorQuery = [];
+    const prestadorFiltersQuery = queryFiltros({
+      filtros: {
+        sid: prestadorSid,
+        nome: prestadorNome,
+        tipo: prestadorTipo,
+        documento: prestadorDocumento,
+      },
+      schema: Prestador.schema,
+    });
 
-    if (prestadorSid && prestadorSid !== "")
-      prestadorQuery.push({ sid: Number(prestadorSid) });
-    if (prestadorTipo && prestadorTipo !== "")
-      prestadorQuery.push({ tipo: prestadorTipo });
-    if (prestadorNome && prestadorNome !== "")
-      prestadorQuery.push({ nome: { $regex: prestadorNome, $options: "i" } });
-    if (prestadorDocumento && prestadorDocumento !== "")
-      prestadorQuery.push({
-        documento: { $regex: prestadorDocumento, $options: "i" },
-      });
+    const prestadoresIds = await Prestador.find({
+      $and: [prestadorFiltersQuery],
+    }).select("_id");
 
     const statusFilter =
       status && status !== ""
         ? { status }
         : { status: { $in: ["pendente", "aberto", "processando"] } };
 
-    const prestadoresIds = await Prestador.find({
-      $or: prestadorQuery,
-    }).select("_id");
-
-    const filtersQuery = buildQuery({
+    const filtersQuery = queryFiltros({
       filtros: rest,
-      schema,
+      schema: Servico.schema,
     });
 
     const prestadorConditions =

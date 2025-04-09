@@ -1,31 +1,190 @@
+const {
+  parse,
+  isValid,
+  startOfDay,
+  endOfDay,
+  startOfMonth,
+  endOfMonth,
+} = require("date-fns");
+
+const criarFiltroPorTipoDeCampo = ({ tipo, campo, valor }) => {
+  const FILTRO_NUMERO = () => {
+    const n = Number(
+      valor.replaceAll(".", "-").replaceAll(",", ".").replaceAll("-", "")
+    );
+    return !isNaN(n) ? { [campo]: n } : null;
+  };
+
+  const FILTRO_STRING = () => {
+    // Função para escapar caracteres especiais do regex
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    // Remove símbolos
+    const sanitized = valor
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+      .replace(/[^\w\s]/gi, ""); // Remove símbolos exceto espaços
+
+    // Cria padrão combinando valor original e sanitizado
+    const patterns = [
+      escapeRegex(valor), // Valor original (escapado)
+      escapeRegex(sanitized), // Valor sem símbolos (escapado)
+    ]
+      .filter(Boolean)
+      .join("|"); // Remove valores vazios e junta com "OU"
+
+    return {
+      [campo]: {
+        $regex: `(${patterns})`, // Busca por qualquer das versões
+        $options: "i", // Case-insensitive
+      },
+    };
+  };
+
+  const FILTRO_DATE = () => {
+    const operadores = [">", "<"];
+    const operador = operadores.find((op) => valor.startsWith(op));
+    const dataStr = operador ? valor.slice(1) : valor;
+
+    // Helper para criar filtros de data com operadores
+    const criarFiltro = (campo, valor, operador) => {
+      const operadoresMongo = {
+        ">": "$gte",
+        "<": "$lte",
+        "=": "$eq",
+      };
+      return { [campo]: { [operadoresMongo[operador || "="]]: valor } };
+    };
+
+    // Tentar analisar como data completa
+    const parseDataCompleta = (str) => {
+      const formatos = ["dd/MM/yyyy", "dd-MM-yyyy", "MM/yyyy", "MM-yyyy"];
+      for (const fmt of formatos) {
+        const data = parse(str, fmt, new Date());
+        if (isValid(data)) {
+          return data;
+        }
+      }
+      return null;
+    };
+
+    // Casos especiais (dia, mês, ano isolado)
+    // if (/^\d+$/.test(dataStr)) {
+    //   const numero = parseInt(dataStr, 10);
+
+    //   // Determinar o tipo (dia, mês ou ano)
+    //   let tipo;
+    //   if (dataStr.length === 4) {
+    //     tipo = "ano";
+    //   } else if (numero >= 1 && numero <= 31) {
+    //     tipo = "dia";
+    //   } else if (numero >= 1 && numero <= 12) {
+    //     tipo = "mês";
+    //   } else {
+    //     return null;
+    //   }
+
+    //   console.log("tipo", tipo);
+
+    //   // Criar expressão de filtro dinâmico
+    //   const expressao = {
+    //     dia: { $dayOfMonth: `$${campo}` },
+    //     mês: { $month: `$${campo}` },
+    //     ano: { $year: `$${campo}` },
+    //   }[tipo];
+
+    //   return {
+    //     [`$${operador ? "expr" : "where"}`]: operador
+    //       ? { [operador === ">" ? "$gte" : "$lte"]: [expressao, numero] }
+    //       : { $eq: [expressao, numero] },
+    //   };
+    // }
+
+    const data = parseDataCompleta(dataStr);
+    if (!data) return null;
+
+    const isMesAno = /^(\d{2}[\/-]\d{4})$/.test(dataStr);
+
+    if (isMesAno) {
+      const inicioMes = startOfMonth(data);
+      const fimMes = endOfMonth(data);
+
+      if (operador === ">") return criarFiltro(campo, inicioMes, operador);
+      if (operador === "<") return criarFiltro(campo, fimMes, operador);
+      return { [campo]: { $gte: inicioMes, $lte: fimMes } };
+    }
+
+    const inicioDia = startOfDay(data);
+    const fimDia = endOfDay(data);
+
+    if (operador === ">") return criarFiltro(campo, inicioDia, operador);
+    if (operador === "<") return criarFiltro(campo, fimDia, operador);
+    return { [campo]: { $gte: inicioDia, $lte: fimDia } };
+  };
+
+  const DEFAULT = () => {
+    return { [campo]: valor };
+  };
+
+  const FILTRO_COMPETENCIA = () => {
+    const operadores = [">", "<"];
+    const operador = operadores.find((op) => valor.startsWith(op));
+
+    const competencia = operador ? valor.slice(1) : valor;
+
+    const mes = Number(competencia?.split(/[\/-]/)[0]);
+    const ano = Number(competencia?.split(/[\/-]/)[1]);
+
+    const operadoresMongo = {
+      ">": "$gt",
+      "<": "$lt",
+      "=": "$eq",
+    };
+
+    if (operador) {
+      return {
+        $or: [
+          { "competencia.ano": { [operadoresMongo[operador]]: ano } },
+          {
+            $and: [
+              { "competencia.ano": { [`${operadoresMongo[operador]}e`]: ano } },
+              { "competencia.mes": { [`${operadoresMongo[operador]}e`]: mes } },
+            ],
+          },
+        ],
+      };
+    }
+
+    return {
+      "competencia.mes": mes,
+      "competencia.ano": ano,
+    };
+  };
+
+  const tipoFiltroMap = {
+    Number: FILTRO_NUMERO,
+    String: FILTRO_STRING,
+    Date: FILTRO_DATE,
+    CompetenciaType: FILTRO_COMPETENCIA,
+    default: DEFAULT,
+  };
+
+  return tipoFiltroMap[tipo] ? tipoFiltroMap[tipo]() : tipoFiltroMap.default();
+};
+
 const queryFiltros = ({ filtros, schema }) => {
   const query = {};
   for (const [campo, valor] of Object.entries(filtros)) {
-    if (!valor) continue;
-
     const campoSchema = schema.path(campo);
-    if (campoSchema && campoSchema.options && campoSchema.options.enum) {
-      query[campo] = valor;
-      continue;
-    }
+    if (!valor || !campoSchema) continue;
 
-    // Se for Number, converte e faz busca exata
-    if (campoSchema?.instance === "Number") {
-      const valorNumber = Number(valor);
-      if (!isNaN(valorNumber)) {
-        query[campo] = valorNumber;
-      }
-      continue;
-    }
+    const filtro = criarFiltroPorTipoDeCampo({
+      campo,
+      tipo: campoSchema?.instance,
+      valor,
+    });
 
-    // Se for String, aplica regex (busca parcial case-insensitive)
-    if (campoSchema?.instance === "String") {
-      query[campo] = { $regex: valor, $options: "i" };
-      continue;
-    }
-
-    // Para outros tipos, aplica busca exata ou lógica específica
-    query[campo] = valor;
+    if (filtro) Object.assign(query, filtro);
   }
   return query;
 };
@@ -38,19 +197,11 @@ const querySearchTerm = ({ searchTerm, schema, camposBusca = [] }) => {
       const campoSchema = schema.path(campo);
       if (!campoSchema) return null;
 
-      if (campoSchema.instance === "String") {
-        return { [campo]: { $regex: searchTerm, $options: "i" } };
-      }
-
-      if (campoSchema.instance === "Number") {
-        const valorNumber = Number(searchTerm);
-        if (!isNaN(valorNumber)) {
-          return { [campo]: valorNumber };
-        }
-        return null;
-      }
-
-      return null;
+      return criarFiltroPorTipoDeCampo({
+        campo,
+        tipo: campoSchema?.instance,
+        valor: searchTerm,
+      });
     })
     .filter(Boolean);
 

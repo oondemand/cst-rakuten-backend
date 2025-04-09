@@ -141,7 +141,7 @@ exports.listarUsuarios = async (req, res) => {
     const camposBusca = ["status", "nome", "email", "tipo"];
 
     // Monta a query para buscar serviços baseados nos demais filtros
-    const filterFromFiltros = filtersUtils.buildQuery({
+    const filterFromFiltros = filtersUtils.queryFiltros({
       filtros: rest,
       schema,
     });

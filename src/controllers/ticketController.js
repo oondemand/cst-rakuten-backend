@@ -428,46 +428,61 @@ exports.getArchivedTickets = async (req, res) => {
       ...rest
     } = req.query;
 
-    const schema = Servico.schema;
-    const prestadorQuery = [];
-
-    if (prestadorSid && prestadorSid !== "")
-      prestadorQuery.push({ sid: Number(prestadorSid) });
-    if (prestadorTipo && prestadorTipo !== "")
-      prestadorQuery.push({ tipo: prestadorTipo });
-    if (prestadorNome && prestadorNome !== "")
-      prestadorQuery.push({ nome: { $regex: prestadorNome, $options: "i" } });
-    if (prestadorDocumento && prestadorDocumento !== "")
-      prestadorQuery.push({
-        documento: { $regex: prestadorDocumento, $options: "i" },
-      });
-
-    if (!isNaN(Number(searchTerm))) {
-      prestadorQuery.push({ documento: Number(searchTerm) });
-      prestadorQuery.push({ sid: Number(searchTerm) });
-    }
-
-    prestadorQuery.push({ nome: { $regex: searchTerm, $options: "i" } });
-
-    const prestadoresIds = await Prestador.find({
-      $or: prestadorQuery,
-    }).select("_id");
-
-    const filtersQuery = filterUtils.buildQuery({
-      filtros: rest,
-      schema,
+    const prestadorFiltersQuery = filterUtils.queryFiltros({
+      filtros: {
+        sid: prestadorSid,
+        nome: prestadorNome,
+        tipo: prestadorTipo,
+        documento: prestadorDocumento,
+      },
+      schema: Prestador.schema,
     });
+
+    const prestadoresQuerySearchTerm = filterUtils.querySearchTerm({
+      schema: Prestador.schema,
+      searchTerm,
+      camposBusca: ["nome", "tipo", "documento", "sid"],
+    });
+
+    let prestadoresIds = [];
+
+    if (
+      Object.keys(prestadorFiltersQuery).length > 0 ||
+      Object.keys(prestadoresQuerySearchTerm).length > 0
+    ) {
+      prestadoresIds = await Prestador.find({
+        $and: [prestadorFiltersQuery, { $or: [prestadoresQuerySearchTerm] }],
+      }).select("_id");
+    }
 
     const prestadorConditions =
       prestadoresIds.length > 0
         ? [{ prestador: { $in: prestadoresIds.map((e) => e._id) } }]
         : [];
 
+    const filtersQuery = filterUtils.queryFiltros({
+      filtros: rest,
+      schema: Ticket.schema,
+    });
+
+    const searchTermCondition = filterUtils.querySearchTerm({
+      searchTerm,
+      schema: Ticket.schema,
+      camposBusca: ["titulo", "createdAt"],
+    });
+
     const queryResult = {
       $and: [
         filtersQuery,
         { status: "arquivado" },
-        { $or: [...prestadorConditions] },
+        {
+          $or: [
+            ...(Object.keys(searchTermCondition).length > 0
+              ? [searchTermCondition]
+              : []),
+            ...prestadorConditions,
+          ],
+        },
       ],
     };
 
@@ -529,49 +544,50 @@ exports.getTicketsPago = async (req, res) => {
       ...rest
     } = req.query;
 
-    const schema = Servico.schema;
-    const prestadorQuery = [];
+    const prestadorFiltersQuery = filterUtils.queryFiltros({
+      filtros: {
+        sid: prestadorSid,
+        nome: prestadorNome,
+        tipo: prestadorTipo,
+        documento: prestadorDocumento,
+      },
+      schema: Prestador.schema,
+    });
 
-    if (prestadorSid && prestadorSid !== "")
-      prestadorQuery.push({ sid: Number(prestadorSid) });
-    if (prestadorTipo && prestadorTipo !== "")
-      prestadorQuery.push({ tipo: prestadorTipo });
-    if (prestadorNome && prestadorNome !== "")
-      prestadorQuery.push({ nome: { $regex: prestadorNome, $options: "i" } });
-    if (prestadorDocumento && prestadorDocumento !== "")
-      prestadorQuery.push({
-        documento: { $regex: prestadorDocumento, $options: "i" },
-      });
-
-    if (!isNaN(Number(searchTerm))) {
-      prestadorQuery.push({ documento: Number(searchTerm) });
-      prestadorQuery.push({ sid: Number(searchTerm) });
-    }
-
-    prestadorQuery.push({ nome: { $regex: searchTerm, $options: "i" } });
+    const prestadoresQuerySearchTerm = filterUtils.querySearchTerm({
+      schema: Prestador.schema,
+      searchTerm,
+      camposBusca: ["nome", "tipo", "documento", "sid"],
+    });
 
     const prestadoresIds = await Prestador.find({
-      $or: prestadorQuery,
+      $and: [prestadorFiltersQuery, { $or: [prestadoresQuerySearchTerm] }],
     }).select("_id");
-
-    const filtersQuery = filterUtils.buildQuery({
-      filtros: rest,
-      schema,
-    });
 
     const prestadorConditions =
       prestadoresIds.length > 0
         ? [{ prestador: { $in: prestadoresIds.map((e) => e._id) } }]
         : [];
 
+    const filtersQuery = filterUtils.queryFiltros({
+      filtros: rest,
+      schema: Ticket.schema,
+    });
+
+    const searchTermCondition = filterUtils.querySearchTerm({
+      searchTerm,
+      schema: Ticket.schema,
+      camposBusca: ["titulo", "createdAt"],
+    });
+
     const queryResult = {
       $and: [
-        filtersQuery,
         {
           status: "concluido",
           etapa: "concluido",
         },
-        { $or: [...prestadorConditions] },
+        { ...filtersQuery, status: "concluido", etapa: "concluido" },
+        { $or: [searchTermCondition, ...prestadorConditions] },
       ],
     };
 
@@ -590,12 +606,14 @@ exports.getTicketsPago = async (req, res) => {
     const [tickets, totalDeTickets] = await Promise.all([
       Ticket.find(queryResult)
         .populate("prestador", "sid nome documento")
+        .populate("arquivos", "nomeOriginal size mimetype tipo")
         .populate({
           path: "servicos",
           options: { virtuals: true },
         })
         .skip(skip)
-        .limit(limite),
+        .limit(limite)
+        .sort(sorting),
       Ticket.countDocuments(queryResult),
     ]);
 

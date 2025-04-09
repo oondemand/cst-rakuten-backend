@@ -13,7 +13,6 @@ const Servico = require("../models/Servico");
 const { add, format } = require("date-fns");
 const { ControleAlteracaoService } = require("../services/controleAlteracao");
 const ContaPagar = require("../models/ContaPagar");
-const { ja } = require("date-fns/locale");
 const Sistema = require("../models/Sistema");
 
 // Função para aprovar um ticket
@@ -93,11 +92,11 @@ const aprovar = async (req, res) => {
     ControleAlteracaoService.registrarAlteracao({
       acao: "aprovar",
       dataHora: new Date(),
-      idRegistroAlterado: ticket._id,
+      idRegistroAlterado: ticket?._id,
       origem: "formulario",
       dadosAtualizados: ticket,
       tipoRegistroAlterado: "ticket",
-      usuario: req.usuario._id,
+      usuario: req.usuario?._id,
     });
 
     res.send({
@@ -156,11 +155,11 @@ const recusar = async (req, res) => {
     ControleAlteracaoService.registrarAlteracao({
       acao: "reprovar",
       dataHora: new Date(),
-      idRegistroAlterado: ticket._id,
+      idRegistroAlterado: ticket?._id,
       origem: "formulario",
       dadosAtualizados: ticket,
       tipoRegistroAlterado: "ticket",
-      usuario: req.usuario._id,
+      usuario: req.usuario?._id,
     });
     res.send({
       success: true,
@@ -215,9 +214,10 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
           nId: conta.codigo_lancamento_omie,
           tabela: "conta-pagar",
         });
+
+        ticket.contaPagarOmie = conta?._id;
       } catch (error) {
         // caso tenha algum erro no upload de arquivos, tenta remover a conta
-        // console.error(error);
         try {
           await contaPagarService.remover({
             codigo_lancamento_integracao: conta.codigo_lancamento_integracao,
@@ -229,25 +229,22 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
           throw error;
         } catch (error) {
           //caso de erro ao remover a conta repassa o erro
-          // console.error(error);
           throw error;
         }
       }
     }
 
-    // caso de tudo certo, vincula codigo da conta o ticket, muda o status e salva
-    ticket.contaPagarOmie = conta._id;
     ticket.status = "concluido";
     await ticket.save();
 
     ControleAlteracaoService.registrarAlteracao({
       acao: "aprovar",
       dataHora: new Date(),
-      idRegistroAlterado: ticket._id,
+      idRegistroAlterado: ticket?._id,
       origem: "formulario",
       dadosAtualizados: ticket,
       tipoRegistroAlterado: "ticket",
-      usuario: usuario._id,
+      usuario: usuario?._id,
     });
   } catch (error) {
     // se ocorrer qualquer erro, volta ticket para etapa de aprovação, criar obs e atualiza o status
@@ -259,11 +256,11 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
     ControleAlteracaoService.registrarAlteracao({
       acao: "aprovar",
       dataHora: new Date(),
-      idRegistroAlterado: ticket._id,
+      idRegistroAlterado: ticket?._id,
       origem: "formulario",
       dadosAtualizados: ticket,
       tipoRegistroAlterado: "ticket",
-      usuario: usuario._id,
+      usuario: usuario?._id,
     });
 
     await emailUtils.emailErroIntegracaoOmie({
@@ -295,9 +292,14 @@ const atualizarOuCriarFornecedor = async ({
       fornecedor = await clienteService.pesquisarCodIntegracao(
         appKey,
         appSecret,
-        prestador._id
+        prestador?._id
       );
     }
+
+    console.log(
+      "Fornecedor encontrado:",
+      `${prestador.endereco?.cidade} ${prestador.endereco?.estado}`
+    );
 
     const novoFornecedor = clienteService.criarFornecedor({
       documento: prestador.documento,
@@ -308,7 +310,7 @@ const atualizarOuCriarFornecedor = async ({
       rua: prestador.endereco ? prestador.endereco.rua : "",
       numeroDoEndereco: prestador.endereco ? prestador.endereco.numero : "",
       complemento: prestador.endereco ? prestador.endereco.complemento : "",
-      cidade: prestador.endereco ? prestador.endereco.cidade : "",
+      cidade: prestador.endereco ? `${prestador.endereco?.cidade}` : "",
       estado: prestador.endereco ? prestador.endereco.estado : "",
       razaoSocial: prestador.nome,
       banco: prestador?.dadosBancarios?.banco ?? "",
@@ -348,6 +350,8 @@ const atualizarOuCriarFornecedor = async ({
 
     return fornecedor;
   } catch (error) {
+    console.log("Error 🟢", error);
+
     throw `Erro ao obter ou cadastrar fornecedor. ${error}`;
   }
 };

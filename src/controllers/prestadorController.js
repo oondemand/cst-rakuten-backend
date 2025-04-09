@@ -116,15 +116,24 @@ exports.listarPrestadores = async (req, res) => {
     const schema = Prestador.schema;
 
     const camposBusca = [
-      "email",
+      "sciUnico",
+      "manager",
       "nome",
       "sid",
-      "sciUnico",
       "documento",
-      "campanha",
-      "status",
-      "grossValue",
-      "bonus",
+      "dadosBancariosSchema.agencia",
+      "dadosBancariosSchema.conta",
+      "email",
+      "cep",
+      "enderecoSchema.rua",
+      "enderecoSchema.numero",
+      "enderecoSchema.complemento",
+      "enderecoSchema.cidade",
+      "pessoaFisica.dataNascimento",
+      "pessoaFisica.pis",
+      "pessoaJuridica.nomeFantasia",
+      "createdAt",
+      "updatedAt",
     ];
 
     const queryResult = filtersUtils.buildQuery({

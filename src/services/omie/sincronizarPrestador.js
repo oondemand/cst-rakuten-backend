@@ -32,7 +32,7 @@ exports.sincronizarPrestador = async ({ prestador, id }) => {
       rua: prestador.endereco ? prestador.endereco.rua : "",
       numeroDoEndereco: prestador.endereco ? prestador.endereco.numero : "",
       complemento: prestador.endereco ? prestador.endereco.complemento : "",
-      // cidade: prestador.endereco ? prestador.endereco.cidade : "",
+      cidade: prestador.endereco ? prestador.endereco.cidade : "",
       estado: prestador.endereco ? prestador.endereco.estado : "",
       razaoSocial: prestador.nome,
       banco: prestador?.dadosBancarios?.banco ?? "",
