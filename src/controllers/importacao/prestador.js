@@ -28,8 +28,20 @@ const criarNovoManager = async ({ manager }) => {
 
 const converterLinhaEmPrestador = async ({ row }) => {
   const pais = LISTA_PAISES_OMIE.find(
-    (e) => e.cDescricao.toLowerCase() === row[17].toLowerCase()
+    (e) => e.cDescricao.toLowerCase() === row[17]?.toLowerCase()
   );
+
+  const formatDataNascimento = () => {
+    const data = row[18];
+
+    if (data === "") return null;
+
+    if (typeof data === "string") {
+      return parse(data.replace(/[^\w\/]/g, ""), "dd/MM/yyyy", new Date());
+    }
+
+    return data;
+  };
 
   const prestador = {
     sciUnico: row[0],
@@ -42,11 +54,11 @@ const converterLinhaEmPrestador = async ({ row }) => {
       banco: row[6],
       agencia: row[7],
       conta: row[8],
-      tipoConta: row[9],
+      tipoConta: row[9]?.toLowerCase(),
     },
     email: row[10] === "" ? null : row[10],
     endereco: {
-      cep: row[11].replaceAll("-", ""),
+      cep: row[11]?.replaceAll("-", ""),
       rua: row[12],
       numero: row[13],
       complemento: row[14],
@@ -55,10 +67,7 @@ const converterLinhaEmPrestador = async ({ row }) => {
       pais: { nome: pais?.cDescricao, cod: pais?.cCodigo },
     },
     pessoaFisica: {
-      dataNascimento:
-        row[18] !== ""
-          ? parse(row[18].replace(/[^\w\/]/g, ""), "dd/MM/yyyy", new Date())
-          : null,
+      dataNascimento: formatDataNascimento(),
       pis: row[19],
     },
     pessoaJuridica: { nomeFantasia: row[20] },
