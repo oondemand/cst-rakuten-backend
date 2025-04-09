@@ -1,5 +1,6 @@
 const Servico = require("../../models/Servico");
 const Ticket = require("../../models/Ticket");
+const { startOfDay, endOfDay } = require("date-fns");
 
 exports.sincronizarEsteira = async (req, res) => {
   try {
@@ -16,11 +17,16 @@ exports.sincronizarEsteira = async (req, res) => {
 
     for (const servico of servicos) {
       if (!servico.dataRegistro) continue;
+      const data = new Date(servico.dataRegistro);
+
+      const inicioDia = startOfDay(data);
+      const fimDia = endOfDay(data);
+
       let ticket = await Ticket.findOneAndUpdate(
         {
           prestador: servico.prestador._id,
           etapa: { $in: etapasValidas },
-          dataRegistro: servico?.dataRegistro,
+          dataRegistro: { $gte: inicioDia, $lte: fimDia },
           status: { $ne: "arquivado" },
         },
         { $push: { servicos: servico._id } },
