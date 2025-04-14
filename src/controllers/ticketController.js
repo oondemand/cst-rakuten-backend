@@ -269,6 +269,28 @@ exports.getTicketsByUsuarioPrestador = async (req, res) => {
       ...servicosPagosExterno,
     ];
 
+    // Ordenação definitiva considerando todos os cenários
+    allTickets.sort((a, b) => {
+      // Extrai datas de diferentes cenários
+      const getDate = (ticket) => {
+        if (ticket.dataRegistro) return ticket.dataRegistro; // Ticket normal
+        if (ticket.servicos?.[0]?.dataRegistro)
+          return ticket.servicos[0].dataRegistro; // Serviços pagos externos
+        return null; // Sem data
+      };
+
+      const aDate = getDate(a);
+      const bDate = getDate(b);
+
+      // Tickets sem data primeiro
+      if (!aDate && !bDate) return 0;
+      if (!aDate) return -1;
+      if (!bDate) return 1;
+
+      // Datas mais recentes primeiro
+      return new Date(bDate) - new Date(aDate);
+    });
+
     let valorTotalRecebido = 0;
     let valorTotalPendente = 0;
 
