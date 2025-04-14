@@ -194,7 +194,7 @@ exports.getTicketsByUsuarioPrestador = async (req, res) => {
           ],
         },
       ],
-    });
+    }).select("-dataRegistro");
 
     const servicosPagosExterno = await Servico.aggregate([
       {
