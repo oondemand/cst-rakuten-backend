@@ -4,6 +4,7 @@ const { criarNomePersonalizado } = require("../utils/formatters");
 const Prestador = require("../models/Prestador");
 const { ControleAlteracaoService } = require("../services/controleAlteracao");
 const Servico = require("../models/Servico");
+const Sistema = require("../models/Sistema");
 const { isEqual } = require("date-fns");
 const filterUtils = require("../utils/filter");
 
@@ -153,6 +154,7 @@ exports.getTicketsByUsuarioPrestador = async (req, res) => {
 
   try {
     const prestador = await Prestador.findOne({ usuario: usuarioId });
+    const config = await Sistema.findOne();
 
     if (!prestador) {
       return res
@@ -171,31 +173,123 @@ exports.getTicketsByUsuarioPrestador = async (req, res) => {
     // Busca serviços abertos não vinculados a tickets
     const servicosAbertos = await Servico.find({
       prestador: prestador._id,
-      status: "aberto",
-      "competencia.ano": { $gte: 2024 },
-    });
+      status: { $in: ["aberto", "pendente"] },
+      $or: [
+        {
+          "competencia.ano": {
+            $gt: config.data_corte_app_publisher.getFullYear(),
+          },
+        },
 
-    // Cria tickets virtuais para serviços abertos
-    const fakeTickets = servicosAbertos.map((servico) => {
-      const servicoObj = servico.toObject({ virtuals: true });
-      return {
-        _id: servico._id, // Usamos o ID do serviço para evitar conflitos
-        titulo:
-          servico.campanha ||
-          `Serviço em Aberto (${servico._id.toString().slice(-6)})`,
-        status: "aberto",
-        prestador: prestador._id,
-        servicos: [servicoObj],
-        arquivos: [],
-        data: servico.createdAt,
-        observacao: "Serviço aberto não associado a um ticket",
-        createdAt: servico.createdAt,
-        updatedAt: servico.updatedAt,
-      };
-    });
+        {
+          $and: [
+            {
+              "competencia.ano": config.data_corte_app_publisher.getFullYear(),
+            },
+            {
+              "competencia.mes": {
+                $gte: config.data_corte_app_publisher.getMonth() + 1, // Ajuste para meses 1-12
+              },
+            },
+          ],
+        },
+      ],
+    }).select("-dataRegistro");
+
+    const servicosPagosExterno = await Servico.aggregate([
+      {
+        $match: {
+          prestador: prestador?._id,
+          status: "pago-externo",
+          dataRegistro: {
+            $exists: true,
+            $ne: null,
+            $gte: config?.data_corte_app_publisher,
+          },
+        },
+      },
+      {
+        $addFields: {
+          totalValores: {
+            $add: [
+              { $ifNull: ["$valores.grossValue", 0] },
+              { $ifNull: ["$valores.bonus", 0] },
+              { $ifNull: ["$valores.ajusteComercial", 0] },
+              { $ifNull: ["$valores.paidPlacement", 0] },
+            ],
+          },
+          totalRevisao: {
+            $add: [
+              { $ifNull: ["$valores.revisionGrossValue", 0] },
+              { $ifNull: ["$valores.revisionProvisionBonus", 0] },
+              { $ifNull: ["$valores.revisionComissaoPlataforma", 0] },
+              { $ifNull: ["$valores.revisionPaidPlacement", 0] },
+            ],
+          },
+        },
+      },
+      {
+        $addFields: {
+          valor: {
+            $add: [
+              "$totalValores",
+              "$totalRevisao",
+              { $ifNull: ["$valores.imposto", 0] },
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$dataRegistro",
+            },
+          },
+          servicos: { $push: "$$ROOT" },
+          status: { $first: "$status" },
+        },
+      },
+    ]);
+
+    // ticket virtual para serviços abertos
+    const fakeTicket = {
+      _id: servicosAbertos[0]?._id,
+      status: "aberto",
+      servicos: servicosAbertos,
+      arquivos: [],
+      observacao: "Serviço aberto não associado a um ticket",
+    };
 
     // Converte tickets reais para objetos simples e combina com os virtuais
-    const allTickets = [...tickets, ...fakeTickets];
+    const allTickets = [
+      ...tickets,
+      ...(servicosAbertos.length > 0 ? [fakeTicket] : []),
+      ...servicosPagosExterno,
+    ];
+
+    // Ordenação definitiva considerando todos os cenários
+    allTickets.sort((a, b) => {
+      // Extrai datas de diferentes cenários
+      const getDate = (ticket) => {
+        if (ticket.dataRegistro) return ticket.dataRegistro; // Ticket normal
+        if (ticket.servicos?.[0]?.dataRegistro)
+          return ticket.servicos[0].dataRegistro; // Serviços pagos externos
+        return null; // Sem data
+      };
+
+      const aDate = getDate(a);
+      const bDate = getDate(b);
+
+      // Tickets sem data primeiro
+      if (!aDate && !bDate) return 0;
+      if (!aDate) return -1;
+      if (!bDate) return 1;
+
+      // Datas mais recentes primeiro
+      return new Date(bDate) - new Date(aDate);
+    });
 
     let valorTotalRecebido = 0;
     let valorTotalPendente = 0;
@@ -221,7 +315,7 @@ exports.getTicketsByUsuarioPrestador = async (req, res) => {
       .status(200)
       .json({ valorTotalRecebido, valorTotalPendente, tickets: allTickets });
   } catch (error) {
-    // console.error("Erro ao buscar tickets:", error);
+    console.error("Erro ao buscar tickets:", error);
     res.status(500).json({
       message: "Erro ao buscar tickets",
       detalhes: error.message,

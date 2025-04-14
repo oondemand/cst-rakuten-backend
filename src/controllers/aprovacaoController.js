@@ -296,11 +296,6 @@ const atualizarOuCriarFornecedor = async ({
       );
     }
 
-    console.log(
-      "Fornecedor encontrado:",
-      `${prestador.endereco?.cidade} ${prestador.endereco?.estado}`
-    );
-
     const novoFornecedor = clienteService.criarFornecedor({
       documento: prestador.documento,
       nome: prestador.nome,
@@ -350,8 +345,6 @@ const atualizarOuCriarFornecedor = async ({
 
     return fornecedor;
   } catch (error) {
-    console.log("Error 🟢", error);
-
     throw `Erro ao obter ou cadastrar fornecedor. ${error}`;
   }
 };

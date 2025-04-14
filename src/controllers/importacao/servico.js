@@ -51,8 +51,6 @@ const converterLinhaEmServico = async ({ row }) => {
     },
   };
 
-  console.log("[SERVIÇO]:", servico);
-
   return servico;
 };
 
