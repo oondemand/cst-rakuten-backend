@@ -105,17 +105,7 @@ exports.updateServico = async (req, res) => {
   const updateData = req.body;
 
   try {
-    const servicoS = await Servico.findById(id);
-
-    if (["pago", "pago-externo"].includes(servicoS.status)) {
-      return res
-        .status(400)
-        .json({ message: "Não é possível atualizar um serviço pago." });
-    }
-
-    const servico = await Servico.findByIdAndUpdate(id, updateData, {
-      new: true,
-    });
+    const servico = await Servico.findById(id);
 
     if (!servico) {
       return res.status(404).json({
@@ -123,9 +113,19 @@ exports.updateServico = async (req, res) => {
       });
     }
 
+    if (["pago", "pago-externo"].includes(servico.status)) {
+      return res
+        .status(400)
+        .json({ message: "Não é possível atualizar um serviço pago." });
+    }
+
+    const servicoAtualizado = await Servico.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
+
     res.status(200).json({
       message: "Serviço atualizado com sucesso!",
-      servico: servico,
+      servico: servicoAtualizado,
     });
   } catch (error) {
     res.status(500).json({
