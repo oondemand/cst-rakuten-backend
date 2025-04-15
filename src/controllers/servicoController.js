@@ -105,6 +105,14 @@ exports.updateServico = async (req, res) => {
   const updateData = req.body;
 
   try {
+    const servicoS = await Servico.findById(id);
+
+    if (["pago", "pago-externo"].includes(servicoS.status)) {
+      return res
+        .status(400)
+        .json({ message: "Não é possível atualizar um serviço pago." });
+    }
+
     const servico = await Servico.findByIdAndUpdate(id, updateData, {
       new: true,
     });
@@ -120,7 +128,6 @@ exports.updateServico = async (req, res) => {
       servico: servico,
     });
   } catch (error) {
-    // console.error("Erro ao atualizar serviço:", error);
     res.status(500).json({
       message: "Erro ao atualizar serviço",
       detalhes: error.message,
