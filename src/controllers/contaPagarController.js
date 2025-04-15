@@ -164,7 +164,7 @@ const contaPagarWebHook = async (req, res) => {
         codigo_lancamento_omie: event?.codigo_lancamento_omie,
       });
 
-      await Ticket.findOneAndUpdate(
+      const ticket = await Ticket.findOneAndUpdate(
         {
           contaPagarOmie: contaPagar?._id,
         },
@@ -173,8 +173,16 @@ const contaPagarWebHook = async (req, res) => {
           etapa: "aprovacao-fiscal",
           contaPagarOmie: null,
           observacao: "[CONTA A PAGAR REMOVIDA DO OMIE]",
-        }
+        },
+        { new: true }
       );
+
+      if (ticket?.servicos.length > 0) {
+        await Servico.updateMany(
+          { _id: { $in: ticket?.servicos } },
+          { status: "processando" }
+        );
+      }
     }
 
     res.status(200).json({ message: "Webhook recebido. Fatura sendo gerada." });
