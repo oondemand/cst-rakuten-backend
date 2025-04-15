@@ -249,7 +249,6 @@ exports.atualizarPrestador = async (req, res) => {
       }
     }
 
-    console.log("DOC", req.body);
     if (req.body?.documento) {
       const prestadorDocumento = await Prestador.findOne({
         documento: req.body.documento,

@@ -460,7 +460,7 @@ exports.enviarConvite = async (req, res) => {
 
     if (usuario.tipo && usuario.tipo === "prestador") {
       await emailUtils.emailLinkCadastroUsuarioPrestador({
-        email: req.usuario.email,
+        email: usuario.email,
         nome: usuario.nome,
         url,
       });
