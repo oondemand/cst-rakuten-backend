@@ -302,12 +302,12 @@ exports.getTicketsByUsuarioPrestador = async (req, res) => {
 
     for (const ticket of allTickets) {
       for (const servico of ticket.servicos) {
-        if (ticket.status === "concluido" && ticket.etapa === "concluido") {
+        if (["pago", "pago-externo"].includes(servico.status)) {
           valorTotalRecebido += servico.valor;
+          continue;
         }
-        if (ticket.etapa !== "concluido" && ticket.etapa !== "requisicao") {
-          valorTotalPendente += servico.valor;
-        }
+
+        valorTotalPendente += servico.valor;
       }
     }
 
