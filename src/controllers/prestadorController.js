@@ -80,6 +80,18 @@ exports.criarPrestador = async (req, res) => {
     const { email, ...rest } = req.body;
     const data = email === "" ? rest : req.body;
 
+    if (req.body?.sid) {
+      const prestador = await Prestador.findOne({
+        sid: req.body.sid,
+      });
+
+      if (prestador) {
+        return res.status(409).json({
+          message: "Já existe um prestador com esse sid registrado",
+        });
+      }
+    }
+
     if (req.body?.sciUnico) {
       const prestador = await Prestador.findOne({
         sciUnico: req.body.sciUnico,
@@ -88,6 +100,18 @@ exports.criarPrestador = async (req, res) => {
       if (prestador) {
         return res.status(409).json({
           message: "Já existe um prestador com esse sciUnico registrado",
+        });
+      }
+    }
+
+    if (req.body?.documento) {
+      const prestador = await Prestador.findOne({
+        documento: req.body.documento,
+      });
+
+      if (prestador) {
+        return res.status(409).json({
+          message: "Já existe um prestador com esse documento registrado",
         });
       }
     }
@@ -199,6 +223,43 @@ exports.atualizarPrestador = async (req, res) => {
 
     if (!prestador) {
       return res.status(404).json({ message: "Prestador não encontrado" });
+    }
+
+    if (req.body?.sid) {
+      const prestadorSid = await Prestador.findOne({
+        sid: req.body.sid,
+      });
+
+      if (prestador._id !== prestadorSid._id) {
+        return res.status(409).json({
+          message: "Já existe um prestador com esse sid registrado",
+        });
+      }
+    }
+
+    if (req.body?.sciUnico) {
+      const prestadorSciUnico = await Prestador.findOne({
+        sciUnico: req.body.sciUnico,
+      });
+
+      if (prestador._id !== prestadorSciUnico._id) {
+        return res.status(409).json({
+          message: "Já existe um prestador com esse sciUnico registrado",
+        });
+      }
+    }
+
+    console.log("DOC", req.body);
+    if (req.body?.documento) {
+      const prestadorDocumento = await Prestador.findOne({
+        documento: req.body.documento,
+      });
+
+      if (prestador._id !== prestadorDocumento._id) {
+        return res.status(409).json({
+          message: "Já existe um prestador com esse documento registrado",
+        });
+      }
     }
 
     if (req?.body?.email && prestador?.usuario) {

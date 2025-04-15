@@ -27,7 +27,7 @@ const dadosBancariosSchema = new mongoose.Schema({
 // Esquema Principal do Prestador
 const prestadorSchema = new mongoose.Schema(
   {
-    sciUnico: { type: Number, match: /^\d{6,}$/ },
+    sciUnico: { type: Number, match: /^\d{6,}$/, unique: true },
     usuario: { type: mongoose.Schema.Types.ObjectId, ref: "Usuario" },
     manager: { type: String },
     nome: { type: String, required: true },
@@ -40,6 +40,7 @@ const prestadorSchema = new mongoose.Schema(
     tipo: { type: String, enum: ["pj", "pf", "ext", ""] },
     documento: {
       type: String,
+      unique: true,
       // validate: {
       //   validator: function (valor) {
       //     if (this.tipo === "ext") {
