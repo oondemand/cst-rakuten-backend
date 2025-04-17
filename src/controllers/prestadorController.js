@@ -225,36 +225,45 @@ exports.atualizarPrestador = async (req, res) => {
       return res.status(404).json({ message: "Prestador não encontrado" });
     }
 
-    if (req.body?.sid) {
+    if (req.body.sid) {
       const prestadorSid = await Prestador.findOne({
         sid: req.body.sid,
       });
 
-      if (prestador._id !== prestadorSid._id) {
+      if (
+        prestadorSid &&
+        prestador._id.toString() !== prestadorSid._id.toString()
+      ) {
         return res.status(409).json({
           message: "Já existe um prestador com esse sid registrado",
         });
       }
     }
 
-    if (req.body?.sciUnico) {
+    if (req.body.sciUnico) {
       const prestadorSciUnico = await Prestador.findOne({
         sciUnico: req.body.sciUnico,
       });
 
-      if (prestador._id !== prestadorSciUnico._id) {
+      if (
+        prestadorSciUnico &&
+        prestador._id.toString() !== prestadorSciUnico._id.toString()
+      ) {
         return res.status(409).json({
           message: "Já existe um prestador com esse sciUnico registrado",
         });
       }
     }
 
-    if (req.body?.documento) {
+    if (req.body.documento) {
       const prestadorDocumento = await Prestador.findOne({
         documento: req.body.documento,
       });
 
-      if (prestador._id !== prestadorDocumento._id) {
+      if (
+        prestadorDocumento &&
+        prestador._id.toString() !== prestadorDocumento._id.toString()
+      ) {
         return res.status(409).json({
           message: "Já existe um prestador com esse documento registrado",
         });
