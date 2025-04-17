@@ -246,11 +246,6 @@ const importarComissõesDetalhes = async ({ usuario, detalhes }) => {
 
 const emailErroIntegracaoOmie = async ({ usuario, error }) => {
   try {
-    const emailFrom = {
-      email: "fabio@oondemand.com.br",
-      nome: "OonDemand",
-    };
-
     const emailTo = {
       email: usuario.email,
       nome: usuario.nome,
@@ -311,8 +306,8 @@ const emailLinkCadastroUsuarioPrestador = async ({ email, nome, url }) => {
 
     return await enviarEmail(emailTo, assunto, corpo);
   } catch (error) {
-    // console.error("Erro ao enviar e-mail de serviços exportados:", error);
-    throw new Error("Erro ao enviar e-mail de serviços exportados:");
+    console.log("[ERRO AO ENVIAR CONVITE]", error);
+    throw error;
   }
 };
 

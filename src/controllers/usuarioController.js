@@ -460,14 +460,15 @@ exports.enviarConvite = async (req, res) => {
 
     if (usuario.tipo && usuario.tipo === "prestador") {
       await emailUtils.emailLinkCadastroUsuarioPrestador({
-        email: usuario.email,
-        nome: usuario.nome,
+        email: usuario?.email,
+        nome: usuario?.nome,
         url,
       });
     }
 
     res.status(200).json({ message: "Ok" });
   } catch (error) {
+    console.log("[ERRO AO ENVIAR CONVITE]", error);
     res.status(400).json({ message: "Ouve um erro ao enviar convite" });
   }
 };
