@@ -116,7 +116,10 @@ exports.updateServico = async (req, res) => {
     if (["pago", "pago-externo", "processando"].includes(servico.status)) {
       return res
         .status(400)
-        .json({ message: "Não é possível atualizar um serviço pago." });
+        .json({
+          message:
+            "Não é possível atualizar um serviço pago ou em processamento.",
+        });
     }
 
     const servicoAtualizado = await Servico.findByIdAndUpdate(id, updateData, {
