@@ -307,6 +307,11 @@ exports.atualizarPrestador = async (req, res) => {
 exports.excluirPrestador = async (req, res) => {
   try {
     const prestador = await Prestador.findByIdAndDelete(req.params.id);
+
+    if (prestador?.usuario) {
+      await Usuario.findByIdAndDelete(prestador?.usuario);
+    }
+
     if (!prestador)
       return res.status(404).json({ error: "Prestador não encontrado" });
     res.status(204).send();
