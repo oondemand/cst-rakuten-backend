@@ -2,6 +2,7 @@ const sgMail = require("@sendgrid/mail");
 const { format } = require("date-fns");
 const Usuario = require("../models/Usuario");
 const Sistema = require("../models/Sistema");
+const { conviteTemplate } = require("../constants/template");
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
@@ -246,11 +247,6 @@ const importarComissõesDetalhes = async ({ usuario, detalhes }) => {
 
 const emailErroIntegracaoOmie = async ({ usuario, error }) => {
   try {
-    const emailFrom = {
-      email: "fabio@oondemand.com.br",
-      nome: "OonDemand",
-    };
-
     const emailTo = {
       email: usuario.email,
       nome: usuario.nome,
@@ -305,14 +301,12 @@ const emailLinkCadastroUsuarioPrestador = async ({ email, nome, url }) => {
 
     const assunto = "Acesso Liberado";
 
-    const corpo = `<h1>Olá, ${nome}!</h1>
-    <p>Segue o link para acessar o seu app publisher:</p>
-    <a href="${url}">Acessar app publisher</a>`;
+    const corpo = await conviteTemplate({ url });
 
     return await enviarEmail(emailTo, assunto, corpo);
   } catch (error) {
-    // console.error("Erro ao enviar e-mail de serviços exportados:", error);
-    throw new Error("Erro ao enviar e-mail de serviços exportados:");
+    // console.log("[ERRO AO ENVIAR CONVITE]", error);
+    throw error;
   }
 };
 

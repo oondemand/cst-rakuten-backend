@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const YAML = require("yamljs");
+const fs = require("fs");
 
 const path = require("node:path");
 const multer = require("multer");
@@ -35,6 +36,17 @@ app.use("/open-api", (req, res) => {
 });
 
 app.use("/auth", require("./routers/authRouter"));
+
+app.get("/image/:filename", (req, res) => {
+  const filename = req.params.filename;
+  const imagePath = path.join(__dirname, "assets/images", filename);
+
+  if (fs.existsSync(imagePath)) {
+    res.sendFile(imagePath);
+  } else {
+    res.status(404).send("Imagem não encontrada");
+  }
+});
 
 // **Middleware de autenticação** - Aplica-se apenas às rotas que necessitam de proteção
 app.use(authMiddleware);

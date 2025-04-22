@@ -19,10 +19,8 @@ const obterContaPagarOmie = async (req, res) => {
         .status(404)
         .json({ mensagem: "Ticket com a conta a pagar não encontrado." });
     }
-    // console.log("Ticket encontrado:", ticket);
 
     const baseOmie = await BaseOmie.findOne();
-    // console.log("Base Omie encontrada:", baseOmie);
 
     const { appKey, appSecret } = baseOmie;
     if (!appKey || !appSecret)
@@ -32,7 +30,6 @@ const obterContaPagarOmie = async (req, res) => {
 
     // Consultar a conta a pagar na Omie usando o serviço de consulta
     const contaPagarOmie = await consultar(appKey, appSecret, codigoLancamento);
-    // console.log("Conta a pagar Omie encontrada:", contaPagarOmie);
 
     if (!contaPagarOmie) {
       ticket.status = "revisao";
@@ -76,8 +73,6 @@ const obterContaPagarOmie = async (req, res) => {
 
 const contaPagarWebHook = async (req, res) => {
   try {
-    console.log("--", req.body);
-
     const { event, ping, topic } = req.body;
     if (ping === "omie") return res.status(200).json({ message: "pong" });
 
@@ -164,7 +159,7 @@ const contaPagarWebHook = async (req, res) => {
         codigo_lancamento_omie: event?.codigo_lancamento_omie,
       });
 
-      await Ticket.findOneAndUpdate(
+      const ticket = await Ticket.findOneAndUpdate(
         {
           contaPagarOmie: contaPagar?._id,
         },
@@ -173,8 +168,16 @@ const contaPagarWebHook = async (req, res) => {
           etapa: "aprovacao-fiscal",
           contaPagarOmie: null,
           observacao: "[CONTA A PAGAR REMOVIDA DO OMIE]",
-        }
+        },
+        { new: true }
       );
+
+      if (ticket?.servicos.length > 0) {
+        await Servico.updateMany(
+          { _id: { $in: ticket?.servicos } },
+          { status: "processando" }
+        );
+      }
     }
 
     res.status(200).json({ message: "Webhook recebido. Fatura sendo gerada." });

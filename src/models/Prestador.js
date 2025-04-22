@@ -40,6 +40,7 @@ const prestadorSchema = new mongoose.Schema(
     tipo: { type: String, enum: ["pj", "pf", "ext", ""] },
     documento: {
       type: String,
+      unique: true,
       // validate: {
       //   validator: function (valor) {
       //     if (this.tipo === "ext") {

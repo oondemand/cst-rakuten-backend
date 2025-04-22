@@ -80,6 +80,18 @@ exports.criarPrestador = async (req, res) => {
     const { email, ...rest } = req.body;
     const data = email === "" ? rest : req.body;
 
+    if (req.body?.sid) {
+      const prestador = await Prestador.findOne({
+        sid: req.body.sid,
+      });
+
+      if (prestador) {
+        return res.status(409).json({
+          message: "Já existe um prestador com esse sid registrado",
+        });
+      }
+    }
+
     if (req.body?.sciUnico) {
       const prestador = await Prestador.findOne({
         sciUnico: req.body.sciUnico,
@@ -88,6 +100,18 @@ exports.criarPrestador = async (req, res) => {
       if (prestador) {
         return res.status(409).json({
           message: "Já existe um prestador com esse sciUnico registrado",
+        });
+      }
+    }
+
+    if (req.body?.documento) {
+      const prestador = await Prestador.findOne({
+        documento: req.body.documento,
+      });
+
+      if (prestador) {
+        return res.status(409).json({
+          message: "Já existe um prestador com esse documento registrado",
         });
       }
     }
@@ -175,7 +199,7 @@ exports.listarPrestadores = async (req, res) => {
 
     res.status(200).json(response);
   } catch (error) {
-    console.log("ERROR", error);
+    // console.log("ERROR", error);
     res.status(400).json({ error: "Erro ao listar prestadores" });
   }
 };
@@ -199,6 +223,51 @@ exports.atualizarPrestador = async (req, res) => {
 
     if (!prestador) {
       return res.status(404).json({ message: "Prestador não encontrado" });
+    }
+
+    if (req.body.sid) {
+      const prestadorSid = await Prestador.findOne({
+        sid: req.body.sid,
+      });
+
+      if (
+        prestadorSid &&
+        prestador._id.toString() !== prestadorSid._id.toString()
+      ) {
+        return res.status(409).json({
+          message: "Já existe um prestador com esse sid registrado",
+        });
+      }
+    }
+
+    if (req.body.sciUnico) {
+      const prestadorSciUnico = await Prestador.findOne({
+        sciUnico: req.body.sciUnico,
+      });
+
+      if (
+        prestadorSciUnico &&
+        prestador._id.toString() !== prestadorSciUnico._id.toString()
+      ) {
+        return res.status(409).json({
+          message: "Já existe um prestador com esse sciUnico registrado",
+        });
+      }
+    }
+
+    if (req.body.documento) {
+      const prestadorDocumento = await Prestador.findOne({
+        documento: req.body.documento,
+      });
+
+      if (
+        prestadorDocumento &&
+        prestador._id.toString() !== prestadorDocumento._id.toString()
+      ) {
+        return res.status(409).json({
+          message: "Já existe um prestador com esse documento registrado",
+        });
+      }
     }
 
     if (req?.body?.email && prestador?.usuario) {
@@ -238,6 +307,11 @@ exports.atualizarPrestador = async (req, res) => {
 exports.excluirPrestador = async (req, res) => {
   try {
     const prestador = await Prestador.findByIdAndDelete(req.params.id);
+
+    if (prestador?.usuario) {
+      await Usuario.findByIdAndDelete(prestador?.usuario);
+    }
+
     if (!prestador)
       return res.status(404).json({ error: "Prestador não encontrado" });
     res.status(204).send();
@@ -297,12 +371,12 @@ exports.obterPrestadorPorPis = async (req, res) => {
 
 exports.prestadorWebHook = async (req, res) => {
   try {
-    console.log("--", req.body);
-
     const { event, ping, topic } = req.body;
     if (ping === "omie") return res.status(200).json({ message: "pong" });
 
     if (topic === "ClienteFornecedor.Alterado") {
+      console.log("🟩 Prestador alterado");
+
       const documento = event?.cnpj_cpf
         ? Number(event.cnpj_cpf.replaceAll(".", "").replaceAll("-", ""))
         : null;
@@ -340,7 +414,6 @@ exports.prestadorWebHook = async (req, res) => {
       );
 
       await prestador.save();
-      console.log("Prestador", prestador);
     }
 
     res

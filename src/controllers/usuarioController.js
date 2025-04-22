@@ -210,11 +210,11 @@ exports.obterUsuario = async (req, res) => {
 };
 
 exports.atualizarUsuario = async (req, res) => {
-  const { nome, email, status, permissoes, configuracoes } = req.body;
+  const { nome, email, status, permissoes, configuracoes, tipo } = req.body;
   try {
     const usuario = await Usuario.findByIdAndUpdate(
       req.params.id,
-      { nome, email, status, permissoes, configuracoes },
+      { nome, email, status, permissoes, configuracoes, tipo },
       { new: true }
     );
     if (!usuario)
@@ -456,18 +456,19 @@ exports.enviarConvite = async (req, res) => {
     url.searchParams.append("code", token);
 
     //mostra url para não ter que verificar no email
-    console.log("URL", url.toString());
+    console.log("🟨 [CONVITE ENVIADO] URL ", url.toString());
 
     if (usuario.tipo && usuario.tipo === "prestador") {
       await emailUtils.emailLinkCadastroUsuarioPrestador({
-        email: req.usuario.email,
-        nome: usuario.nome,
+        email: usuario?.email,
+        nome: usuario?.nome,
         url,
       });
     }
 
     res.status(200).json({ message: "Ok" });
   } catch (error) {
+    console.log("[ERRO AO ENVIAR CONVITE]", error);
     res.status(400).json({ message: "Ouve um erro ao enviar convite" });
   }
 };
