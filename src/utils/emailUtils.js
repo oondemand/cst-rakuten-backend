@@ -2,6 +2,7 @@ const sgMail = require("@sendgrid/mail");
 const { format } = require("date-fns");
 const Usuario = require("../models/Usuario");
 const Sistema = require("../models/Sistema");
+const { conviteTemplate } = require("../constants/template");
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
@@ -300,9 +301,7 @@ const emailLinkCadastroUsuarioPrestador = async ({ email, nome, url }) => {
 
     const assunto = "Acesso Liberado";
 
-    const corpo = `<h1>Olá, ${nome}!</h1>
-    <p>Segue o link para acessar o seu app publisher:</p>
-    <a href="${url}">Acessar app publisher</a>`;
+    const corpo = await conviteTemplate({ url });
 
     return await enviarEmail(emailTo, assunto, corpo);
   } catch (error) {
