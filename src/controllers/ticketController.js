@@ -614,7 +614,7 @@ exports.getArchivedTickets = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error);
+    // console.log(error);
 
     res.status(500).json({
       message: "Erro ao buscar tickets arquivados",
@@ -721,7 +721,7 @@ exports.getTicketsPago = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error);
+    // console.log(error);
 
     res.status(500).json({
       message: "Erro ao buscar tickets arquivados",
@@ -794,7 +794,7 @@ exports.removeServico = async (req, res) => {
 
     return res.status(200).json(ticket);
   } catch (error) {
-    console.log(error);
+    // console.log(error);
     return res.status(500).json();
   }
 };

@@ -48,12 +48,10 @@ exports.atualizarSistemaConfig = async (req, res) => {
 
 exports.testeEmail = async (req, res) => {
   try {
-    console.log("BODY:", req.body);
-
     await emailTeste({ email: req.body.email });
     res.status(200).json();
   } catch (error) {
-    console.log(error);
+    console.log("[TESTE EMAIL, ERRO AO ENVIA EMAIL]", error);
 
     res
       .status(500)

@@ -306,7 +306,7 @@ const emailLinkCadastroUsuarioPrestador = async ({ email, nome, url }) => {
 
     return await enviarEmail(emailTo, assunto, corpo);
   } catch (error) {
-    console.log("[ERRO AO ENVIAR CONVITE]", error);
+    // console.log("[ERRO AO ENVIAR CONVITE]", error);
     throw error;
   }
 };

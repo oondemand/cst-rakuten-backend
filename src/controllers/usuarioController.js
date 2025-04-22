@@ -456,7 +456,7 @@ exports.enviarConvite = async (req, res) => {
     url.searchParams.append("code", token);
 
     //mostra url para não ter que verificar no email
-    console.log("URL", url.toString());
+    console.log("🟨 [CONVITE ENVIADO] URL ", url.toString());
 
     if (usuario.tipo && usuario.tipo === "prestador") {
       await emailUtils.emailLinkCadastroUsuarioPrestador({

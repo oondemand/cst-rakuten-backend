@@ -199,7 +199,7 @@ exports.listarPrestadores = async (req, res) => {
 
     res.status(200).json(response);
   } catch (error) {
-    console.log("ERROR", error);
+    // console.log("ERROR", error);
     res.status(400).json({ error: "Erro ao listar prestadores" });
   }
 };
@@ -371,12 +371,12 @@ exports.obterPrestadorPorPis = async (req, res) => {
 
 exports.prestadorWebHook = async (req, res) => {
   try {
-    console.log("--", req.body);
-
     const { event, ping, topic } = req.body;
     if (ping === "omie") return res.status(200).json({ message: "pong" });
 
     if (topic === "ClienteFornecedor.Alterado") {
+      console.log("🟩 Prestador alterado");
+
       const documento = event?.cnpj_cpf
         ? Number(event.cnpj_cpf.replaceAll(".", "").replaceAll("-", ""))
         : null;
@@ -414,7 +414,6 @@ exports.prestadorWebHook = async (req, res) => {
       );
 
       await prestador.save();
-      console.log("Prestador", prestador);
     }
 
     res

@@ -197,7 +197,9 @@ const processarJsonServicos = async ({ json }) => {
         detalhes.novosServicos += 1;
       }
     } catch (error) {
-      console.log("ERROR", error);
+      console.log(
+        `❌ [ERROR AO PROCESSAR LINHA]: ${i + 1} [SID: ${row[1]} - PRESTADOR: ${row[0]}] - \nDETALHES DO ERRO: ${error}\n\n`
+      );
       arquivoDeErro.push(row);
       detalhes.linhasLidasComErro += 1;
       detalhes.errors += `❌ [ERROR AO PROCESSAR LINHA]: ${i + 1} [SID: ${row[1]} - PRESTADOR: ${row[0]}] - \nDETALHES DO ERRO: ${error}\n\n`;
@@ -237,7 +239,7 @@ exports.importarServico = async (req, res) => {
 
     // console.log("[EMAIL ENVIADO PARA]:", req.usuario.email);
   } catch (error) {
-    console.log("ERROR", error);
+    // console.log("ERROR", error);
 
     return res
       .status(500)

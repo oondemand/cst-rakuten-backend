@@ -19,10 +19,8 @@ const obterContaPagarOmie = async (req, res) => {
         .status(404)
         .json({ mensagem: "Ticket com a conta a pagar não encontrado." });
     }
-    // console.log("Ticket encontrado:", ticket);
 
     const baseOmie = await BaseOmie.findOne();
-    // console.log("Base Omie encontrada:", baseOmie);
 
     const { appKey, appSecret } = baseOmie;
     if (!appKey || !appSecret)
@@ -32,7 +30,6 @@ const obterContaPagarOmie = async (req, res) => {
 
     // Consultar a conta a pagar na Omie usando o serviço de consulta
     const contaPagarOmie = await consultar(appKey, appSecret, codigoLancamento);
-    // console.log("Conta a pagar Omie encontrada:", contaPagarOmie);
 
     if (!contaPagarOmie) {
       ticket.status = "revisao";
@@ -76,8 +73,6 @@ const obterContaPagarOmie = async (req, res) => {
 
 const contaPagarWebHook = async (req, res) => {
   try {
-    console.log("--", req.body);
-
     const { event, ping, topic } = req.body;
     if (ping === "omie") return res.status(200).json({ message: "pong" });
 

@@ -40,8 +40,6 @@ const anexarArquivoAoTicket = async ({ arquivo, usuario }) => {
     status: "trabalhando",
   });
 
-  console.log("Prestador", prestador, ticket);
-
   if (!ticket) {
     throw `Erro ao fazer upload de arquivo ${arquivo.originalname} - Não foi encontrado um ticket aberto e com status trabalhando referente ao prestador ${prestador.nome} - sciUnico: ${prestador.sciUnico}`;
   }
@@ -55,7 +53,8 @@ const anexarArquivoAoTicket = async ({ arquivo, usuario }) => {
     buffer: arquivo.buffer,
     tipo: "rpa",
   });
-  await novoArquivoDoTicket.save();
+
+  await novoArquivoDoTicket?.save();
 
   ticket.arquivos.push(novoArquivoDoTicket._id);
 

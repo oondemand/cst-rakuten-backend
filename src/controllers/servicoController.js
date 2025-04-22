@@ -114,12 +114,10 @@ exports.updateServico = async (req, res) => {
     }
 
     if (["pago", "pago-externo", "processando"].includes(servico.status)) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Não é possível atualizar um serviço pago ou em processamento.",
-        });
+      return res.status(400).json({
+        message:
+          "Não é possível atualizar um serviço pago ou em processamento.",
+      });
     }
 
     const servicoAtualizado = await Servico.findByIdAndUpdate(id, updateData, {
@@ -224,7 +222,7 @@ exports.listarServicos = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error);
+    // console.log(error);
     res.status(400).json({ error: "Erro ao listar servicoes" });
   }
 };
@@ -233,8 +231,6 @@ exports.listarServicoPorPrestador = async (req, res) => {
   try {
     const { prestadorId } = req.params;
     const { dataRegistro } = req.query;
-
-    console.log("Data registro ->", dataRegistro, typeof dataRegistro);
 
     const servicos = await Servico.find({
       prestador: prestadorId,
