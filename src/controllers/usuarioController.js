@@ -210,11 +210,11 @@ exports.obterUsuario = async (req, res) => {
 };
 
 exports.atualizarUsuario = async (req, res) => {
-  const { nome, email, status, permissoes, configuracoes } = req.body;
+  const { nome, email, status, permissoes, configuracoes, tipo } = req.body;
   try {
     const usuario = await Usuario.findByIdAndUpdate(
       req.params.id,
-      { nome, email, status, permissoes, configuracoes },
+      { nome, email, status, permissoes, configuracoes, tipo },
       { new: true }
     );
     if (!usuario)
