@@ -39,7 +39,7 @@ app.use("/auth", require("./routers/authRouter"));
 
 app.get("/image/:filename", (req, res) => {
   const filename = req.params.filename;
-  const imagePath = path.join(__dirname, "../assets/images", filename);
+  const imagePath = path.join(__dirname, "assets/images", filename);
 
   if (fs.existsSync(imagePath)) {
     res.sendFile(imagePath);
