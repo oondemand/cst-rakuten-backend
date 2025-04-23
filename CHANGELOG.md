@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.4 (2025-04-23)
+
+## [1.5.3](https://github.com/oondemand/cst-rakuten-backend/compare/1.5.2...1.5.3) (2025-04-23)
+
 ## 1.5.2 (2025-04-22)
 
 ## 1.5.1 (2025-04-22)
