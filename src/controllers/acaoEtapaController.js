@@ -202,7 +202,7 @@ exports.exportarServicos = async (req, res) => {
               "ddMMyyyy"
             ),
             dataDeRealizacao: format(new Date(), "ddMMyyyy"),
-            tipoDeDocumento: 1, // numero do exemplo
+            tipoDeDocumento: 1,  // numero do exemplo
             valor: valorTotalDoTicket.toString().replace(".", ","),
           }).concat("\n\n");
 
