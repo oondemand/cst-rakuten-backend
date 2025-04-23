@@ -31,11 +31,8 @@ exports.conviteTemplate = async ({ url }) => {
         }
         .header-image {
             width: 100%;
-            /* Faz a imagem ocupar 100% da largura do container */
             height: auto;
-            /* Mantém a proporção da imagem */
             display: block;
-            /* Remove espaços extras ao redor da imagem */
         }
         .content {
             padding: 20px;
