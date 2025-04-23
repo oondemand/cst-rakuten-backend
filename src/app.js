@@ -9,7 +9,6 @@ const fs = require("fs");
 const path = require("node:path");
 const multer = require("multer");
 
-// Carregar variáveis de ambiente
 dotenv.config();
 
 const authMiddleware = require("./middlewares/authMiddleware");
