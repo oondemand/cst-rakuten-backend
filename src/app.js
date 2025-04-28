@@ -63,6 +63,7 @@ app.use("/etapas", require("./routers/etapaRouter"));
 app.use("/logs", require("./routers/logRouter"));
 app.use("/prestadores", require("./routers/prestadorRouter"));
 app.use("/servicos", require("./routers/servicoRouter"));
+app.use("/documentos-fiscais", require("./routers/documentoFiscalRouter"));
 app.use("/acoes-etapas", require("./routers/acaoEtapaRouter"));
 app.use("/registros", require("./routers/controleAlteracao"));
 app.use("/listas", require("./routers/listaRouter"));
