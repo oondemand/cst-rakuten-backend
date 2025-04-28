@@ -25,6 +25,7 @@ const sistemaSchema = new mongoose.Schema(
   {
     sci: sciSchema,
     omie: omieSchema,
+    sendgrid_api_key: { type: String },
     remetente: { type: { nome: String, email: String } },
     data_corte_app_publisher: { type: Date },
   },

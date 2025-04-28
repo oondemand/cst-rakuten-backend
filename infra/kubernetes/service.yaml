@@ -4,7 +4,7 @@ metadata:
   name: cst-rakuten-backend-service
   namespace: rakuten
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: cst-rakuten-backend
   ports:
