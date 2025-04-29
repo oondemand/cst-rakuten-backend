@@ -1,8 +1,11 @@
 const Prestador = require("../../models/Prestador");
 const Ticket = require("../../models/Ticket");
+const Arquivo = require("../../models/Arquivo");
+
 const DocumentoFiscal = require("../../models/DocumentoFiscal");
 
 const filtersUtils = require("../../utils/filter");
+const { criarNomePersonalizado } = require("../../utils/formatters");
 
 exports.createDocumentoFiscal = async (req, res) => {
   try {
@@ -134,6 +137,7 @@ exports.listarDocumentoFiscal = async (req, res) => {
     const [documentosFiscais, totalDedocumentosFiscais] = await Promise.all([
       DocumentoFiscal.find(queryResult)
         .populate("prestador", "sid nome documento tipo")
+        .populate("arquivo", "nomeOriginal mimetype size")
         .skip(skip)
         .limit(limite)
         .sort(sorting),
@@ -162,6 +166,7 @@ exports.listarDocumentoFiscalPorPrestador = async (req, res) => {
     const documentosFiscais = await DocumentoFiscal.find({
       prestador: prestadorId,
       statusValidacao: "aprovado",
+      status: { $nin: ["processando", "pago"] },
     }).populate("prestador", "sid nome documento");
 
     res.status(200).json(documentosFiscais);
@@ -194,23 +199,52 @@ exports.excluirDocumentoFiscal = async (req, res) => {
   }
 };
 
-// exports.atualizarStatus = async (req, res) => {
-//   const { ids, status } = req.body;
+exports.anexarArquivo = async (req, res) => {
+  try {
+    const arquivo = req.file;
+    const documentoFiscalId = req.params.documentoFiscalId;
 
-//   try {
-//     const result = await Servico.updateMany(
-//       { _id: { $in: ids } },
-//       { $set: { status: status } }
-//     );
+    const documentoFiscal = await DocumentoFiscal.findById(documentoFiscalId);
 
-//     res.status(200).json({
-//       message: "Serviço atualizado com sucesso!",
-//       servicos: result,
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       message: "Erro ao atualizar serviço",
-//       detalhes: error.message,
-//     });
-//   }
-// };
+    const novoArquivo = new Arquivo({
+      nome: criarNomePersonalizado({ nomeOriginal: arquivo.originalname }),
+      nomeOriginal: arquivo.originalname,
+      mimetype: arquivo.mimetype,
+      size: arquivo.size,
+      buffer: arquivo.buffer,
+      tipo: "generico",
+    });
+
+    await novoArquivo?.save();
+
+    documentoFiscal.arquivo = novoArquivo._id;
+    await documentoFiscal.save();
+
+    return res.status(200).json(novoArquivo);
+  } catch (error) {
+    console.log("Erro ao anexar arquivo:", error);
+    res.status(400).json({ message: "Ouve um erro ao anexar o arquivo" });
+  }
+};
+
+exports.excluirArquivo = async (req, res) => {
+  try {
+    const { id, documentoFiscalId } = req.params;
+
+    const arquivo = await Arquivo.findByIdAndDelete(id);
+
+    const documentoFiscal = await DocumentoFiscal.findByIdAndUpdate(
+      documentoFiscalId,
+      { $unset: { arquivo: id } }
+    );
+
+    res.status(200).json(arquivo);
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      message: "Erro ao deletar arquivo do ticket",
+      error: error.message,
+    });
+  }
+};

@@ -1,5 +1,6 @@
 const Ticket = require("../models/Ticket");
 const Servico = require("../models/Servico");
+const DocumentoFiscal = require("../models/DocumentoFiscal");
 
 const BaseOmie = require("../models/BaseOmie");
 const { consultar } = require("../services/omie/contaPagarService");
@@ -119,6 +120,13 @@ const contaPagarWebHook = async (req, res) => {
           { status: "pago" }
         );
       }
+
+      if (ticket?.documentosFiscais.length > 0) {
+        await DocumentoFiscal.updateMany(
+          { _id: { $in: ticket?.documentosFiscais } },
+          { status: "pago" }
+        );
+      }
     }
 
     if (topic === "Financas.ContaPagar.BaixaCancelada") {
@@ -150,6 +158,13 @@ const contaPagarWebHook = async (req, res) => {
           { status: "processando" }
         );
       }
+
+      if (ticket?.documentosFiscais.length > 0) {
+        await DocumentoFiscal.updateMany(
+          { _id: { $in: ticket?.documentosFiscais } },
+          { status: "processando" }
+        );
+      }
     }
 
     if (topic === "Financas.ContaPagar.Excluido") {
@@ -175,6 +190,13 @@ const contaPagarWebHook = async (req, res) => {
       if (ticket?.servicos.length > 0) {
         await Servico.updateMany(
           { _id: { $in: ticket?.servicos } },
+          { status: "processando" }
+        );
+      }
+
+      if (ticket?.documentosFiscais.length > 0) {
+        await DocumentoFiscal.updateMany(
+          { _id: { $in: ticket?.documentosFiscais } },
           { status: "processando" }
         );
       }

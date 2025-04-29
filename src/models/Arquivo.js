@@ -8,11 +8,6 @@ const ArquivoSchema = new mongoose.Schema(
     mimetype: { type: String, required: true },
     size: { type: Number, required: true },
     buffer: { type: Buffer },
-    ticket: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Ticket",
-      required: true,
-    },
   },
   { timestamps: true }
 );
