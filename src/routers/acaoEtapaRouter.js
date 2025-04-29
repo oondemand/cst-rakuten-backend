@@ -4,6 +4,9 @@ const multer = require("multer");
 const acaoEtapaController = require("../controllers/acaoEtapaController");
 const { importarServico } = require("../controllers/importacao/servico");
 const { importarPrestador } = require("../controllers/importacao/prestador");
+const {
+  importarDocumentoFiscal,
+} = require("../controllers/importacao/documentosFiscais");
 
 // Configuração do armazenamento (aqui, salvando no disco)
 const storage = multer.diskStorage({
@@ -69,6 +72,12 @@ router.post("/exportar-prestadores", acaoEtapaController.exportarPrestadores);
 
 router.post("/importar-servicos", upload.array("file"), importarServico);
 router.post("/importar-prestadores", upload.array("file"), importarPrestador);
+
+router.post(
+  "/importar-documentos-fiscais",
+  upload.array("file"),
+  importarDocumentoFiscal
+);
 
 router.post(
   "/importar-rpas",

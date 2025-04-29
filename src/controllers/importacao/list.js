@@ -8,7 +8,7 @@ exports.listarImportacoes = async (req, res) => {
     const limite = parseInt(pageSize) || 10;
     const skip = page * limite;
 
-    if (!["prestador", "servico", "rpa"].includes(tipo)) {
+    if (!["prestador", "servico", "rpa", "documento-fiscal"].includes(tipo)) {
       return res.status(400).json({ message: "Tipo não existente" });
     }
 
