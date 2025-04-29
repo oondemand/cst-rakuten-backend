@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.0 (2025-04-29)
+
+### Features
+
+* implement file attachment and deletion for Documento Fiscal with validation ([9c962fd](https://github.com/oondemand/cst-rakuten-backend/commit/9c962fd18e5386b14e0395a093814caaa829aeed))
+
 ## 1.5.6 (2025-04-23)
 
 ## 1.5.5 (2025-04-23)
