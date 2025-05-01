@@ -1,6 +1,6 @@
 {
   "name": "cst-rakuten-backend",
-  "version": "1.5.8",
+  "version": "1.5.9",
   "description": "Backend para a Central de Serviços Integrada ao Omie",
   "main": "src/server.js",
   "scripts": {
