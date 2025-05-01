@@ -9,7 +9,10 @@ const ArquivoSchema = new mongoose.Schema({
 
 const ImportacaoSchema = new mongoose.Schema(
   {
-    tipo: { type: String, enum: ["prestador", "servico", "rpa"] },
+    tipo: {
+      type: String,
+      enum: ["prestador", "servico", "rpa", "documento-fiscal"],
+    },
     arquivoOriginal: ArquivoSchema,
     arquivoErro: { type: Buffer },
     arquivoLog: { type: Buffer },

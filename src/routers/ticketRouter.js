@@ -63,6 +63,16 @@ router.post(
   ticketController.addServico
 );
 
+router.post(
+  "/adicionar-documento-fiscal/:ticketId/:documentoFiscalId/",
+  ticketController.addDocumentoFiscal
+);
+
 router.post("/remover-servico/:servicoId", ticketController.removeServico);
+
+router.post(
+  "/remover-documento-fiscal/:documentoFiscalId",
+  ticketController.removeDocumentoFiscal
+);
 
 module.exports = router;

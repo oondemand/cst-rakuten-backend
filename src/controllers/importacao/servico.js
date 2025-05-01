@@ -3,8 +3,6 @@ const Prestador = require("../../models/Prestador");
 const Usuario = require("../../models/Usuario");
 const Servico = require("../../models/Servico");
 const Lista = require("../../models/Lista");
-// const { CNPJouCPF } = require("../../utils/formatters");
-const emailUtils = require("../../utils/emailUtils");
 
 const {
   arrayToExcelBuffer,

@@ -10,6 +10,9 @@ const TicketSchema = new mongoose.Schema(
     data: { type: Date, default: Date.now },
     prestador: { type: mongoose.Schema.Types.ObjectId, ref: "Prestador" },
     servicos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Servico" }],
+    documentosFiscais: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "DocumentoFiscal" },
+    ],
     contaPagarOmie: { type: Schema.Types.ObjectId, ref: "ContaPagar" },
     arquivos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Arquivo" }],
     dataRegistro: { type: Date },
