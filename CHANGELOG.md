@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.0 (2025-05-02)
+
+### Features
+
+* adicionar suporte para documentos fiscais na busca de tickets e atualizar status de documento fiscal ([62422ba](https://github.com/oondemand/cst-rakuten-backend/commit/62422ba4b31750953087c605a96a7ec6233de8ff))
+
 ## 1.6.0 (2025-04-29)
 
 ### Features
