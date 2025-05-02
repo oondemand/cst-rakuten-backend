@@ -236,7 +236,7 @@ exports.listarDocumentoFiscalPorUsuarioPrestador = async (req, res) => {
 
     const documentosFiscais = await DocumentoFiscal.find({
       prestador: prestador,
-      statusValidacao: "aprovado",
+      // statusValidacao: "aprovado",
       // status: { $nin: ["processando", "pago"] },
     }).populate("prestador", "sid nome documento");
 

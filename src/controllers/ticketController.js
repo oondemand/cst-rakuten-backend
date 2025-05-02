@@ -170,7 +170,8 @@ exports.getTicketsByUsuarioPrestador = async (req, res) => {
       etapa: { $ne: "requisicao" },
     })
       .populate("servicos")
-      .populate("arquivos", "nomeOriginal size mimetype tipo");
+      .populate("arquivos", "nomeOriginal size mimetype tipo")
+      .populate("documentosFiscais");
 
     // Busca serviços abertos não vinculados a tickets
     const servicosAbertos = await Servico.find({
@@ -832,7 +833,7 @@ exports.removeDocumentoFiscal = async (req, res) => {
     const { documentoFiscalId } = req.params;
     await DocumentoFiscal.findByIdAndUpdate(
       documentoFiscalId,
-      { status: "pendente" },
+      { statusValidacao: "pendente", status: "aberto" },
       { new: true }
     );
 
