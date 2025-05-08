@@ -385,12 +385,10 @@ const cadastrarContaAPagar = async (baseOmie, codigoFornecedor, ticket) => {
       dataVencimento: add(dataDaEmissão, { hours: 24 }), // 24 horas a mais
       observacao,
       valor: valorTotalDaNota,
-      id_conta_corrente:
-        config?.omie?.id_conta_corrente ?? process.env.ID_CONTA_CORRENTE,
+      id_conta_corrente: config?.omie?.id_conta_corrente,
       dataRegistro: ticket?.servicos[0]?.dataRegistro,
       notaFiscal: notaFiscalOmie?.replace("/", ""),
-      codigo_categoria:
-        config?.omie?.codigo_categoria ?? process.env.CODIGO_CATEGORIA,
+      codigo_categoria: config?.omie?.codigo_categoria,
     });
 
     const contaPagarOmie = await contaPagarService.incluir(

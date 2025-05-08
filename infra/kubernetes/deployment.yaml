@@ -50,29 +50,9 @@ spec:
               value: "${API_OMIE}"
             - name: JWT_SECRET
               value: "${JWT_SECRET}"
-            - name: SENDGRID_REMETENTE
-              value: "${SENDGRID_REMETENTE}"
-            - name: SENDGRID_API_KEY
-              value: "${SENDGRID_API_KEY}"
             - name: BASE_URL_CST
               value: "${BASE_URL_CST}"
             - name: BASE_URL_APP_PUBLISHER
               value: "${BASE_URL_APP_PUBLISHER}"
-            - name: SCI_CODIGO_EMPRESA
-              value: "${SCI_CODIGO_EMPRESA}"
-            - name: SCI_CODIGO_CENTRO_CUSTO
-              value: "${SCI_CODIGO_CENTRO_CUSTO}"
-            - name: SCI_PORCENTAGEM_ISS
-              value: "${SCI_PORCENTAGEM_ISS}"
-            - name: SCI_DIAS_PAGAMENTO
-              value: "${SCI_DIAS_PAGAMENTO}"
-            - name: SCI_CBO
-              value: "${SCI_CBO}"
-            - name: SCI_CFIP
-              value: "${SCI_CFIP}"
-            - name: SCI_ESOCIAL
-              value: "${SCI_ESOCIAL}"
-            - name: ID_CONTA_CORRENTE
-              value: "${ID_CONTA_CORRENTE}"
             - name: CODIGO_CATEGORIA
               value: "${CODIGO_CATEGORIA}"

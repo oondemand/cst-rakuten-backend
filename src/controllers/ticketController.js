@@ -117,9 +117,15 @@ exports.getAllTickets = async (req, res) => {
     })
       .populate("prestador")
       .populate("servicos")
-      .populate("documentosFiscais")
       .populate("arquivos", "nomeOriginal size mimetype tipo")
-      .populate("contaPagarOmie");
+      .populate("contaPagarOmie")
+      .populate({
+        path: "documentosFiscais",
+        populate: {
+          path: "arquivo",
+          select: "nomeOriginal",
+        },
+      });
 
     res.status(200).json(tickets);
   } catch (error) {
@@ -704,6 +710,13 @@ exports.getTicketsPago = async (req, res) => {
       Ticket.find(queryResult)
         .populate("prestador", "sid nome documento")
         .populate("arquivos", "nomeOriginal size mimetype tipo")
+        .populate({
+          path: "documentosFiscais",
+          populate: {
+            path: "arquivo",
+            select: "nomeOriginal size mimetype tipo",
+          },
+        })
         .populate({
           path: "servicos",
           options: { virtuals: true },

@@ -185,20 +185,11 @@ exports.exportarServicos = async (req, res) => {
         if (valorTotalDoTicket > 0) {
           documento += criarServicoParaExportacao({
             codAutonomo: prestador.sciUnico,
-            codCentroDeCustos:
-              config?.sci?.codigo_centro_custo ??
-              process.env.SCI_CODIGO_CENTRO_CUSTO,
-            codEmpresa:
-              config?.sci?.codigo_empresa ?? process.env.SCI_CODIGO_EMPRESA,
-            porcentualIss:
-              config?.sci?.porcentagem_iss ?? process.env.SCI_PORCENTAGEM_ISS,
+            codCentroDeCustos: config?.sci?.codigo_centro_custo,
+            codEmpresa: config?.sci?.codigo_empresa,
+            porcentualIss: config?.sci?.porcentagem_iss,
             dataDePagamento: format(
-              addDays(
-                new Date(),
-                Number(
-                  config?.sci?.dias_pagamento ?? process.env.SCI_DIAS_PAGAMENTO
-                )
-              ),
+              addDays(new Date(), config?.sci?.dias_pagamento ?? 0),
               "ddMMyyyy"
             ),
             dataDeRealizacao: format(new Date(), "ddMMyyyy"),
@@ -281,9 +272,9 @@ exports.exportarPrestadores = async (req, res) => {
             dataNascimento instanceof Date
               ? format(dataNascimento, "dd/MM/yyyy")
               : "",
-          CBO: config?.sci?.cbo ?? process.env.SCI_CBO,
-          CFIP: config?.sci?.cfip ?? process.env.SCI_CFIP,
-          eSocial: config?.sci?.e_social ?? process.env.SCI_ESOCIAL,
+          CBO: config?.sci?.cbo,
+          CFIP: config?.sci?.cfip,
+          eSocial: config?.sci?.e_social,
         }).concat("\n\n");
 
         prestadoresJaExportados.add(prestador._id);
