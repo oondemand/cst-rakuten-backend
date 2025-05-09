@@ -1,6 +1,7 @@
 const Prestador = require("../models/Prestador");
 const Ticket = require("../models/Ticket");
 const Arquivo = require("../models/Arquivo");
+const DocumentoFiscal = require("../models/DocumentoFiscal");
 
 const { addDays, format } = require("date-fns");
 
@@ -76,6 +77,79 @@ const anexarArquivoAoTicket = async ({ arquivo, usuario }) => {
   return ticket;
 };
 
+const criarDocumentoFiscal = async ({ arquivo, usuario }) => {
+  const filename = arquivo.originalname.replace(".pdf", "").split("_");
+
+  const sciUnico = filename[2];
+  const numero = filename[1];
+
+  if (!sciUnico || isNaN(sciUnico) || !numero) {
+    throw `Erro ao fazer upload de arquivo ${arquivo.originalname}; sciUnico não encontrado no nome do arquivo ou não é um número válido`;
+  }
+
+  const prestador = await Prestador.findOne({ sciUnico: sciUnico });
+
+  if (!prestador) {
+    throw `Erro ao fazer upload de arquivo ${arquivo.originalname} - Não foi encontrado um prestador com sciUnico: ${sciUnico}`;
+  }
+
+  const ticket = await Ticket.findOne({
+    etapa: "geracao-rpa",
+    prestador: prestador?._id,
+    status: "trabalhando",
+  }).populate("servicos");
+
+  if (!ticket) {
+    throw `Erro ao fazer upload de arquivo ${arquivo.originalname} - Não foi encontrado um ticket aberto e com status trabalhando referente ao prestador ${prestador.nome} - sciUnico: ${prestador.sciUnico}`;
+  }
+
+  const valorTotal = ticket?.servicos?.reduce((acc, curr) => {
+    acc = acc + curr.valor;
+    return acc;
+  }, 0);
+
+  const novoArquivoDoTicket = new Arquivo({
+    nome: criarNomePersonalizado({ nomeOriginal: arquivo.originalname }),
+    nomeOriginal: arquivo.originalname,
+    mimetype: arquivo.mimetype,
+    size: arquivo.size,
+    ticket: ticket._id,
+    buffer: arquivo.buffer,
+    tipo: "documento-fiscal",
+  });
+
+  await novoArquivoDoTicket?.save();
+
+  const documentoFiscal = new DocumentoFiscal({
+    numero,
+    prestador: prestador._id,
+    arquivo: novoArquivoDoTicket._id,
+    valor: valorTotal,
+    tipoDocumentoFiscal: "rpa",
+    status: "processando",
+  });
+
+  await documentoFiscal.save();
+  ticket.documentosFiscais.push(documentoFiscal._id);
+
+  ticket.etapa = "aprovacao-fiscal";
+  ticket.status = "aguardando-inicio";
+
+  await ticket.save();
+
+  ControleAlteracaoService.registrarAlteracao({
+    acao: "alterar",
+    dataHora: new Date(),
+    idRegistroAlterado: ticket._id,
+    origem: "integracao-sci",
+    dadosAtualizados: ticket,
+    tipoRegistroAlterado: "ticket",
+    usuario: usuario._id,
+  });
+
+  return ticket;
+};
+
 const processarArquivos = async ({ arquivos, usuario }) => {
   const detalhes = {
     totalDeArquivosEncontrados: arquivos.length,
@@ -87,7 +161,8 @@ const processarArquivos = async ({ arquivos, usuario }) => {
 
   for (const arquivo of arquivos) {
     try {
-      await anexarArquivoAoTicket({ arquivo, usuario });
+      // await anexarArquivoAoTicket({ arquivo, usuario });
+      await criarDocumentoFiscal({ arquivo, usuario });
     } catch (error) {
       arquivoDeErro.push(arquivo);
       detalhes.arquivosComErro += 1;
