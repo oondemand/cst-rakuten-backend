@@ -6,6 +6,8 @@ const {
 } = require("../services/omie/sincronizarPrestador");
 const filtersUtils = require("../utils/filter");
 const Usuario = require("../models/Usuario");
+const Servico = require("../models/Servico");
+const DocumentoFiscal = require("../models/DocumentoFiscal");
 
 // Método para obter prestador pelo idUsuario
 exports.obterPrestadorPorIdUsuario = async (req, res) => {
@@ -306,6 +308,21 @@ exports.atualizarPrestador = async (req, res) => {
 // Excluir um Prestador
 exports.excluirPrestador = async (req, res) => {
   try {
+    const associacoes = [
+      { model: Ticket, nome: "ticket" },
+      { model: Servico, nome: "serviço" },
+      { model: DocumentoFiscal, nome: "documento fiscal" },
+    ];
+
+    for (const { model, nome } of associacoes) {
+      const associacao = await model.findOne({ prestador: req.params.id });
+      if (associacao) {
+        return res.status(400).json({
+          message: `Não foi possível excluir o prestador, pois ele está associado a um ${nome}.`,
+        });
+      }
+    }
+
     const prestador = await Prestador.findByIdAndDelete(req.params.id);
 
     if (prestador?.usuario) {

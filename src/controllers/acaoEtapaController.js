@@ -127,6 +127,7 @@ const criarDocumentoFiscal = async ({ arquivo, usuario }) => {
     valor: valorTotal,
     tipoDocumentoFiscal: "rpa",
     status: "processando",
+    statusValidacao: "aprovado",
   });
 
   await documentoFiscal.save();
