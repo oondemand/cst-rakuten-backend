@@ -77,6 +77,18 @@ const converterLinhaEmPrestador = async ({ row }) => {
 };
 
 const criarNovoPrestador = async ({ prestador }) => {
+  if (prestador?.email) {
+    const prestadorExistente = await Prestador.findOne({
+      email: prestador?.email,
+    });
+
+    if (prestadorExistente) {
+      throw new Error(
+        `Prestador com o mesmo email já cadastrado: ${prestador?.email}`
+      );
+    }
+  }
+
   const novoPrestador = new Prestador({
     ...prestador,
     status: "ativo",
@@ -88,28 +100,47 @@ const criarNovoPrestador = async ({ prestador }) => {
 
 const buscarPrestadorPorSidEAtualizar = async ({ sid, prestador }) => {
   if (!sid || !prestador) return null;
+
+  const prestadorExistente = await Prestador.findOne({ sid: sid });
+  if (!prestadorExistente) return null;
+
+  if (prestador?.email) {
+    const prestadorPorEmail = await Prestador.findOne({
+      email: prestador?.email,
+    });
+
+    if (
+      prestadorPorEmail &&
+      prestadorPorEmail?._id?.toString() !== prestadorExistente._id.toString()
+    ) {
+      throw new Error(
+        `Prestador com o mesmo email já cadastrado: ${prestador?.email}`
+      );
+    }
+
+    if (prestadorExistente?.usuario) {
+      const usuario = await Usuario.findOne({ email: prestador?.email });
+
+      if (usuario) {
+        if (
+          usuario?._id?.toString() !== prestadorExistente.usuario.toString()
+        ) {
+          throw new Error(
+            `Usuário prestador com o mesmo email já cadastrado: ${prestador?.email}`
+          );
+        }
+
+        usuario.email = prestador?.email;
+        await usuario.save();
+      }
+    }
+  }
+
   const prestadorAtualizado = await Prestador.findOneAndUpdate(
     { sid: sid },
     prestador
   );
   return prestadorAtualizado;
-};
-
-const criarNovoUsuario = async ({ nome, email }) => {
-  const usuario = await Usuario.findOne({ email });
-
-  if (!usuario) {
-    const novoUsuario = new Usuario({
-      email: email,
-      nome: nome,
-      tipo: "prestador",
-      senha: "123456",
-    });
-
-    return await novoUsuario.save();
-  }
-
-  return usuario;
 };
 
 const processarJsonPrestadores = async ({ json }) => {
@@ -146,17 +177,8 @@ const processarJsonPrestadores = async ({ json }) => {
         detalhes.novosPrestadores += 1;
       }
 
-      if (prestador.email && !prestador.usuario) {
-        const usuario = await criarNovoUsuario({
-          email: prestador?.email,
-          nome: prestador?.nome,
-        });
-
-        prestador.usuario = usuario._id;
-        await prestador.save();
-      }
+      await prestador.save();
     } catch (error) {
-      console.log("ERROR", error);
       arquivoDeErro.push(row);
       detalhes.linhasLidasComErro += 1;
       detalhes.errors += `❌ [ERROR AO PROCESSAR LINHA]: ${i + 1} [SID: ${row[3]} - PRESTADOR: ${row[2]}] - \nDETALHES DO ERRO: ${error}\n\n`;
