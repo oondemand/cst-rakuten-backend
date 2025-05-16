@@ -11,6 +11,16 @@ const createLista = async (req, res) => {
   }
 };
 
+const deletarLista = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Lista.findByIdAndDelete(id);
+    res.status(204).json({ message: "Lista deletada com sucesso" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 const addItem = async (req, res) => {
   const { id } = req.params;
   const { valor } = req.body;
@@ -110,4 +120,5 @@ module.exports = {
   getListas,
   updateItem,
   getListaPorCodigo,
+  deletarLista,
 };

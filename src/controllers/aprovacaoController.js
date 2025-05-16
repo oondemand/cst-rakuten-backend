@@ -23,7 +23,13 @@ const aprovar = async (req, res) => {
     const ticket = await Ticket.findById(ticketId)
       .populate("arquivos")
       .populate("servicos")
-      .populate("prestador");
+      .populate("prestador")
+      .populate({
+        path: "documentosFiscais",
+        populate: {
+          path: "arquivo",
+        },
+      });
 
     if (!ticket) {
       return res
@@ -215,6 +221,12 @@ const gerarContaPagar = async ({ ticket, usuario }) => {
           tabela: "conta-pagar",
         });
 
+        await uploadDocumentosFiscaisOmie({
+          ticket,
+          nId: conta.codigo_lancamento_omie,
+          tabela: "conta-pagar",
+        });
+
         ticket.contaPagarOmie = conta?._id;
       } catch (error) {
         // caso tenha algum erro no upload de arquivos, tenta remover a conta
@@ -385,12 +397,10 @@ const cadastrarContaAPagar = async (baseOmie, codigoFornecedor, ticket) => {
       dataVencimento: add(dataDaEmissão, { hours: 24 }), // 24 horas a mais
       observacao,
       valor: valorTotalDaNota,
-      id_conta_corrente:
-        config?.omie?.id_conta_corrente ?? process.env.ID_CONTA_CORRENTE,
+      id_conta_corrente: config?.omie?.id_conta_corrente,
       dataRegistro: ticket?.servicos[0]?.dataRegistro,
       notaFiscal: notaFiscalOmie?.replace("/", ""),
-      codigo_categoria:
-        config?.omie?.codigo_categoria ?? process.env.CODIGO_CATEGORIA,
+      codigo_categoria: config?.omie?.codigo_categoria,
     });
 
     const contaPagarOmie = await contaPagarService.incluir(
@@ -436,6 +446,31 @@ const uploadDeArquivosOmie = async ({ ticket, nId, tabela }) => {
         tipoArquivo: arquivo.mimetype,
         arquivo: arquivo.buffer,
       });
+    }
+  } catch (error) {
+    // console.log("Erro ao anexar arquivo:", error);
+    throw error;
+  }
+};
+
+const uploadDocumentosFiscaisOmie = async ({ ticket, nId, tabela }) => {
+  if (ticket.documentosFiscais.length === 0) return;
+
+  const baseOmie = await BaseOmie.findOne({ status: "ativo" });
+
+  try {
+    for (const documentoFiscal of ticket?.documentosFiscais) {
+      if (documentoFiscal?.arquivo) {
+        await anexoService.incluir({
+          appKey: baseOmie.appKey,
+          appSecret: baseOmie.appSecret,
+          tabela,
+          nId,
+          nomeArquivo: documentoFiscal?.arquivo?.nomeOriginal,
+          tipoArquivo: documentoFiscal?.arquivo?.mimetype,
+          arquivo: documentoFiscal?.arquivo?.buffer,
+        });
+      }
     }
   } catch (error) {
     // console.log("Erro ao anexar arquivo:", error);

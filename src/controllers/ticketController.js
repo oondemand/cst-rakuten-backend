@@ -117,9 +117,15 @@ exports.getAllTickets = async (req, res) => {
     })
       .populate("prestador")
       .populate("servicos")
-      .populate("documentosFiscais")
       .populate("arquivos", "nomeOriginal size mimetype tipo")
-      .populate("contaPagarOmie");
+      .populate("contaPagarOmie")
+      .populate({
+        path: "documentosFiscais",
+        populate: {
+          path: "arquivo",
+          select: "nomeOriginal",
+        },
+      });
 
     res.status(200).json(tickets);
   } catch (error) {
@@ -170,7 +176,8 @@ exports.getTicketsByUsuarioPrestador = async (req, res) => {
       etapa: { $ne: "requisicao" },
     })
       .populate("servicos")
-      .populate("arquivos", "nomeOriginal size mimetype tipo");
+      .populate("arquivos", "nomeOriginal size mimetype tipo")
+      .populate("documentosFiscais");
 
     // Busca serviços abertos não vinculados a tickets
     const servicosAbertos = await Servico.find({
@@ -704,6 +711,13 @@ exports.getTicketsPago = async (req, res) => {
         .populate("prestador", "sid nome documento")
         .populate("arquivos", "nomeOriginal size mimetype tipo")
         .populate({
+          path: "documentosFiscais",
+          populate: {
+            path: "arquivo",
+            select: "nomeOriginal size mimetype tipo",
+          },
+        })
+        .populate({
           path: "servicos",
           options: { virtuals: true },
         })
@@ -832,7 +846,7 @@ exports.removeDocumentoFiscal = async (req, res) => {
     const { documentoFiscalId } = req.params;
     await DocumentoFiscal.findByIdAndUpdate(
       documentoFiscalId,
-      { status: "pendente" },
+      { statusValidacao: "pendente", status: "aberto" },
       { new: true }
     );
 

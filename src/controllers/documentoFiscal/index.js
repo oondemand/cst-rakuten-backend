@@ -9,16 +9,6 @@ const { criarNomePersonalizado } = require("../../utils/formatters");
 
 exports.createDocumentoFiscal = async (req, res) => {
   try {
-    const documentoFiscalExistente = await DocumentoFiscal.findOne({
-      prestador: req.body.prestador,
-      "competencia.mes": req.body.competencia?.mes,
-      "competencia.ano": req.body.competencia?.ano,
-    });
-
-    if (documentoFiscalExistente) {
-      return res.status(400).json({ message: "Documento fiscal existente" });
-    }
-
     const filteredBody = Object.fromEntries(
       Object.entries(req.body).filter(([_, value]) => value !== "")
     );
@@ -40,6 +30,66 @@ exports.createDocumentoFiscal = async (req, res) => {
       message: "Erro ao criar documento fiscal",
       detalhes: error.message,
     });
+  }
+};
+
+exports.criarDocumentoFiscalPorUsuarioPrestador = async (req, res) => {
+  try {
+    const usuario = req.usuario;
+    const arquivo = req.file;
+
+    if (!arquivo) {
+      return res
+        .status(400)
+        .json({ message: "Arquivo é um campo obrigatório" });
+    }
+
+    const prestador = await Prestador.findOne({
+      usuario: usuario._id,
+    });
+
+    if (!prestador) {
+      return res.status(400).json({ message: "Prestador não encontrado" });
+    }
+
+    const filteredBody = Object.fromEntries(
+      Object.entries(req.body).filter(([_, value]) => value !== "")
+    );
+
+    if (filteredBody?.mes && filteredBody?.ano) {
+      filteredBody.competencia = {
+        mes: Number(filteredBody.mes),
+        ano: Number(filteredBody.ano),
+      };
+    }
+
+    const novoArquivo = new Arquivo({
+      nome: criarNomePersonalizado({ nomeOriginal: arquivo.originalname }),
+      nomeOriginal: arquivo.originalname,
+      mimetype: arquivo.mimetype,
+      size: arquivo.size,
+      buffer: arquivo.buffer,
+      tipo: "documento-fiscal",
+    });
+
+    await novoArquivo.save();
+
+    const novoDocumentoFiscal = new DocumentoFiscal({
+      ...filteredBody,
+      prestador: prestador._id,
+      status: "aberto",
+      arquivo: novoArquivo._id,
+    });
+
+    await novoDocumentoFiscal.save();
+
+    return res.status(201).json({
+      message: "Documento fiscal criado com sucesso!",
+      documentoFiscal: novoDocumentoFiscal,
+    });
+  } catch (e) {
+    console.log(e);
+    return res.status(400).json({ message: "Erro ao criar documento fiscal" });
   }
 };
 
@@ -178,14 +228,37 @@ exports.listarDocumentoFiscalPorPrestador = async (req, res) => {
   }
 };
 
+exports.listarDocumentoFiscalPorUsuarioPrestador = async (req, res) => {
+  try {
+    const prestador = await Prestador.findOne({
+      usuario: req.usuario,
+    });
+
+    const documentosFiscais = await DocumentoFiscal.find({
+      prestador: prestador,
+      // statusValidacao: "aprovado",
+      // status: { $nin: ["processando", "pago"] },
+    }).populate("prestador", "sid nome documento");
+
+    console.log("documentosFiscais", documentosFiscais);
+
+    res.status(200).json(documentosFiscais);
+  } catch (error) {
+    console.error("Erro na listagem:", error);
+    res
+      .status(400)
+      .json({ error: "Falha ao buscar serviços", details: error.message });
+  }
+};
+
 exports.excluirDocumentoFiscal = async (req, res) => {
   try {
     const documentoFiscalId = req.params.id;
 
-    // await Ticket.updateMany(
-    //   { servicos: documentoFiscalId },
-    //   { $pull: { servicos: documentoFiscalId } }
-    // );
+    await Ticket.updateMany(
+      { documentosFiscais: documentoFiscalId },
+      { $pull: { documentosFiscais: documentoFiscalId } }
+    );
 
     const documentoFiscal =
       await DocumentoFiscal.findByIdAndDelete(documentoFiscalId);

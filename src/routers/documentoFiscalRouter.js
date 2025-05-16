@@ -33,10 +33,22 @@ router.get(
   documentoFiscalController.listarDocumentoFiscalPorPrestador
 );
 
+router.get(
+  "/prestador",
+  documentoFiscalController.listarDocumentoFiscalPorUsuarioPrestador
+);
+
 // router.get("/:id", documentoFiscalController.getServicoById);
 router.delete("/:id", documentoFiscalController.excluirDocumentoFiscal);
 
 router.post("/", documentoFiscalController.createDocumentoFiscal);
+
+router.post(
+  "/usuario-prestador",
+  upload.single("file"),
+  documentoFiscalController.criarDocumentoFiscalPorUsuarioPrestador
+);
+
 router.post(
   "/anexar-arquivo/:documentoFiscalId",
   upload.single("file"),

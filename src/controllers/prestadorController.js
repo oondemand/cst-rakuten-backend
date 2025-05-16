@@ -6,6 +6,8 @@ const {
 } = require("../services/omie/sincronizarPrestador");
 const filtersUtils = require("../utils/filter");
 const Usuario = require("../models/Usuario");
+const Servico = require("../models/Servico");
+const DocumentoFiscal = require("../models/DocumentoFiscal");
 
 // Método para obter prestador pelo idUsuario
 exports.obterPrestadorPorIdUsuario = async (req, res) => {
@@ -270,11 +272,35 @@ exports.atualizarPrestador = async (req, res) => {
       }
     }
 
-    if (req?.body?.email && prestador?.usuario) {
-      const usuario = await Usuario.findById(prestador?.usuario);
+    if (req?.body?.email) {
+      const prestadorEmail = await Prestador.findOne({
+        email: req.body.email,
+      });
 
-      usuario.email = req.body?.email;
-      await usuario.save();
+      if (
+        prestadorEmail &&
+        prestadorEmail?._id?.toString() !== prestador._id.toString()
+      ) {
+        return res.status(409).json({
+          message: "Já existe um prestador com esse email registrado",
+        });
+      }
+
+      if (prestador?.usuario) {
+        const usuario = await Usuario.findOne({ email: req.body.email });
+
+        if (usuario) {
+          if (usuario?._id?.toString() !== prestador.usuario.toString()) {
+            return res.status(409).json({
+              message:
+                "Já existe um usuário prestador com esse email registrado",
+            });
+          }
+
+          usuario.email = req.body.email;
+          await usuario.save();
+        }
+      }
     }
 
     const prestadorAtualizado = await Prestador.findByIdAndUpdate(
@@ -306,6 +332,21 @@ exports.atualizarPrestador = async (req, res) => {
 // Excluir um Prestador
 exports.excluirPrestador = async (req, res) => {
   try {
+    const associacoes = [
+      { model: Ticket, nome: "ticket" },
+      { model: Servico, nome: "serviço" },
+      { model: DocumentoFiscal, nome: "documento fiscal" },
+    ];
+
+    for (const { model, nome } of associacoes) {
+      const associacao = await model.findOne({ prestador: req.params.id });
+      if (associacao) {
+        return res.status(400).json({
+          message: `Não foi possível excluir o prestador, pois ele está associado a um ${nome}.`,
+        });
+      }
+    }
+
     const prestador = await Prestador.findByIdAndDelete(req.params.id);
 
     if (prestador?.usuario) {
@@ -395,7 +436,7 @@ exports.prestadorWebHook = async (req, res) => {
           agencia: event?.dadosBancarios?.agencia ?? "",
           conta: event?.dadosBancarios?.conta_corrente ?? "",
         },
-        email: event?.email ?? "",
+        email: event?.email,
         endereco: {
           cep: event?.cep ?? "",
           rua: event?.endereco ?? "",
@@ -406,14 +447,65 @@ exports.prestadorWebHook = async (req, res) => {
         },
       };
 
-      const prestador = await Prestador.findOneAndUpdate(
+      const prestador = await Prestador.findOne({
+        $or: [{ documento }, { email: event?.email }],
+      });
+
+      if (documento) {
+        const prestadorDocumento = await Prestador.findOne({
+          documento: documento,
+        });
+
+        if (
+          prestadorDocumento &&
+          prestador._id.toString() !== prestadorDocumento._id.toString()
+        ) {
+          return res.status(409).json({
+            message: "Já existe um prestador com esse documento registrado",
+          });
+        }
+      }
+
+      if (prestadorOmie?.email) {
+        const prestadorEmail = await Prestador.findOne({
+          email: prestadorOmie?.email,
+        });
+
+        if (
+          prestadorEmail &&
+          prestadorEmail?._id?.toString() !== prestador._id.toString()
+        ) {
+          console.log("Já existe um prestador com esse email registrado");
+          return res.status(409).json({
+            message: "Já existe um prestador com esse email registrado",
+          });
+        }
+
+        if (prestador?.usuario) {
+          const usuario = await Usuario.findOne({
+            email: prestadorOmie?.email,
+          });
+
+          if (usuario) {
+            if (usuario?._id?.toString() !== prestador.usuario.toString()) {
+              return res.status(409).json({
+                message:
+                  "Já existe um usuário prestador com esse email registrado",
+              });
+            }
+
+            usuario.email = prestadorOmie?.email;
+            await usuario.save();
+          }
+        }
+      }
+
+      await Prestador.findOneAndUpdate(
         {
           $or: [{ documento }, { email: event.email }],
         },
         { ...prestadorOmie }
       );
-
-      await prestador.save();
     }
 
     res
