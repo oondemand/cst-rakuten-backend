@@ -30,6 +30,11 @@ exports.ticketsPorEtapa = async (req, res) => {
   try {
     const aggregationPipeline = [
       {
+        $match: {
+          status: { $ne: "arquivado" },
+        },
+      },
+      {
         $group: {
           _id: "$etapa",
           count: { $sum: 1 },
@@ -47,7 +52,6 @@ exports.ticketsPorEtapa = async (req, res) => {
     const response = await Ticket.aggregate(aggregationPipeline);
     return res.status(200).json(response);
   } catch (error) {
-    // console.log("Error", error);
     res.status(500).json({ message: "Ouve um erro inesperado" });
   }
 };
