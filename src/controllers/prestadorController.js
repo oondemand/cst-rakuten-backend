@@ -431,6 +431,7 @@ exports.prestadorWebHook = async (req, res) => {
               ? "pf"
               : "pj",
         documento,
+        codigo_cliente_omie: event?.codigo_cliente_omie,
         dadosBancarios: {
           banco: event?.dadosBancarios?.codigo_banco ?? "",
           agencia: event?.dadosBancarios?.agencia ?? "",
