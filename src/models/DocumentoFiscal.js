@@ -64,9 +64,4 @@ const documentoFiscalSchema = new mongoose.Schema(
   }
 );
 
-// documentoFiscalSchema.index(
-//   { prestador: 1, "competencia.mes": 1, "competencia.ano": 1 },
-//   { unique: true }
-// );
-
 module.exports = mongoose.model("DocumentoFiscal", documentoFiscalSchema);

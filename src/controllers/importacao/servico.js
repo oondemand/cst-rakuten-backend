@@ -150,15 +150,10 @@ const processarJsonServicos = async ({ json }) => {
         prestadorId: prestador?._id,
       });
 
-      // Atualiza o serviço caso já exista
       if (servicoExistente) {
         throw new Error(
           "Serviço para esse prestador com competência já cadastrada!"
         );
-        // console.log("Serviço já existente");
-        // servicoExistente.valores = servico.valores;
-        // servicoExistente.tipoDocumentoFiscal = servico.tipoDocumentoFiscal;
-        // await servicoExistente.save();
       }
 
       await criarNovaCampanha({ campanha: servico?.campanha });
