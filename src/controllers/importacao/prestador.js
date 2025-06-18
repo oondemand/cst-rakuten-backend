@@ -101,7 +101,9 @@ const criarNovoPrestador = async ({ prestador }) => {
 const buscarPrestadorPorSidEAtualizar = async ({ sid, prestador }) => {
   if (!sid || !prestador) return null;
 
-  const prestadorExistente = await Prestador.findOne({ sid: sid });
+  const prestadorExistente = await Prestador.findOne({ sid: sid }).populate(
+    "usuario"
+  );
   if (!prestadorExistente) return null;
 
   if (prestador?.email) {
@@ -121,18 +123,17 @@ const buscarPrestadorPorSidEAtualizar = async ({ sid, prestador }) => {
     if (prestadorExistente?.usuario) {
       const usuario = await Usuario.findOne({ email: prestador?.email });
 
-      if (usuario) {
-        if (
-          usuario?._id?.toString() !== prestadorExistente.usuario.toString()
-        ) {
-          throw new Error(
-            `Usuário prestador com o mesmo email já cadastrado: ${prestador?.email}`
-          );
-        }
-
-        usuario.email = prestador?.email;
-        await usuario.save();
+      if (
+        usuario &&
+        usuario?._id?.toString() !== prestadorExistente.usuario._id.toString()
+      ) {
+        throw new Error(
+          `Usuário prestador com o mesmo email já cadastrado: ${prestador?.email}`
+        );
       }
+
+      prestadorExistente.usuario.email = prestador?.email;
+      await prestadorExistente.usuario.save();
     }
   }
 
@@ -211,12 +212,12 @@ exports.importarPrestador = async (req, res) => {
 
     await importacao.save();
 
-    await emailUtils.importarPrestadorDetalhes({
-      detalhes,
-      usuario: req.usuario,
-    });
+    // await emailUtils.importarPrestadorDetalhes({
+    //   detalhes,
+    //   usuario: req.usuario,
+    // });
 
-    console.log("[EMAIL ENVIADO PARA]:", req.usuario.email);
+    // console.log("[EMAIL ENVIADO PARA]:", req.usuario.email);
   } catch (error) {
     console.log(error);
     return res

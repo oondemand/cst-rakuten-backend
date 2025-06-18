@@ -221,11 +221,12 @@ exports.obterPrestador = async (req, res) => {
 // Atualizar um Prestador
 exports.atualizarPrestador = async (req, res) => {
   try {
-    const prestador = await Prestador.findById(req.params.id);
+    const prestador = await Prestador.findById(req.params.id).populate(
+      "usuario"
+    );
 
-    if (!prestador) {
+    if (!prestador)
       return res.status(404).json({ message: "Prestador não encontrado" });
-    }
 
     if (req.body.sid) {
       const prestadorSid = await Prestador.findOne({
@@ -289,17 +290,17 @@ exports.atualizarPrestador = async (req, res) => {
       if (prestador?.usuario) {
         const usuario = await Usuario.findOne({ email: req.body.email });
 
-        if (usuario) {
-          if (usuario?._id?.toString() !== prestador.usuario.toString()) {
-            return res.status(409).json({
-              message:
-                "Já existe um usuário prestador com esse email registrado",
-            });
-          }
-
-          usuario.email = req.body.email;
-          await usuario.save();
+        if (
+          usuario &&
+          usuario?._id?.toString() !== prestador.usuario._id.toString()
+        ) {
+          return res.status(409).json({
+            message: "Já existe um usuário prestador com esse email registrado",
+          });
         }
+
+        prestador.usuario.email = req.body.email;
+        await prestador.usuario.save();
       }
     }
 
@@ -449,7 +450,7 @@ exports.prestadorWebHook = async (req, res) => {
 
       const prestador = await Prestador.findOne({
         $or: [{ documento }, { email: event?.email }],
-      });
+      }).populate("usuario");
 
       if (documento) {
         const prestadorDocumento = await Prestador.findOne({
@@ -486,17 +487,18 @@ exports.prestadorWebHook = async (req, res) => {
             email: prestadorOmie?.email,
           });
 
-          if (usuario) {
-            if (usuario?._id?.toString() !== prestador.usuario.toString()) {
-              return res.status(409).json({
-                message:
-                  "Já existe um usuário prestador com esse email registrado",
-              });
-            }
-
-            usuario.email = prestadorOmie?.email;
-            await usuario.save();
+          if (
+            usuario &&
+            usuario?._id?.toString() !== prestador.usuario._id.toString()
+          ) {
+            return res.status(409).json({
+              message:
+                "Já existe um usuário prestador com esse email registrado",
+            });
           }
+
+          prestador.usuario.email = prestadorOmie?.email;
+          await prestador.usuario.save();
         }
       }
 
