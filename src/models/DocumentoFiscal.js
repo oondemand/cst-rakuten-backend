@@ -27,7 +27,6 @@ const documentoFiscalSchema = new mongoose.Schema(
     },
     tipoDocumentoFiscal: {
       type: String,
-      required: [true, "Tipo Documento Fiscal é obrigatório"],
     },
     numero: {
       type: String,
