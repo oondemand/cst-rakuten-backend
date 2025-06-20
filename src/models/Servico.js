@@ -85,9 +85,4 @@ servicoSchema.virtual("valor").get(function () {
   return totalServico + totalRevisao + imposto;
 });
 
-servicoSchema.index(
-  { prestador: 1, "competencia.mes": 1, "competencia.ano": 1 },
-  { unique: true }
-);
-
 module.exports = mongoose.model("Servico", servicoSchema);

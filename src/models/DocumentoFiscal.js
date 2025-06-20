@@ -27,7 +27,6 @@ const documentoFiscalSchema = new mongoose.Schema(
     },
     tipoDocumentoFiscal: {
       type: String,
-      required: [true, "Tipo Documento Fiscal é obrigatório"],
     },
     numero: {
       type: String,
@@ -63,10 +62,5 @@ const documentoFiscalSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
-// documentoFiscalSchema.index(
-//   { prestador: 1, "competencia.mes": 1, "competencia.ano": 1 },
-//   { unique: true }
-// );
 
 module.exports = mongoose.model("DocumentoFiscal", documentoFiscalSchema);
