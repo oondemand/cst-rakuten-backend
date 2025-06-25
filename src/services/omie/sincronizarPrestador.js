@@ -2,26 +2,17 @@ const Prestador = require("../../models/Prestador");
 const clienteService = require("../omie/clienteService");
 
 const BaseOmie = require("../../models/BaseOmie");
+const { buscarPrestadorOmie } = require("../prestador/buscarPrestadorOmie");
 
 exports.sincronizarPrestador = async ({ prestador, id }) => {
   try {
     const { appKey, appSecret } = await BaseOmie.findOne({ status: "ativo" });
 
-    let fornecedor = null;
-
-    fornecedor = await clienteService.pesquisarPorCNPJ(
+    let fornecedor = await buscarPrestadorOmie({
       appKey,
       appSecret,
-      prestador.documento
-    );
-
-    if (!fornecedor) {
-      fornecedor = await clienteService.pesquisarCodIntegracao(
-        appKey,
-        appSecret,
-        prestador._id
-      );
-    }
+      prestador,
+    });
 
     const cliente = clienteService.criarFornecedor({
       documento: prestador.documento,
@@ -55,6 +46,9 @@ exports.sincronizarPrestador = async ({ prestador, id }) => {
         cliente
       );
 
+      prestador.codigo_cliente_omie = fornecedorCadastrado?.codigo_cliente_omie;
+      prestador.save();
+
       fornecedor = fornecedorCadastrado;
     }
 
@@ -65,6 +59,9 @@ exports.sincronizarPrestador = async ({ prestador, id }) => {
         appSecret,
         cliente
       );
+
+      prestador.codigo_cliente_omie = fornecedorCadastrado?.codigo_cliente_omie;
+      prestador.save();
 
       fornecedor = fornecedorCadastrado;
     }

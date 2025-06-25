@@ -29,6 +29,7 @@ const prestadorSchema = new mongoose.Schema(
   {
     sciUnico: { type: Number, match: /^\d{6,}$/ },
     usuario: { type: mongoose.Schema.Types.ObjectId, ref: "Usuario" },
+    codigo_cliente_omie: { type: String },
     manager: { type: String },
     nome: { type: String, required: true },
     sid: {

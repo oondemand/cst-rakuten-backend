@@ -14,6 +14,9 @@ const { add, format } = require("date-fns");
 const { ControleAlteracaoService } = require("../services/controleAlteracao");
 const ContaPagar = require("../models/ContaPagar");
 const Sistema = require("../models/Sistema");
+const {
+  buscarPrestadorOmie,
+} = require("../services/prestador/buscarPrestadorOmie");
 
 // Função para aprovar um ticket
 const aprovar = async (req, res) => {
@@ -288,25 +291,13 @@ const atualizarOuCriarFornecedor = async ({
   prestadorId,
 }) => {
   try {
-    let banco = "";
-
     const prestador = await Prestador.findById(prestadorId);
 
-    let fornecedor = null;
-
-    fornecedor = await clienteService.pesquisarPorCNPJ(
+    let fornecedor = await buscarPrestadorOmie({
       appKey,
       appSecret,
-      prestador.documento
-    );
-
-    if (!fornecedor) {
-      fornecedor = await clienteService.pesquisarCodIntegracao(
-        appKey,
-        appSecret,
-        prestador?._id
-      );
-    }
+      prestador,
+    });
 
     const novoFornecedor = clienteService.criarFornecedor({
       documento: prestador.documento,
@@ -341,6 +332,8 @@ const atualizarOuCriarFornecedor = async ({
         novoFornecedor
       );
 
+      prestador.codigo_cliente_omie = fornecedorCadastrado?.codigo_cliente_omie;
+      prestador.save();
       fornecedor = fornecedorCadastrado;
     }
 
@@ -352,6 +345,8 @@ const atualizarOuCriarFornecedor = async ({
         novoFornecedor
       );
 
+      prestador.codigo_cliente_omie = fornecedorCadastrado?.codigo_cliente_omie;
+      prestador.save();
       fornecedor = fornecedorCadastrado;
     }
 

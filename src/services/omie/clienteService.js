@@ -274,25 +274,25 @@ const pesquisarPorCNPJ = async (appKey, appSecret, cnpj, maxTentativas = 3) => {
   throw `Falha ao buscar prestador após ${maxTentativas} tentativas.`;
 };
 
-const cachePesquisarPorCodIntegracao = {};
-const pesquisarCodIntegracao = async (
+const cachePesquisarPorCodClienteOmie = {};
+const pesquisarCodClienteOmie = async (
   appKey,
   appSecret,
-  codigo_cliente_integracao,
+  codigo_cliente_omie,
   maxTentativas = 3
 ) => {
-  const cacheKey = `codigo_cliente_integracao_${codigo_cliente_integracao}`;
+  const cacheKey = `codigo_cliente_omie_${codigo_cliente_omie}`;
   const now = Date.now();
 
   let tentativas = 0;
 
-  // Verificar se o codigo_cliente_integracao	 está no cache e se ainda é válido (10 minuto)
+  // Verificar se o codigo_cliente_omie	 está no cache e se ainda é válido (10 minuto)
   if (
-    cachePesquisarPorCodIntegracao[cacheKey] &&
-    now - cachePesquisarPorCodIntegracao[cacheKey].timestamp < 60 * 1000
+    cachePesquisarPorCodClienteOmie[cacheKey] &&
+    now - cachePesquisarPorCodClienteOmie[cacheKey].timestamp < 60 * 1000
   ) {
-    // console.log(`Retornando do cache para o codigo_cliente_integracao	: ${codigo_cliente_integracao	}`);
-    return cachePesquisarPorCodIntegracao[cacheKey].data;
+    // console.log(`Retornando do cache para o codigo_cliente_omie	: ${codigo_cliente_omie	}`);
+    return cachePesquisarPorCodClienteOmie[cacheKey].data;
   }
   while (tentativas < maxTentativas) {
     try {
@@ -305,7 +305,7 @@ const pesquisarCodIntegracao = async (
             pagina: 1,
             registros_por_pagina: 50,
             clientesFiltro: {
-              codigo_cliente_integracao,
+              codigo_cliente_omie,
             },
           },
         ],
@@ -316,7 +316,7 @@ const pesquisarCodIntegracao = async (
       const data = response.data?.clientes_cadastro[0];
 
       // Armazenar a resposta no cache com um timestamp
-      cachePesquisarPorCodIntegracao[cacheKey] = {
+      cachePesquisarPorCodClienteOmie[cacheKey] = {
         data: data,
         timestamp: now,
       };
@@ -360,6 +360,6 @@ module.exports = {
   incluir,
   pesquisarPorCNPJ,
   consultar,
-  pesquisarCodIntegracao,
+  pesquisarCodClienteOmie,
   update,
 };
