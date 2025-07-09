@@ -33,10 +33,23 @@ const prestadorSchema = new mongoose.Schema(
     manager: { type: String },
     nome: { type: String, required: true },
     sid: {
-      type: Number,
+      type: [Number],
       required: true,
-      unique: true,
-      match: [/^\d{7}$/, "O SID deve ter exatamente 7 dígitos."],
+      validate: [
+        {
+          validator: function (arr) {
+            return arr.every((n) => /^\d{7}$/.test(n.toString()));
+          },
+          message: "Cada SID deve ter exatamente 7 dígitos.",
+        },
+        {
+          validator: function (arr) {
+            const set = new Set(arr);
+            return set.size === arr.length; // evita sids repetidos no mesmo prestador
+          },
+          message: "Não pode haver SIDs duplicados no mesmo prestador.",
+        },
+      ],
     },
     tipo: { type: String, enum: ["pj", "pf", "ext", ""] },
     documento: {
