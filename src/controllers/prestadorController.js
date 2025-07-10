@@ -201,7 +201,7 @@ exports.listarPrestadores = async (req, res) => {
 
     res.status(200).json(response);
   } catch (error) {
-    // console.log("ERROR", error);
+    console.log("ERROR", error);
     res.status(400).json({ error: "Erro ao listar prestadores" });
   }
 };

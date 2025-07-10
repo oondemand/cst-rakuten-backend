@@ -35,6 +35,7 @@ const prestadorSchema = new mongoose.Schema(
     sid: {
       type: [Number],
       required: true,
+      unique: true,
       validate: [
         {
           validator: function (arr) {

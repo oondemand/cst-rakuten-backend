@@ -161,12 +161,17 @@ const criarFiltroPorTipoDeCampo = ({ tipo, campo, valor }) => {
     };
   };
 
+  const FILTRO_ARRAY = () => {
+    return { [campo]: { $in: [valor] } };
+  };
+
   const tipoFiltroMap = {
     Number: FILTRO_NUMERO,
     String: FILTRO_STRING,
     Date: FILTRO_DATE,
     CompetenciaType: FILTRO_COMPETENCIA,
     default: DEFAULT,
+    Array: FILTRO_ARRAY,
   };
 
   return tipoFiltroMap[tipo] ? tipoFiltroMap[tipo]() : tipoFiltroMap.default();
