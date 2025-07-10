@@ -47,7 +47,7 @@ const converterLinhaEmPrestador = async ({ row }) => {
     sciUnico: row[0],
     manager: row[1],
     nome: row[2],
-    sid: row[3],
+    sid: row[3]?.split(/[,;]/), // separa por , ou ;
     tipo: row[4],
     documento: row[5],
     dadosBancarios: {

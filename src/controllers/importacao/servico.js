@@ -19,7 +19,7 @@ const converterLinhaEmServico = async ({ row }) => {
   const servico = {
     prestador: {
       nome: row[0],
-      sid: row[1],
+      sid: row[1]?.split(/[,;]/),
       documento: row[2],
       tipo: tipoPessoa,
     },
