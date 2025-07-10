@@ -162,6 +162,7 @@ const criarFiltroPorTipoDeCampo = ({ tipo, campo, valor }) => {
   };
 
   const FILTRO_ARRAY = () => {
+    if (isNaN(valor?.trim())) return;
     return { [campo]: { $in: [valor] } };
   };
 
