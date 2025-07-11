@@ -46,7 +46,7 @@ const prestadorSchema = new mongoose.Schema(
         {
           validator: function (arr) {
             const set = new Set(arr);
-            return set.size === arr.length; // evita sids repetidos no mesmo prestador
+            return set.size === arr.length;
           },
           message: "Não pode haver SIDs duplicados.",
         },
