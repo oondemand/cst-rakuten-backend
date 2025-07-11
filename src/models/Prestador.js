@@ -48,7 +48,7 @@ const prestadorSchema = new mongoose.Schema(
             const set = new Set(arr);
             return set.size === arr.length; // evita sids repetidos no mesmo prestador
           },
-          message: "Não pode haver SIDs duplicados no mesmo prestador.",
+          message: "Não pode haver SIDs duplicados.",
         },
       ],
     },
