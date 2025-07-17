@@ -355,11 +355,58 @@ const pesquisarCodClienteOmie = async (
   throw `Falha ao buscar prestador após ${maxTentativas} tentativas.`;
 };
 
+const consultarCaracteristicas = async ({
+  appKey,
+  appSecret,
+  codigo_cliente_omie,
+}) => {
+  try {
+    const body = {
+      call: "ConsultarCaractCliente",
+      app_key: appKey,
+      app_secret: appSecret,
+      param: [{ codigo_cliente_omie }],
+    };
+
+    const response = await apiOmie.post("geral/clientescaract/", body);
+    return response?.data?.caracteristicas;
+  } catch (e) {
+    console.log(e);
+    throw e;
+  }
+};
+
+const alterarCaracteristicas = async ({
+  appKey,
+  appSecret,
+  codigo_cliente_omie,
+  campo,
+  conteudo,
+}) => {
+  try {
+    const body = {
+      call: "AlterarCaractCliente",
+      app_key: appKey,
+      app_secret: appSecret,
+      param: [{ codigo_cliente_omie, campo, conteudo }],
+    };
+
+    const response = await apiOmie.post("geral/clientescaract/", body);
+
+    return response;
+  } catch (e) {
+    console.log(e);
+    throw e;
+  }
+};
+
 module.exports = {
-  criarFornecedor,
-  incluir,
-  pesquisarPorCNPJ,
-  consultar,
-  pesquisarCodClienteOmie,
   update,
+  incluir,
+  consultar,
+  criarFornecedor,
+  pesquisarPorCNPJ,
+  alterarCaracteristicas,
+  pesquisarCodClienteOmie,
+  consultarCaracteristicas,
 };

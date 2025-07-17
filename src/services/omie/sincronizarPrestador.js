@@ -3,6 +3,7 @@ const clienteService = require("../omie/clienteService");
 
 const BaseOmie = require("../../models/BaseOmie");
 const { buscarPrestadorOmie } = require("../prestador/buscarPrestadorOmie");
+const { randomUUID } = require("crypto");
 
 exports.sincronizarPrestador = async ({ prestador, id }) => {
   try {
@@ -53,7 +54,7 @@ exports.sincronizarPrestador = async ({ prestador, id }) => {
     }
 
     if (!fornecedor) {
-      cliente.codigo_cliente_integracao = prestador._id;
+      cliente.codigo_cliente_integracao = randomUUID();
       const fornecedorCadastrado = await clienteService.incluir(
         appKey,
         appSecret,

@@ -42,16 +42,6 @@ const prestadorSchema = new mongoose.Schema(
     documento: {
       type: String,
       unique: true,
-      // validate: {
-      //   validator: function (valor) {
-      //     if (this.tipo === "ext") {
-      //       return true;
-      //     }
-
-      //     return /^\d{11}$|^\d{14}$/.test(valor);
-      //   },
-      //   message: "Documento inválido para o tipo selecionado.",
-      // },
     },
     dadosBancarios: dadosBancariosSchema,
     email: {

@@ -416,6 +416,10 @@ exports.prestadorWebHook = async (req, res) => {
     const { event, ping, topic } = req.body;
     if (ping === "omie") return res.status(200).json({ message: "pong" });
 
+    if (topic === "ClienteFornecedor.Adicionado") {
+      console.log("🟨 Prestador adicionado", event);
+    }
+
     if (topic === "ClienteFornecedor.Alterado") {
       console.log("🟩 Prestador alterado");
 
