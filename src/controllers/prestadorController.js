@@ -106,17 +106,17 @@ exports.criarPrestador = async (req, res) => {
       }
     }
 
-    if (req.body?.documento) {
-      const prestador = await Prestador.findOne({
-        documento: req.body.documento,
-      });
+    // if (req.body?.documento) {
+    //   const prestador = await Prestador.findOne({
+    //     documento: req.body.documento,
+    //   });
 
-      if (prestador) {
-        return res.status(409).json({
-          message: "Já existe um prestador com esse documento registrado",
-        });
-      }
-    }
+    //   if (prestador) {
+    //     return res.status(409).json({
+    //       message: "Já existe um prestador com esse documento registrado",
+    //     });
+    //   }
+    // }
 
     const prestador = new Prestador(data);
     await prestador.save();
@@ -258,20 +258,20 @@ exports.atualizarPrestador = async (req, res) => {
       }
     }
 
-    if (req.body.documento) {
-      const prestadorDocumento = await Prestador.findOne({
-        documento: req.body.documento,
-      });
+    // if (req.body.documento) {
+    //   const prestadorDocumento = await Prestador.findOne({
+    //     documento: req.body.documento,
+    //   });
 
-      if (
-        prestadorDocumento &&
-        prestador._id.toString() !== prestadorDocumento._id.toString()
-      ) {
-        return res.status(409).json({
-          message: "Já existe um prestador com esse documento registrado",
-        });
-      }
-    }
+    //   if (
+    //     prestadorDocumento &&
+    //     prestador._id.toString() !== prestadorDocumento._id.toString()
+    //   ) {
+    //     return res.status(409).json({
+    //       message: "Já existe um prestador com esse documento registrado",
+    //     });
+    //   }
+    // }
 
     if (req?.body?.email) {
       const prestadorEmail = await Prestador.findOne({

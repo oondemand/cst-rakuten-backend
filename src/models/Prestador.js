@@ -32,6 +32,10 @@ const prestadorSchema = new mongoose.Schema(
     codigo_cliente_omie: { type: String },
     manager: { type: String },
     nome: { type: String, required: true },
+    status_sincronizacao_omie: {
+      type: String,
+      enum: ["sucesso", "processando", "erro"],
+    },
     sid: {
       type: Number,
       required: true,
@@ -41,7 +45,7 @@ const prestadorSchema = new mongoose.Schema(
     tipo: { type: String, enum: ["pj", "pf", "ext", ""] },
     documento: {
       type: String,
-      unique: true,
+      // unique: true,
     },
     dadosBancarios: dadosBancariosSchema,
     email: {
