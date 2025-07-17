@@ -36,7 +36,7 @@ router.post(
 );
 
 router.get("/:id/arquivos", ticketController.listFilesFromTicket);
-router.delete("/arquivo/:id", ticketController.deleteFileFromTicket);
+router.delete("/arquivo/:ticketId/:id", ticketController.deleteFileFromTicket);
 router.get("/arquivo/:id", ticketController.getArquivoPorId);
 
 router.post("/", ticketController.createTicket);
