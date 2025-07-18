@@ -442,8 +442,6 @@ exports.deleteFileFromTicket = async (req, res) => {
       $pull: { arquivos: id },
     });
 
-    console.log("ERR", req.usuario, ticket, arquivo);
-
     ControleAlteracaoService.registrarAlteracao({
       acao: "alterar",
       dataHora: new Date(),
