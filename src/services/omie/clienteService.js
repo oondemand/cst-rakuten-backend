@@ -123,79 +123,28 @@ const consultar = async (appKey, appSecret, codCliente) => {
   }
 };
 
-const incluir = async (appKey, appSecret, cliente, maxTentativas = 3) => {
-  let tentativas = 0;
-  let erroEncontrado;
-  while (tentativas < maxTentativas) {
-    try {
-      const body = {
-        call: "IncluirCliente",
-        app_key: appKey,
-        app_secret: appSecret,
-        param: [cliente],
-      };
+const incluir = async (appKey, appSecret, cliente) => {
+  const body = {
+    call: "IncluirCliente",
+    app_key: appKey,
+    app_secret: appSecret,
+    param: [cliente],
+  };
 
-      const response = await apiOmie.post("geral/clientes/", body);
-      return response.data;
-    } catch (error) {
-      tentativas++;
-      if (
-        error.response?.data?.faultstring?.includes(
-          "Consumo redundante detectado"
-        )
-      ) {
-        await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
-      }
-
-      erroEncontrado =
-        error.response?.data?.faultstring ||
-        error.response?.data ||
-        error.response ||
-        error;
-
-      // console.error(`Falha ao criar cliente: ${erroEncontrado}`);
-    }
-  }
-
-  throw `Falha ao criar cliente após ${maxTentativas} tentativas. ${erroEncontrado}`;
+  const response = await apiOmie.post("geral/clientes/", body);
+  return response.data;
 };
 
-const update = async (appKey, appSecret, cliente, maxTentativas = 3) => {
-  let tentativas = 0;
-  let erroEncontrado;
+const update = async (appKey, appSecret, cliente) => {
+  const body = {
+    call: "AlterarCliente",
+    app_key: appKey,
+    app_secret: appSecret,
+    param: [cliente],
+  };
 
-  while (tentativas < maxTentativas) {
-    try {
-      const body = {
-        call: "AlterarCliente",
-        app_key: appKey,
-        app_secret: appSecret,
-        param: [cliente],
-      };
-
-      const response = await apiOmie.post("geral/clientes/", body);
-      return response.data;
-    } catch (error) {
-      tentativas++;
-      if (
-        error.response?.data?.faultstring?.includes(
-          "Consumo redundante detectado"
-        )
-      ) {
-        await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
-      }
-
-      erroEncontrado =
-        error.response?.data?.faultstring ||
-        error.response?.data ||
-        error.response ||
-        error;
-
-      // console.error(`Falha ao atualizar cliente: ${erroEncontrado}`);
-    }
-  }
-
-  throw `Falha ao atualizar cliente após ${maxTentativas} tentativas. ${erroEncontrado}`;
+  const response = await apiOmie.post("geral/clientes/", body);
+  return response.data;
 };
 
 const cachePesquisaPorCNPJ = {};
@@ -355,11 +304,58 @@ const pesquisarCodClienteOmie = async (
   throw `Falha ao buscar prestador após ${maxTentativas} tentativas.`;
 };
 
+const consultarCaracteristicas = async ({
+  appKey,
+  appSecret,
+  codigo_cliente_omie,
+}) => {
+  try {
+    const body = {
+      call: "ConsultarCaractCliente",
+      app_key: appKey,
+      app_secret: appSecret,
+      param: [{ codigo_cliente_omie }],
+    };
+
+    const response = await apiOmie.post("geral/clientescaract/", body);
+    return response?.data?.caracteristicas;
+  } catch (e) {
+    console.log(e);
+    throw e;
+  }
+};
+
+const alterarCaracteristicas = async ({
+  appKey,
+  appSecret,
+  codigo_cliente_omie,
+  campo,
+  conteudo,
+}) => {
+  try {
+    const body = {
+      call: "AlterarCaractCliente",
+      app_key: appKey,
+      app_secret: appSecret,
+      param: [{ codigo_cliente_omie, campo, conteudo }],
+    };
+
+    const response = await apiOmie.post("geral/clientescaract/", body);
+
+    return response;
+  } catch (e) {
+    console.log(e);
+    throw e;
+  }
+};
+
 module.exports = {
-  criarFornecedor,
-  incluir,
-  pesquisarPorCNPJ,
-  consultar,
-  pesquisarCodClienteOmie,
   update,
+  incluir,
+  consultar,
+  criarFornecedor,
+  pesquisarPorCNPJ,
+  alterarCaracteristicas,
+  pesquisarCodClienteOmie,
+  consultarCaracteristicas,
 };

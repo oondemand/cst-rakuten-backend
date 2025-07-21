@@ -435,10 +435,10 @@ exports.listFilesFromTicket = async (req, res) => {
 
 exports.deleteFileFromTicket = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id, ticketId } = req.params;
 
     const arquivo = await Arquivo.findByIdAndDelete(id);
-    const ticket = await Ticket.findByIdAndUpdate(arquivo.ticket, {
+    const ticket = await Ticket.findByIdAndUpdate(ticketId, {
       $pull: { arquivos: id },
     });
 

@@ -8,6 +8,7 @@ const filtersUtils = require("../utils/filter");
 const Usuario = require("../models/Usuario");
 const Servico = require("../models/Servico");
 const DocumentoFiscal = require("../models/DocumentoFiscal");
+const IntegracaoPrestadorService = require("../services/IntegracaoPrestador");
 
 // Método para obter prestador pelo idUsuario
 exports.obterPrestadorPorIdUsuario = async (req, res) => {
@@ -106,17 +107,17 @@ exports.criarPrestador = async (req, res) => {
       }
     }
 
-    if (req.body?.documento) {
-      const prestador = await Prestador.findOne({
-        documento: req.body.documento,
-      });
+    // if (req.body?.documento) {
+    //   const prestador = await Prestador.findOne({
+    //     documento: req.body.documento,
+    //   });
 
-      if (prestador) {
-        return res.status(409).json({
-          message: "Já existe um prestador com esse documento registrado",
-        });
-      }
-    }
+    //   if (prestador) {
+    //     return res.status(409).json({
+    //       message: "Já existe um prestador com esse documento registrado",
+    //     });
+    //   }
+    // }
 
     const prestador = new Prestador(data);
     await prestador.save();
@@ -258,20 +259,20 @@ exports.atualizarPrestador = async (req, res) => {
       }
     }
 
-    if (req.body.documento) {
-      const prestadorDocumento = await Prestador.findOne({
-        documento: req.body.documento,
-      });
+    // if (req.body.documento) {
+    //   const prestadorDocumento = await Prestador.findOne({
+    //     documento: req.body.documento,
+    //   });
 
-      if (
-        prestadorDocumento &&
-        prestador._id.toString() !== prestadorDocumento._id.toString()
-      ) {
-        return res.status(409).json({
-          message: "Já existe um prestador com esse documento registrado",
-        });
-      }
-    }
+    //   if (
+    //     prestadorDocumento &&
+    //     prestador._id.toString() !== prestadorDocumento._id.toString()
+    //   ) {
+    //     return res.status(409).json({
+    //       message: "Já existe um prestador com esse documento registrado",
+    //     });
+    //   }
+    // }
 
     if (req?.body?.email) {
       const prestadorEmail = await Prestador.findOne({
@@ -312,8 +313,7 @@ exports.atualizarPrestador = async (req, res) => {
       }
     );
 
-    sincronizarPrestador({
-      id: prestadorAtualizado._id,
+    await IntegracaoPrestadorService.create({
       prestador: prestadorAtualizado,
     });
 
@@ -416,106 +416,110 @@ exports.prestadorWebHook = async (req, res) => {
     const { event, ping, topic } = req.body;
     if (ping === "omie") return res.status(200).json({ message: "pong" });
 
-    if (topic === "ClienteFornecedor.Alterado") {
-      console.log("🟩 Prestador alterado");
+    // if (topic === "ClienteFornecedor.Adicionado") {
+    //   console.log("🟨 Prestador adicionado", event);
+    // }
 
-      const documento = event?.cnpj_cpf
-        ? Number(event.cnpj_cpf.replace(/[.\-\/]/g, ""))
-        : null;
+    // if (topic === "ClienteFornecedor.Alterado") {
+    //   console.log("🟩 Prestador alterado");
 
-      const prestadorOmie = {
-        nome: event.razao_social,
-        tipo:
-          event?.exterior === "S"
-            ? "ext"
-            : event?.pessoa_fisica === "S"
-              ? "pf"
-              : "pj",
-        documento,
-        codigo_cliente_omie: event?.codigo_cliente_omie,
-        dadosBancarios: {
-          banco: event?.dadosBancarios?.codigo_banco ?? "",
-          agencia: event?.dadosBancarios?.agencia ?? "",
-          conta: event?.dadosBancarios?.conta_corrente ?? "",
-        },
-        email: event?.email,
-        endereco: {
-          cep: event?.cep ?? "",
-          rua: event?.endereco ?? "",
-          numero: event?.endereco_numero ? Number(event?.endereco_numero) : "",
-          complemento: event?.complemento ?? complemento,
-          cidade: event?.cidade ?? "",
-          estado: event?.estado ?? "",
-        },
-      };
+    //   const documento = event?.cnpj_cpf
+    //     ? Number(event.cnpj_cpf.replace(/[.\-\/]/g, ""))
+    //     : null;
 
-      const prestador = await Prestador.findOne({
-        $or: [
-          { documento },
-          { email: event?.email },
-          { codigo_cliente_omie: event.codigo_cliente_omie },
-        ],
-      }).populate("usuario");
+    //   const prestadorOmie = {
+    //     nome: event.razao_social,
+    //     tipo:
+    //       event?.exterior === "S"
+    //         ? "ext"
+    //         : event?.pessoa_fisica === "S"
+    //           ? "pf"
+    //           : "pj",
+    //     documento,
+    //     codigo_cliente_omie: event?.codigo_cliente_omie,
+    //     dadosBancarios: {
+    //       banco: event?.dadosBancarios?.codigo_banco ?? "",
+    //       agencia: event?.dadosBancarios?.agencia ?? "",
+    //       conta: event?.dadosBancarios?.conta_corrente ?? "",
+    //     },
+    //     email: event?.email,
+    //     endereco: {
+    //       cep: event?.cep ?? "",
+    //       rua: event?.endereco ?? "",
+    //       numero: event?.endereco_numero ? Number(event?.endereco_numero) : "",
+    //       complemento: event?.complemento ?? complemento,
+    //       cidade: event?.cidade ?? "",
+    //       estado: event?.estado ?? "",
+    //     },
+    //   };
 
-      if (prestador) {
-        if (documento) {
-          const prestadorDocumento = await Prestador.findOne({
-            documento: documento,
-          });
+    //   const prestador = await Prestador.findOne({
+    //     $or: [
+    //       { documento },
+    //       { email: event?.email },
+    //       { codigo_cliente_omie: event.codigo_cliente_omie },
+    //     ],
+    //   }).populate("usuario");
 
-          if (
-            prestadorDocumento &&
-            prestador._id.toString() !== prestadorDocumento._id.toString()
-          ) {
-            return res.status(409).json({
-              message: "Já existe um prestador com esse documento registrado",
-            });
-          }
-        }
+    //   if (prestador) {
+    //     if (documento) {
+    //       const prestadorDocumento = await Prestador.findOne({
+    //         documento: documento,
+    //       });
 
-        if (prestadorOmie?.email) {
-          const prestadorEmail = await Prestador.findOne({
-            email: prestadorOmie?.email,
-          });
+    //       if (
+    //         prestadorDocumento &&
+    //         prestador._id.toString() !== prestadorDocumento._id.toString()
+    //       ) {
+    //         return res.status(409).json({
+    //           message: "Já existe um prestador com esse documento registrado",
+    //         });
+    //       }
+    //     }
 
-          if (
-            prestadorEmail &&
-            prestadorEmail?._id?.toString() !== prestador._id.toString()
-          ) {
-            return res.status(409).json({
-              message: "Já existe um prestador com esse email registrado",
-            });
-          }
+    //     if (prestadorOmie?.email) {
+    //       const prestadorEmail = await Prestador.findOne({
+    //         email: prestadorOmie?.email,
+    //       });
 
-          if (prestador?.usuario) {
-            const usuario = await Usuario.findOne({
-              email: prestadorOmie?.email,
-            });
+    //       if (
+    //         prestadorEmail &&
+    //         prestadorEmail?._id?.toString() !== prestador._id.toString()
+    //       ) {
+    //         return res.status(409).json({
+    //           message: "Já existe um prestador com esse email registrado",
+    //         });
+    //       }
 
-            if (
-              usuario &&
-              usuario?._id?.toString() !== prestador.usuario._id.toString()
-            ) {
-              return res.status(409).json({
-                message:
-                  "Já existe um usuário prestador com esse email registrado",
-              });
-            }
+    //       if (prestador?.usuario) {
+    //         const usuario = await Usuario.findOne({
+    //           email: prestadorOmie?.email,
+    //         });
 
-            prestador.usuario.email = prestadorOmie?.email;
-            await prestador.usuario.save();
-          }
-        }
+    //         if (
+    //           usuario &&
+    //           usuario?._id?.toString() !== prestador.usuario._id.toString()
+    //         ) {
+    //           return res.status(409).json({
+    //             message:
+    //               "Já existe um usuário prestador com esse email registrado",
+    //           });
+    //         }
 
-        await Prestador.findByIdAndUpdate(prestador._id, {
-          ...prestadorOmie,
-        });
+    //         prestador.usuario.email = prestadorOmie?.email;
+    //         await prestador.usuario.save();
+    //       }
+    //     }
 
-        res
-          .status(200)
-          .json({ message: "Webhook recebido. Dados sendo atualizados." });
-      }
-    }
+    //     await Prestador.findByIdAndUpdate(prestador._id, {
+    //       ...prestadorOmie,
+    //     });
+
+    //     res
+    //       .status(200)
+    //       .json({ message: "Webhook recebido. Dados sendo atualizados." });
+    //   }
+    // }
   } catch (error) {
     console.error("Erro ao processar o webhook:", error);
     res.status(500).json({ error: "Erro ao processar o webhook." });
