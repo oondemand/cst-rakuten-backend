@@ -9,7 +9,7 @@ const integracaoPrestadorSchema = new mongoose.Schema(
     },
     payload: Object,
     resposta: Object,
-    erros: { type: [String] },
+    erros: { type: [mongoose.Schema.Types.Mixed] },
     reprocessado: { type: Boolean, default: false },
     tentativas: { type: Number, default: 0 },
     prestador: Object,

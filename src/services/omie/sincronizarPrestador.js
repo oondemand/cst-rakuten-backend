@@ -15,25 +15,10 @@ exports.sincronizarPrestador = async ({ prestador }) => {
   });
 
   const cliente = clienteService.criarFornecedor({
-    documento: prestador.documento,
-    nome: prestador.nome,
-    tipo: prestador.tipo,
-    email: prestador?.email ? prestador?.email : "",
-    cep: prestador.endereco ? prestador.endereco.cep : "",
-    rua: prestador.endereco ? prestador.endereco.rua : "",
-    numeroDoEndereco: prestador.endereco ? prestador.endereco.numero : "",
-    complemento: prestador.endereco ? prestador.endereco.complemento : "",
-    cidade: prestador.endereco ? prestador.endereco.cidade : "",
-    estado: prestador.endereco ? prestador.endereco.estado : "",
-    razaoSocial: prestador.nome,
-    banco: prestador?.dadosBancarios?.banco ?? "",
-    agencia: prestador.dadosBancarios ? prestador.dadosBancarios.agencia : "",
-    conta: prestador.dadosBancarios ? prestador.dadosBancarios.conta : "",
-    tipoConta: prestador.dadosBancarios
-      ? prestador.dadosBancarios.tipoConta
-      : "",
-    codPais: prestador?.endereco?.pais?.cod,
+    prestador,
   });
+
+  console.log("CLIENTE", cliente);
 
   if (fornecedor) {
     cliente.codigo_cliente_omie = fornecedor.codigo_cliente_omie;

@@ -18,7 +18,6 @@ const create = async ({ prestador }) => {
   const integracao = await IntegracaoPrestador.create({
     prestadorId: prestador._id,
     etapa: "requisicao",
-    payload: { prestador },
     prestador: prestador.toObject(),
   });
 

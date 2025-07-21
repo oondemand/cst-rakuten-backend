@@ -1,25 +1,11 @@
 const { createQueue } = require("../index");
 const IntegracaoPrestador = require("../../../models/IntegracaoPrestador");
 const Prestador = require("../../../models/Prestador");
-const { sincronizarPrestador } = require("../../omie/sincronizarPrestador");
-
-const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-
-const executarComTentativas = async ({ callback, limit, onTry }) => {
-  const erros = [];
-
-  for (let tentativa = 1; tentativa <= limit; tentativa++) {
-    await onTry?.(tentativa);
-    try {
-      const resultado = await callback();
-      return { resultado, erros };
-    } catch (err) {
-      erros.push(err?.response?.data?.faultstring ?? err?.message);
-    }
-  }
-
-  return { resultado: null, erros };
-};
+const { retryAsync, sleep } = require("../../../utils");
+const BaseOmie = require("../../../models/BaseOmie");
+const { buscarPrestadorOmie } = require("../../prestador/buscarPrestadorOmie");
+const clienteService = require("../../omie/clienteService");
+const { randomUUID } = require("crypto");
 
 const prestadorHandler = async (integracao) => {
   if (!integracao || integracao.arquivado) return;
@@ -27,47 +13,74 @@ const prestadorHandler = async (integracao) => {
   try {
     integracao.executadoEm = new Date();
 
-    const { erros, resultado } = await executarComTentativas({
+    const { appKey, appSecret } = await BaseOmie.findOne({ status: "ativo" });
+    let fornecedor = await buscarPrestadorOmie({
+      appKey,
+      appSecret,
+      prestador: integracao.prestador,
+    });
+
+    const cliente = clienteService.criarFornecedor({
+      prestador: integracao.prestador,
+    });
+
+    integracao.payload = cliente;
+    await integracao.save();
+
+    const { errors, result } = await retryAsync({
       callback: async () => {
-        return await sincronizarPrestador({ prestador: integracao.prestador });
+        if (fornecedor) {
+          cliente.codigo_cliente_omie = fornecedor.codigo_cliente_omie;
+          return await clienteService.update(appKey, appSecret, cliente);
+        }
+
+        if (!fornecedor) {
+          cliente.codigo_cliente_integracao = randomUUID();
+          return await clienteService.incluir(appKey, appSecret, cliente);
+        }
       },
-      limit: 3,
+      limit: 1,
       onTry: async (tentativa) => {
-        if (tentativa === 2) await sleep(1000 * 10);
-        if (tentativa >= 3) await sleep(1000 * 30);
+        if (tentativa === 2) await sleep(1000 * 10); // 10 seg
+        if (tentativa >= 3) await sleep(1000 * 60 * 3); // 3 min
         integracao.tentativas = (integracao.tentativas || 0) + 1;
       },
     });
 
-    if (resultado) {
+    const formattedErrors = errors?.map((e) => {
+      return e?.response?.data;
+    });
+
+    if (result) {
       integracao.etapa = "sucesso";
-      integracao.erros = [...(integracao.erros || []), ...erros];
-      integracao.resposta = resultado;
+      integracao.erros = [
+        ...(integracao.erros || []),
+        ...(formattedErrors || []),
+      ];
+      integracao.resposta = result;
       await integracao.save();
 
       await Prestador.findByIdAndUpdate(integracao.prestadorId, {
         status_sincronizacao_omie: "sucesso",
-        codigo_cliente_omie: resultado.codigo_cliente_omie,
+        codigo_cliente_omie: result.codigo_cliente_omie,
       });
     } else {
       integracao.etapa = "falhas";
-      integracao.erros = [...(integracao.erros || []), ...erros];
+      integracao.erros = [
+        ...(integracao.erros || []),
+        ...(formattedErrors || []),
+      ];
       await integracao.save();
 
       await Prestador.findByIdAndUpdate(integracao.prestadorId, {
         status_sincronizacao_omie: "erro",
       });
     }
-
-    console.log(
-      `🈯 Integração do prestador ${integracao.prestadorId} finalizada`
-    );
   } catch (err) {
-    console.log("ERROR", err);
-
+    console.log(err);
     integracao.etapa = "falhas";
-    integracao.erros = [
-      ...(integracao.erros || []),
+    integracao.errors = [
+      ...(integracao.errors || []),
       err?.response?.data?.faultstring ?? err?.message,
     ];
     integracao.executadoEm = new Date();

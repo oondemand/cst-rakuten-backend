@@ -1,76 +1,46 @@
 const apiOmie = require("../../config/apiOmie");
-// const { logger } = require("../../config/msLogger");
 
-const criarFornecedor = ({
-  // codigo_cliente_integracao,
-  documento,
-  nome,
-  sid,
-  tipo,
-  email,
-  banco,
-  agencia,
-  conta,
-  tipoConta,
-  cep,
-  rua,
-  numeroDoEndereco,
-  complemento,
-  cidade,
-  estado,
-  codPais,
-  pessoaFisica,
-  dataNascimento,
-  pis,
-  numeroRg,
-  orgaoEmissorRg,
-  razaoSocial,
-  nomeFantasia,
-  codigoCNAE,
-  codigoServicoNacional,
-  regimeTributario,
-  observacao,
-}) => {
-  const cliente = {
-    cnpj_cpf: documento,
-    razao_social: nome.substring(0, 60),
-    tags: ["Fornecedor"],
-    nome_fantasia: razaoSocial ? razaoSocial.substring(0, 60) : "",
-    endereco: rua ? rua : "",
-    endereco_numero: numeroDoEndereco ? numeroDoEndereco : "",
-    complemento: complemento ? complemento : "",
-    estado: estado ? estado : "",
-    cidade: cidade ? cidade : "",
-    cep: cep ? cep : "",
-    email: email ? email : "",
-    observacao: observacao ? observacao : "",
-    importado_api: "S",
-  };
+const criarFornecedor = ({ prestador }) => {
+  try {
+    const observacao =
+      prestador?.tipoConta === "poupanca" ? "Tipo de conta: Poupança" : "";
 
-  cliente.dadosBancarios = {
-    codigo_banco: banco ? banco.toString() : "",
-    agencia: agencia ? agencia : "",
-    conta_corrente: conta ? conta : "",
-    doc_titular: documento ? documento : "",
-    nome_titular: nome ? nome : "",
-  };
+    const cliente = {
+      tags: ["Fornecedor"],
+      cnpj_cpf: prestador?.documento,
+      razao_social: prestador?.nome?.substring(0, 60),
+      nome_fantasia: prestador?.nome?.substring(0, 60),
+      endereco: prestador?.endereco?.rua,
+      cidade: prestador?.endereco?.cidade,
+      estado: prestador?.endereco?.estado,
+      codigo_pais: prestador?.endereco?.pais?.cod,
+      endereco_numero: prestador?.endereco?.numero,
+      complemento: prestador?.endereco?.complemento,
+      cep: prestador?.endereco?.cep,
+      email: prestador?.email,
+      dadosBancarios: {
+        codigo_banco: prestador?.dadosBancarios?.banco,
+        agencia: prestador?.dadosBancarios?.agencia,
+        conta_corrente: prestador?.dadosBancarios?.conta,
+        doc_titular: prestador?.documento,
+        nome_titular: prestador?.nome,
+      },
+      observacao,
+    };
 
-  if (tipoConta == "poupanca") {
-    observacao
-      ? (cliente.observacao += "\n\n conta poupança")
-      : (cliente.observacao = "conta poupança");
+    if (prestador?.tipo === "ext") {
+      cliente.cnpj_cpf = "";
+      cliente.estado = "EX";
+      cliente.cidade = "EX";
+      cliente.exterior = "S";
+      cliente.nif = prestador?.documento;
+    }
+
+    return cliente;
+  } catch (error) {
+    console.log(error);
+    throw new Error("Erro ao formatar cliente/fornecedor: " + error);
   }
-
-  if (tipo === "ext") {
-    cliente.estado = "EX";
-    cliente.codigo_pais = codPais ? codPais : "";
-    cliente.cidade = "EX";
-    cliente.exterior = "S";
-    cliente.nif = documento; //numero de identificação fiscal para estrangeiros
-    cliente.cnpj_cpf = "";
-  }
-
-  return cliente;
 };
 
 const cache = {};
