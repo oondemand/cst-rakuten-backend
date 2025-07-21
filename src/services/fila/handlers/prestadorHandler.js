@@ -80,11 +80,21 @@ const prestadorHandler = async (integracao) => {
 };
 
 const fetchNextIntegracao = async () => {
-  return await IntegracaoPrestador.findOneAndUpdate(
+  let integracao = await IntegracaoPrestador.findOneAndUpdate(
     { etapa: "requisicao" },
     { etapa: "processando", executadoEm: new Date() },
     { sort: { createdAt: 1 }, new: true }
   );
+
+  if (!integracao) {
+    integracao = await IntegracaoPrestador.findOneAndUpdate(
+      { etapa: "reprocessar" },
+      { etapa: "processando", executadoEm: new Date() },
+      { sort: { createdAt: 1 }, new: true }
+    );
+  }
+
+  return integracao;
 };
 
 const filaPrestador = createQueue({

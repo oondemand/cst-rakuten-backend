@@ -13,5 +13,9 @@ router.post(
 );
 
 router.post("/prestador/arquivar/:id", IntegracaoPrestadorController.arquivar);
+router.post(
+  "/prestador/reprocessar/:id",
+  IntegracaoPrestadorController.reprocessar
+);
 
 module.exports = router;

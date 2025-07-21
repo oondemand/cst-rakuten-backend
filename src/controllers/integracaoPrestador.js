@@ -43,3 +43,38 @@ exports.arquivar = async (req, res) => {
       .json("Um erro inesperado aconteceu ao arquivar item!");
   }
 };
+
+exports.reprocessar = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const integracao = await IntegracaoPrestador.findById(id);
+    if (!integracao) {
+      return res.status(404).json("Integração não encontrada");
+    }
+
+    const integracaoASerProcessada = await IntegracaoPrestador.findOne({
+      prestador: integracao.prestadorId,
+      etapa: "requisicao",
+      arquivado: false,
+    });
+
+    if (integracaoASerProcessada) {
+      integracaoASerProcessada.arquivado = true;
+      integracaoASerProcessada.motivoArquivamento = "Duplicidade";
+      await integracaoASerProcessada.save();
+    }
+
+    if (!integracaoASerProcessada) {
+      integracao.etapa = "reprocessar";
+      integracao.reprocessado = true;
+      await integracao.save();
+    }
+
+    return res.status(200).json("Integração reprocessada com sucesso!");
+  } catch (error) {
+    return res
+      .status(500)
+      .json("Um erro inesperado aconteceu ao reprocessar item!");
+  }
+};
