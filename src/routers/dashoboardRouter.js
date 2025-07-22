@@ -4,11 +4,18 @@ const {
   ticketsPorStatus,
   ticketsPorEtapa,
 } = require("../controllers/dashboard/tickets");
+const {
+  integracaoPrestadorOmieCentralPorEtapa,
+} = require("../controllers/dashboard/integracao");
 
 const router = Router();
 
 router.get("/servicos/valores", valoresPorStatus);
 router.get("/tickets/status", ticketsPorStatus);
 router.get("/tickets/etapa", ticketsPorEtapa);
+router.get(
+  "/integracao/prestador/central-omie",
+  integracaoPrestadorOmieCentralPorEtapa
+);
 
 module.exports = router;
