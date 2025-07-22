@@ -1,4 +1,5 @@
 const IntegracaoPrestador = require("../models/IntegracaoPrestador");
+const Prestador = require("../models/Prestador");
 const { filaPrestador } = require("../services/fila/handlers/prestadorHandler");
 
 exports.listarIntegracaoPrestador = async (req, res) => {
@@ -53,23 +54,27 @@ exports.reprocessar = async (req, res) => {
       return res.status(404).json("Integração não encontrada");
     }
 
-    const integracaoASerProcessada = await IntegracaoPrestador.findOne({
-      prestador: integracao.prestadorId,
-      etapa: "requisicao",
-      arquivado: false,
+    // const integracaoASerProcessada = await IntegracaoPrestador.findOne({
+    //   prestador: integracao.prestadorId,
+    //   etapa: "requisicao",
+    //   arquivado: false,
+    // });
+
+    // if (integracaoASerProcessada) {
+    //   integracaoASerProcessada.arquivado = true;
+    //   integracaoASerProcessada.motivoArquivamento = "Duplicidade";
+    //   await integracaoASerProcessada.save();
+    // }
+
+    // if (!integracaoASerProcessada) {
+    integracao.etapa = "reprocessar";
+    integracao.reprocessado = true;
+    await integracao.save();
+    // }
+
+    await Prestador.findByIdAndUpdate(integracao.prestadorId, {
+      status_sincronizacao_omie: "processando",
     });
-
-    if (integracaoASerProcessada) {
-      integracaoASerProcessada.arquivado = true;
-      integracaoASerProcessada.motivoArquivamento = "Duplicidade";
-      await integracaoASerProcessada.save();
-    }
-
-    if (!integracaoASerProcessada) {
-      integracao.etapa = "reprocessar";
-      integracao.reprocessado = true;
-      await integracao.save();
-    }
 
     return res.status(200).json("Integração reprocessada com sucesso!");
   } catch (error) {

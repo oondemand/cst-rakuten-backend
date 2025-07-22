@@ -307,7 +307,7 @@ exports.atualizarPrestador = async (req, res) => {
 
     const prestadorAtualizado = await Prestador.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      { ...req.body, status_sincronizacao_omie: "processando" },
       {
         new: true,
       }
