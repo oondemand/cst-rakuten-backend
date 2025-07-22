@@ -4,7 +4,16 @@ const { filaPrestador } = require("../services/fila/handlers/prestadorHandler");
 
 exports.listarIntegracaoPrestador = async (req, res) => {
   try {
-    const results = await IntegracaoPrestador.find({ arquivado: false }).sort({
+    const { time = 1, ...rest } = req.query;
+
+    const oneDayInMilliseconds = 1000 * 60 * 60 * 24;
+
+    const filtros = {
+      arquivado: false,
+      updatedAt: { $gte: new Date(Date.now() - time * oneDayInMilliseconds) },
+    };
+
+    const results = await IntegracaoPrestador.find(filtros).sort({
       executadoEm: -1,
     });
     res.status(200).json(results);
