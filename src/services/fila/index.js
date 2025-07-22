@@ -1,4 +1,4 @@
-const createQueue = ({ handler, limit = 2, next, onError }) => {
+const createQueue = ({ handler, limit = 1, next, onError }) => {
   let activeTasks = 0;
   let queueRunning = false;
 
