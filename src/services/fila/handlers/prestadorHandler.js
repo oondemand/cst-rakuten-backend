@@ -11,14 +11,9 @@ const prestadorHandler = async (integracao) => {
   if (!integracao || integracao.arquivado) return;
 
   try {
-    integracao.executadoEm = new Date();
-
     const cliente = clienteService.criarFornecedor({
       prestador: integracao.prestador,
     });
-
-    integracao.payload = cliente;
-    await integracao.save();
 
     const { appKey, appSecret } = await BaseOmie.findOne({ status: "ativo" });
     let prestadorOmie = await buscarPrestadorOmie({
@@ -26,6 +21,19 @@ const prestadorHandler = async (integracao) => {
       appSecret,
       prestador: integracao.prestador,
     });
+
+    integracao.executadoEm = new Date();
+    integracao.payload = {
+      url: `${process.env.API_OMIE}/geral/clientes/`,
+      body: {
+        call: prestadorOmie ? "AlterarCliente" : "IncluirCliente",
+        app_key: appKey,
+        app_secret: appSecret,
+        param: [cliente],
+      },
+    };
+
+    await integracao.save();
 
     const { errors, result } = await retryAsync({
       callback: async () => {
