@@ -18,7 +18,7 @@ const buscarPrestadorOmie = async ({ prestador, appKey, appSecret }) => {
       prestador.documento
     );
 
-    if (clientes && clientes.length > 1) {
+    if (clientes && clientes.length > 0) {
       const cliente = clientes.find((item) => {
         return item?.caracteristicas?.some(
           (caracteristica) =>
@@ -28,10 +28,6 @@ const buscarPrestadorOmie = async ({ prestador, appKey, appSecret }) => {
       });
 
       return cliente;
-    }
-
-    if (clientes && clientes.length === 1) {
-      return clientes[0];
     }
   }
 
