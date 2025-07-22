@@ -26,6 +26,7 @@ const criarFornecedor = ({ prestador }) => {
         nome_titular: prestador?.nome,
       },
       observacao,
+      caracteristicas: [{ campo: "sid", conteudo: prestador?.sid || "" }],
     };
 
     if (prestador?.tipo === "ext") {
@@ -59,6 +60,7 @@ const consultar = async (appKey, appSecret, codCliente) => {
       call: "ConsultarCliente",
       app_key: appKey,
       app_secret: appSecret,
+      exibir_caracteristicas: "S",
       param: [
         {
           codigo_cliente_omie: codCliente,
@@ -142,6 +144,7 @@ const pesquisarPorCNPJ = async (appKey, appSecret, cnpj, maxTentativas = 3) => {
           {
             pagina: 1,
             registros_por_pagina: 50,
+            exibir_caracteristicas: "S",
             clientesFiltro: {
               cnpj_cpf: cnpj,
             },
@@ -151,91 +154,10 @@ const pesquisarPorCNPJ = async (appKey, appSecret, cnpj, maxTentativas = 3) => {
 
       // console.log(JSON.stringify(body));
       const response = await apiOmie.post("geral/clientes/", body);
-      const data = response.data?.clientes_cadastro[0];
+      const data = response.data?.clientes_cadastro;
 
       // Armazenar a resposta no cache com um timestamp
       cachePesquisaPorCNPJ[cacheKey] = {
-        data: data,
-        timestamp: now,
-      };
-
-      return data;
-    } catch (error) {
-      if (
-        error.response?.data?.faultstring?.includes(
-          "ERROR: Não existem registros para a página [1]!"
-        )
-      ) {
-        return null;
-      }
-
-      tentativas++;
-      if (
-        error.response?.data?.faultstring?.includes(
-          "API bloqueada por consumo indevido."
-        )
-      ) {
-        // console.log("Esperando 5 minutos");
-        await new Promise((resolve) => setTimeout(resolve, 60 * 1000 * 5));
-      }
-
-      if (
-        error.response?.data?.faultstring?.includes(
-          "Consumo redundante detectado"
-        )
-      ) {
-        // console.log("Aguardando 1 minuto");
-        await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
-      }
-    }
-  }
-
-  throw `Falha ao buscar prestador após ${maxTentativas} tentativas.`;
-};
-
-const cachePesquisarPorCodClienteOmie = {};
-const pesquisarCodClienteOmie = async (
-  appKey,
-  appSecret,
-  codigo_cliente_omie,
-  maxTentativas = 3
-) => {
-  const cacheKey = `codigo_cliente_omie_${codigo_cliente_omie}`;
-  const now = Date.now();
-
-  let tentativas = 0;
-
-  // Verificar se o codigo_cliente_omie	 está no cache e se ainda é válido (10 minuto)
-  if (
-    cachePesquisarPorCodClienteOmie[cacheKey] &&
-    now - cachePesquisarPorCodClienteOmie[cacheKey].timestamp < 60 * 1000
-  ) {
-    // console.log(`Retornando do cache para o codigo_cliente_omie	: ${codigo_cliente_omie	}`);
-    return cachePesquisarPorCodClienteOmie[cacheKey].data;
-  }
-  while (tentativas < maxTentativas) {
-    try {
-      const body = {
-        call: "ListarClientes",
-        app_key: appKey,
-        app_secret: appSecret,
-        param: [
-          {
-            pagina: 1,
-            registros_por_pagina: 50,
-            clientesFiltro: {
-              codigo_cliente_omie,
-            },
-          },
-        ],
-      };
-
-      // console.log(JSON.stringify(body));
-      const response = await apiOmie.post("geral/clientes/", body);
-      const data = response.data?.clientes_cadastro[0];
-
-      // Armazenar a resposta no cache com um timestamp
-      cachePesquisarPorCodClienteOmie[cacheKey] = {
         data: data,
         timestamp: now,
       };
@@ -302,21 +224,16 @@ const alterarCaracteristicas = async ({
   campo,
   conteudo,
 }) => {
-  try {
-    const body = {
-      call: "AlterarCaractCliente",
-      app_key: appKey,
-      app_secret: appSecret,
-      param: [{ codigo_cliente_omie, campo, conteudo }],
-    };
+  const body = {
+    call: "AlterarCaractCliente",
+    app_key: appKey,
+    app_secret: appSecret,
+    param: [{ codigo_cliente_omie, campo, conteudo }],
+  };
 
-    const response = await apiOmie.post("geral/clientescaract/", body);
+  const response = await apiOmie.post("geral/clientescaract/", body);
 
-    return response;
-  } catch (e) {
-    console.log(e);
-    throw e;
-  }
+  return response;
 };
 
 module.exports = {
@@ -326,6 +243,5 @@ module.exports = {
   criarFornecedor,
   pesquisarPorCNPJ,
   alterarCaracteristicas,
-  pesquisarCodClienteOmie,
   consultarCaracteristicas,
 };

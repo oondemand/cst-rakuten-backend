@@ -13,13 +13,6 @@ const prestadorHandler = async (integracao) => {
   try {
     integracao.executadoEm = new Date();
 
-    const { appKey, appSecret } = await BaseOmie.findOne({ status: "ativo" });
-    let fornecedor = await buscarPrestadorOmie({
-      appKey,
-      appSecret,
-      prestador: integracao.prestador,
-    });
-
     const cliente = clienteService.criarFornecedor({
       prestador: integracao.prestador,
     });
@@ -27,14 +20,20 @@ const prestadorHandler = async (integracao) => {
     integracao.payload = cliente;
     await integracao.save();
 
+    const { appKey, appSecret } = await BaseOmie.findOne({ status: "ativo" });
+    let prestadorOmie = await buscarPrestadorOmie({
+      appKey,
+      appSecret,
+      prestador: integracao.prestador,
+    });
+
     const { errors, result } = await retryAsync({
       callback: async () => {
-        if (fornecedor) {
-          cliente.codigo_cliente_omie = fornecedor.codigo_cliente_omie;
+        if (prestadorOmie) {
+          cliente.codigo_cliente_omie = prestadorOmie.codigo_cliente_omie;
           return await clienteService.update(appKey, appSecret, cliente);
         }
-
-        if (!fornecedor) {
+        if (!prestadorOmie) {
           cliente.codigo_cliente_integracao = randomUUID();
           return await clienteService.incluir(appKey, appSecret, cliente);
         }
