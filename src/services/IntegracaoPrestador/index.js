@@ -1,4 +1,4 @@
-const IntegracaoPrestador = require("../../models/IntegracaoPrestador");
+const IntegracaoPrestador = require("../../models/integracao/prestador/central-omie");
 
 const create = async ({ prestador }) => {
   await IntegracaoPrestador.updateMany(

@@ -1,10 +1,12 @@
-const { createQueue } = require("../index");
-const IntegracaoPrestador = require("../../../models/IntegracaoPrestador");
-const Prestador = require("../../../models/Prestador");
-const { retryAsync, sleep } = require("../../../utils");
-const BaseOmie = require("../../../models/BaseOmie");
-const { buscarPrestadorOmie } = require("../../prestador/buscarPrestadorOmie");
-const clienteService = require("../../omie/clienteService");
+const { createQueue } = require("../../index");
+const IntegracaoPrestadorCentralOmie = require("../../../../models/integracao/prestador/central-omie");
+const Prestador = require("../../../../models/Prestador");
+const { retryAsync, sleep } = require("../../../../utils");
+const BaseOmie = require("../../../../models/BaseOmie");
+const {
+  buscarPrestadorOmie,
+} = require("../../../prestador/buscarPrestadorOmie");
+const clienteService = require("../../../omie/clienteService");
 const { randomUUID } = require("crypto");
 
 const prestadorHandler = async (integracao) => {
@@ -23,6 +25,7 @@ const prestadorHandler = async (integracao) => {
     });
 
     integracao.executadoEm = new Date();
+    integracao.tentativas = (integracao.tentativas || 0) + 1;
     integracao.payload = {
       url: `${process.env.API_OMIE}/geral/clientes/`,
       body: {
@@ -49,9 +52,25 @@ const prestadorHandler = async (integracao) => {
       limit: 1,
     });
 
+    if (!result && integracao.tentativas < 3) {
+      integracao.etapa = "reprocessar";
+      integracao.erros = [
+        ...(integracao.erros || []),
+        ...(errors?.map((e) => e?.response?.data) || []),
+      ];
+
+      await integracao.save();
+      await Prestador.findByIdAndUpdate(integracao.prestadorId, {
+        status_sincronizacao_omie: "processando",
+      });
+
+      await sleep(1000 * 60); // Espera 1 minuto antes de tentar outra requisição
+
+      return;
+    }
+
     if (!result && integracao.tentativas >= 3) {
       integracao.etapa = "falhas";
-      integracao.tentativas = (integracao.tentativas || 0) + 1;
       integracao.erros = [
         ...(integracao.erros || []),
         ...(errors?.map((e) => e?.response?.data) || []),
@@ -61,22 +80,6 @@ const prestadorHandler = async (integracao) => {
 
       await Prestador.findByIdAndUpdate(integracao.prestadorId, {
         status_sincronizacao_omie: "erro",
-      });
-
-      return;
-    }
-
-    if (!result && integracao.tentativas < 3) {
-      integracao.etapa = "reprocessar";
-      integracao.tentativas = (integracao.tentativas || 0) + 1;
-      integracao.erros = [
-        ...(integracao.erros || []),
-        ...(errors?.map((e) => e?.response?.data) || []),
-      ];
-
-      await integracao.save();
-      await Prestador.findByIdAndUpdate(integracao.prestadorId, {
-        status_sincronizacao_omie: "processando",
       });
 
       return;
@@ -95,6 +98,8 @@ const prestadorHandler = async (integracao) => {
         status_sincronizacao_omie: "sucesso",
         codigo_cliente_omie: result.codigo_cliente_omie,
       });
+
+      return;
     }
   } catch (err) {
     console.log(err);
@@ -113,14 +118,14 @@ const prestadorHandler = async (integracao) => {
 };
 
 const fetchNextIntegracao = async () => {
-  let integracao = await IntegracaoPrestador.findOneAndUpdate(
+  let integracao = await IntegracaoPrestadorCentralOmie.findOneAndUpdate(
     { etapa: "requisicao" },
     { etapa: "processando", executadoEm: new Date() },
     { sort: { createdAt: 1 }, new: true }
   );
 
   if (!integracao) {
-    integracao = await IntegracaoPrestador.findOneAndUpdate(
+    integracao = await IntegracaoPrestadorCentralOmie.findOneAndUpdate(
       { etapa: "reprocessar" },
       { etapa: "processando", executadoEm: new Date() },
       { sort: { createdAt: 1 }, new: true }
@@ -130,9 +135,9 @@ const fetchNextIntegracao = async () => {
   return integracao;
 };
 
-const filaPrestador = createQueue({
+const queue = createQueue({
   handler: prestadorHandler,
   next: fetchNextIntegracao,
 });
 
-module.exports = { filaPrestador };
+module.exports = queue;

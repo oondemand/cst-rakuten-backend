@@ -1,32 +1,30 @@
-const IntegracaoPrestador = require("../models/IntegracaoPrestador");
-const Prestador = require("../models/Prestador");
-const { filaPrestador } = require("../services/fila/handlers/prestadorHandler");
-const filtersUtils = require("../utils/filter");
+const IntegracaoPrestadorCentralOmie = require("../../../models/integracao/prestador/central-omie");
+const PrestadorCentralOmieQueue = require("../../../services/fila/handlers/prestador/central-omie");
 
-exports.listarIntegracaoPrestador = async (req, res) => {
+const listarTodas = async (req, res) => {
   try {
-    const { time = 1, ...rest } = req.query;
-
-    const oneDayInMilliseconds = 1000 * 60 * 60 * 24;
+    const { time, ...rest } = req.query;
+    const umDiaEmMilissegundos = 1000 * 60 * 60 * 24;
 
     const filtros = {
       arquivado: false,
-      updatedAt: { $gte: new Date(Date.now() - time * oneDayInMilliseconds) },
+      updatedAt: { $gte: new Date(Date.now() - time * umDiaEmMilissegundos) },
     };
 
-    const results = await IntegracaoPrestador.find(filtros).sort({
+    const results = await IntegracaoPrestadorCentralOmie.find(filtros).sort({
       executadoEm: -1,
     });
+
     res.status(200).json(results);
   } catch (error) {
     res.status(500).json("Algo deu errado ao listar integração com prestador");
   }
 };
 
-exports.processarLista = async (req, res) => {
+const processar = async (req, res) => {
   try {
-    filaPrestador.start();
-    return res.status(200);
+    PrestadorCentralOmieQueue.start();
+    return res.status(200).json("Processamento iniciado com sucesso");
   } catch (error) {
     return res
       .status(500)
@@ -34,20 +32,16 @@ exports.processarLista = async (req, res) => {
   }
 };
 
-exports.arquivar = async (req, res) => {
+const arquivar = async (req, res) => {
   try {
     const { id } = req.params;
-    const ticketIntegracaoArquivado =
-      await IntegracaoPrestador.findByIdAndUpdate(
-        id,
-        {
-          arquivado: true,
-          motivoArquivamento: "arquivado pelo usuario",
-        },
-        { new: true }
-      );
+    const ticketArquivado =
+      await IntegracaoPrestadorCentralOmie.findByIdAndUpdate(id, {
+        arquivado: true,
+        motivoArquivamento: "arquivado pelo usuario",
+      });
 
-    res.status(200).json(ticketIntegracaoArquivado);
+    res.status(200).json(ticketArquivado);
   } catch (error) {
     return res
       .status(500)
@@ -55,32 +49,33 @@ exports.arquivar = async (req, res) => {
   }
 };
 
-exports.reprocessar = async (req, res) => {
+const reprocessar = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const integracao = await IntegracaoPrestador.findById(id);
+    const integracao = await IntegracaoPrestadorCentralOmie.findById(id);
     if (!integracao) {
       return res.status(404).json("Integração não encontrada");
     }
 
-    // const integracaoASerProcessada = await IntegracaoPrestador.findOne({
-    //   prestador: integracao.prestadorId,
-    //   etapa: "requisicao",
-    //   arquivado: false,
-    // });
+    const integracaoASerProcessada =
+      await IntegracaoPrestadorCentralOmie.findOne({
+        prestador: integracao.prestadorId,
+        etapa: "requisicao",
+        arquivado: false,
+      });
 
-    // if (integracaoASerProcessada) {
-    //   integracaoASerProcessada.arquivado = true;
-    //   integracaoASerProcessada.motivoArquivamento = "Duplicidade";
-    //   await integracaoASerProcessada.save();
-    // }
+    if (integracaoASerProcessada) {
+      integracao.arquivado = true;
+      integracao.motivoArquivamento = "Duplicidade";
+      await integracao.save();
+    }
 
-    // if (!integracaoASerProcessada) {
-    integracao.etapa = "reprocessar";
-    integracao.reprocessado = true;
-    await integracao.save();
-    // }
+    if (!integracaoASerProcessada) {
+      integracao.etapa = "reprocessar";
+      integracao.reprocessado = true;
+      await integracao.save();
+    }
 
     await Prestador.findByIdAndUpdate(integracao.prestadorId, {
       status_sincronizacao_omie: "processando",
@@ -94,18 +89,18 @@ exports.reprocessar = async (req, res) => {
   }
 };
 
-exports.listarIntegracaoPrestadorCentralOmieArquivados = async (req, res) => {
+const listarComPaginacao = async (req, res) => {
   try {
     const { sortBy, pageIndex, pageSize, searchTerm, ...rest } = req.query;
 
     const filterFromFiltros = filtersUtils.queryFiltros({
       filtros: rest,
-      schema: IntegracaoPrestador.schema,
+      schema: IntegracaoPrestadorCentralOmie.schema,
     });
 
     const searchTermCondition = filtersUtils.querySearchTerm({
       searchTerm,
-      schema: IntegracaoPrestador.schema,
+      schema: IntegracaoPrestadorCentralOmie.schema,
       camposBusca: ["prestador.nome", "prestador.documento", "prestador.sid"],
     });
 
@@ -129,25 +124,33 @@ exports.listarIntegracaoPrestadorCentralOmieArquivados = async (req, res) => {
     const limite = parseInt(pageSize) || 10;
     const skip = page * limite;
 
-    const [integracaoPrestador, totalIntegracaoPrestador] = await Promise.all([
-      IntegracaoPrestador.find(queryResult)
+    const [integracoes, totalIntegracoes] = await Promise.all([
+      IntegracaoPrestadorCentralOmie.find(queryResult)
         .populate("prestador", "sid nome documento tipo")
         .skip(skip)
         .limit(limite)
         .sort(sorting),
-      IntegracaoPrestador.countDocuments(queryResult),
+      IntegracaoPrestadorCentralOmie.countDocuments(queryResult),
     ]);
 
     res.status(200).json({
-      integracaoPrestador,
+      integracoes,
       pagination: {
         currentPage: page,
-        totalPages: Math.ceil(totalIntegracaoPrestador / limite),
-        totalItems: totalIntegracaoPrestador,
+        totalPages: Math.ceil(totalIntegracoes / limite),
+        totalItems: totalIntegracoes,
         itemsPerPage: limite,
       },
     });
   } catch (error) {
     res.status(500).json("Algo deu errado ao listar integração com prestador");
   }
+};
+
+module.exports = {
+  processar,
+  arquivar,
+  reprocessar,
+  listarTodas,
+  listarComPaginacao,
 };

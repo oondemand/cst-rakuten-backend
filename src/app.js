@@ -73,7 +73,11 @@ app.use("/planejamento", require("./routers/planejamentoRouter"));
 app.use("/importacoes", require("./routers/importacaoRouter"));
 app.use("/dashboard", require("./routers/dashoboardRouter"));
 app.use("/sistema", require("./routers/sistemaRouter"));
-app.use("/integracao", require("./routers/integracaoRouter"));
+
+app.use(
+  "/integracao/prestador/central-omie",
+  require("./routers/integracao/prestador/central-omie")
+);
 
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
