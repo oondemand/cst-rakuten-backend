@@ -1,6 +1,7 @@
 const IntegracaoPrestadorCentralOmie = require("../../../models/integracao/prestador/central-omie");
 const PrestadorCentralOmieQueue = require("../../../services/fila/handlers/prestador/central-omie");
 const filterUtils = require("../../../utils/filter");
+const Prestador = require("../../../models/Prestador")
 
 const listarTodas = async (req, res) => {
   try {
@@ -84,6 +85,8 @@ const reprocessar = async (req, res) => {
 
     return res.status(200).json("Integração reprocessada com sucesso!");
   } catch (error) {
+    console.log(error);
+
     return res
       .status(500)
       .json("Um erro inesperado aconteceu ao reprocessar item!");
