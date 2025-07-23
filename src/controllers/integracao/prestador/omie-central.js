@@ -1,5 +1,6 @@
 const IntegracaoPrestadorOmieCentral = require("../../../models/integracao/prestador/omie-central");
 // const PrestadorCentralOmieQueue = require("../../../services/fila/handlers/prestador/central-omie");
+const filterOptions = require("../../../utils/filter");
 
 const listarTodas = async (req, res) => {
   try {
@@ -93,23 +94,19 @@ const listarComPaginacao = async (req, res) => {
   try {
     const { sortBy, pageIndex, pageSize, searchTerm, ...rest } = req.query;
 
-    const filterFromFiltros = filtersUtils.queryFiltros({
+    const filterFromFiltros = filterOptions.queryFiltros({
       filtros: rest,
       schema: IntegracaoPrestadorOmieCentral.schema,
     });
 
-    const searchTermCondition = filtersUtils.querySearchTerm({
+    const searchTermCondition = filterOptions.querySearchTerm({
       searchTerm,
       schema: IntegracaoPrestadorOmieCentral.schema,
       camposBusca: ["prestador.nome", "prestador.documento", "prestador.sid"],
     });
 
     const queryResult = {
-      $and: [
-        { arquivado: true },
-        filterFromFiltros,
-        { $or: [searchTermCondition] },
-      ],
+      $and: [filterFromFiltros, { $or: [searchTermCondition] }],
     };
 
     let sorting = {};
@@ -126,7 +123,6 @@ const listarComPaginacao = async (req, res) => {
 
     const [integracoes, totalIntegracoes] = await Promise.all([
       IntegracaoPrestadorOmieCentral.find(queryResult)
-        .populate("prestador", "sid nome documento tipo")
         .skip(skip)
         .limit(limite)
         .sort(sorting),

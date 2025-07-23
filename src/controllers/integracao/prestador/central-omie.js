@@ -123,7 +123,6 @@ const listarComPaginacao = async (req, res) => {
 
     const [integracoes, totalIntegracoes] = await Promise.all([
       IntegracaoPrestadorCentralOmie.find(queryResult)
-        .populate("prestador", "sid nome documento tipo")
         .skip(skip)
         .limit(limite)
         .sort(sorting),
