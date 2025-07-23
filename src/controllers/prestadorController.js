@@ -423,9 +423,7 @@ exports.prestadorWebHook = async (req, res) => {
     if (topic === "ClienteFornecedor.Alterado") {
       console.log("🟩 Prestador alterado", req);
 
-      await IntegracaoPrestadorService.create.omieCentral({
-        prestador: prestadorAtualizado,
-      });
+      await IntegracaoPrestadorService.create.omieCentral();
 
       //   const documento = event?.cnpj_cpf
       //     ? Number(event.cnpj_cpf.replace(/[.\-\/]/g, ""))
@@ -508,10 +506,10 @@ exports.prestadorWebHook = async (req, res) => {
       //     await Prestador.findByIdAndUpdate(prestador._id, {
       //       ...prestadorOmie,
       //     });
-      //     res
-      //       .status(200)
-      //       .json({ message: "Webhook recebido. Dados sendo atualizados." });
-      //   }
+      res
+        .status(200)
+        .json({ message: "Webhook recebido. Dados sendo atualizados." });
+      // }
     }
   } catch (error) {
     console.error("Erro ao processar o webhook:", error);
