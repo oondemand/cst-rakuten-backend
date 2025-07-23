@@ -47,22 +47,46 @@ const prestadorHandler = async (integracao) => {
         }
       },
       limit: 1,
-      onTry: async (tentativa) => {
-        if (tentativa === 2) await sleep(1000 * 10); // 10 seg
-        if (tentativa >= 3) await sleep(1000 * 60 * 3); // 3 min
-        integracao.tentativas = (integracao.tentativas || 0) + 1;
-      },
     });
 
-    const formattedErrors = errors?.map((e) => {
-      return e?.response?.data;
-    });
+    if (!result && integracao.tentativas >= 3) {
+      integracao.etapa = "falhas";
+      integracao.tentativas = (integracao.tentativas || 0) + 1;
+      integracao.erros = [
+        ...(integracao.erros || []),
+        ...(errors?.map((e) => e?.response?.data) || []),
+      ];
+
+      await integracao.save();
+
+      await Prestador.findByIdAndUpdate(integracao.prestadorId, {
+        status_sincronizacao_omie: "erro",
+      });
+
+      return;
+    }
+
+    if (!result && integracao.tentativas < 3) {
+      integracao.etapa = "reprocessar";
+      integracao.tentativas = (integracao.tentativas || 0) + 1;
+      integracao.erros = [
+        ...(integracao.erros || []),
+        ...(errors?.map((e) => e?.response?.data) || []),
+      ];
+
+      await integracao.save();
+      await Prestador.findByIdAndUpdate(integracao.prestadorId, {
+        status_sincronizacao_omie: "processando",
+      });
+
+      return;
+    }
 
     if (result) {
       integracao.etapa = "sucesso";
       integracao.erros = [
         ...(integracao.erros || []),
-        ...(formattedErrors || []),
+        ...(errors?.map((e) => e?.response?.data) || []),
       ];
       integracao.resposta = result;
       await integracao.save();
@@ -70,17 +94,6 @@ const prestadorHandler = async (integracao) => {
       await Prestador.findByIdAndUpdate(integracao.prestadorId, {
         status_sincronizacao_omie: "sucesso",
         codigo_cliente_omie: result.codigo_cliente_omie,
-      });
-    } else {
-      integracao.etapa = "falhas";
-      integracao.erros = [
-        ...(integracao.erros || []),
-        ...(formattedErrors || []),
-      ];
-      await integracao.save();
-
-      await Prestador.findByIdAndUpdate(integracao.prestadorId, {
-        status_sincronizacao_omie: "erro",
       });
     }
   } catch (err) {

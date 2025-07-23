@@ -106,12 +106,12 @@ exports.listarIntegracaoPrestadorCentralOmieArquivados = async (req, res) => {
     const searchTermCondition = filtersUtils.querySearchTerm({
       searchTerm,
       schema: IntegracaoPrestador.schema,
-      camposBusca: [],
+      camposBusca: ["prestador.nome", "prestador.documento", "prestador.sid"],
     });
 
     const queryResult = {
       $and: [
-        { arquivado: false },
+        { arquivado: true },
         filterFromFiltros,
         { $or: [searchTermCondition] },
       ],
@@ -130,12 +130,12 @@ exports.listarIntegracaoPrestadorCentralOmieArquivados = async (req, res) => {
     const skip = page * limite;
 
     const [integracaoPrestador, totalIntegracaoPrestador] = await Promise.all([
-      IntegracaoPrestador.find()
+      IntegracaoPrestador.find(queryResult)
         .populate("prestador", "sid nome documento tipo")
         .skip(skip)
         .limit(limite)
         .sort(sorting),
-      IntegracaoPrestador.countDocuments(),
+      IntegracaoPrestador.countDocuments(queryResult),
     ]);
 
     res.status(200).json({
