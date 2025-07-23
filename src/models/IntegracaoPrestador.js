@@ -15,7 +15,10 @@ const integracaoPrestadorSchema = new mongoose.Schema(
     prestador: Object,
     executadoEm: Date,
     arquivado: { type: Boolean, default: false },
-    motivoArquivamento: { type: String },
+    motivoArquivamento: {
+      type: String,
+      enum: ["duplicidade", "arquivado pelo usuario"],
+    },
   },
   { timestamps: true }
 );

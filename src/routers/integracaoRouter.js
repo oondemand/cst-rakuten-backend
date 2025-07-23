@@ -7,6 +7,11 @@ router.get(
   IntegracaoPrestadorController.listarIntegracaoPrestador
 );
 
+router.get(
+  "/prestador/arquivados",
+  IntegracaoPrestadorController.listarIntegracaoPrestadorCentralOmieArquivados
+);
+
 router.post(
   "/prestador/processar",
   IntegracaoPrestadorController.processarLista

@@ -1,6 +1,7 @@
 const IntegracaoPrestador = require("../models/IntegracaoPrestador");
 const Prestador = require("../models/Prestador");
 const { filaPrestador } = require("../services/fila/handlers/prestadorHandler");
+const filtersUtils = require("../utils/filter");
 
 exports.listarIntegracaoPrestador = async (req, res) => {
   try {
@@ -41,7 +42,7 @@ exports.arquivar = async (req, res) => {
         id,
         {
           arquivado: true,
-          motivoArquivamento: "Solicitado pelo cliente",
+          motivoArquivamento: "arquivado pelo usuario",
         },
         { new: true }
       );
@@ -90,5 +91,63 @@ exports.reprocessar = async (req, res) => {
     return res
       .status(500)
       .json("Um erro inesperado aconteceu ao reprocessar item!");
+  }
+};
+
+exports.listarIntegracaoPrestadorCentralOmieArquivados = async (req, res) => {
+  try {
+    const { sortBy, pageIndex, pageSize, searchTerm, ...rest } = req.query;
+
+    const filterFromFiltros = filtersUtils.queryFiltros({
+      filtros: rest,
+      schema: IntegracaoPrestador.schema,
+    });
+
+    const searchTermCondition = filtersUtils.querySearchTerm({
+      searchTerm,
+      schema: IntegracaoPrestador.schema,
+      camposBusca: [],
+    });
+
+    const queryResult = {
+      $and: [
+        { arquivado: false },
+        filterFromFiltros,
+        { $or: [searchTermCondition] },
+      ],
+    };
+
+    let sorting = {};
+
+    if (sortBy) {
+      const [campo, direcao] = sortBy.split(".");
+      const campoFormatado = campo.replaceAll("_", ".");
+      sorting[campoFormatado] = direcao === "desc" ? -1 : 1;
+    }
+
+    const page = parseInt(pageIndex) || 0;
+    const limite = parseInt(pageSize) || 10;
+    const skip = page * limite;
+
+    const [integracaoPrestador, totalIntegracaoPrestador] = await Promise.all([
+      IntegracaoPrestador.find()
+        .populate("prestador", "sid nome documento tipo")
+        .skip(skip)
+        .limit(limite)
+        .sort(sorting),
+      IntegracaoPrestador.countDocuments(),
+    ]);
+
+    res.status(200).json({
+      integracaoPrestador,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalIntegracaoPrestador / limite),
+        totalItems: totalIntegracaoPrestador,
+        itemsPerPage: limite,
+      },
+    });
+  } catch (error) {
+    res.status(500).json("Algo deu errado ao listar integração com prestador");
   }
 };

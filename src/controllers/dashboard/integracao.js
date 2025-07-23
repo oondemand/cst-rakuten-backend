@@ -21,9 +21,6 @@ const integracaoPrestadorOmieCentralPorEtapa = async (req, res) => {
           count: 1,
         },
       },
-      // {
-      //   $sort: { count: -1 }, // opcional: ordenar da etapa com mais para menos
-      // },
     ];
 
     const response = await IntegracaoPrestador.aggregate(aggregationPipeline);
