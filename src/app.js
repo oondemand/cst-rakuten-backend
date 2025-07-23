@@ -79,6 +79,11 @@ app.use(
   require("./routers/integracao/prestador/central-omie")
 );
 
+app.use(
+  "/integracao/prestador/omie-central",
+  require("./routers/integracao/prestador/omie-central")
+);
+
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 // Middleware de erro

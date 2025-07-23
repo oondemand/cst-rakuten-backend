@@ -1,4 +1,4 @@
-const IntegracaoPrestador = require("../../models/IntegracaoPrestador");
+const IntegracaoPrestadorCentralOmie = require("../../models/integracao/prestador/central-omie");
 
 const integracaoPrestadorOmieCentralPorEtapa = async (req, res) => {
   try {
@@ -23,7 +23,8 @@ const integracaoPrestadorOmieCentralPorEtapa = async (req, res) => {
       },
     ];
 
-    const response = await IntegracaoPrestador.aggregate(aggregationPipeline);
+    const response =
+      await IntegracaoPrestadorCentralOmie.aggregate(aggregationPipeline);
     return res.status(200).json(response);
   } catch (error) {
     console.error("Erro ao agrupar por etapa:", error);
