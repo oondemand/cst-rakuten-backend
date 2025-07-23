@@ -1,6 +1,6 @@
 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 
-const retryAsync = async (callback, { limit = 1, onTry, onError }) => {
+const retryAsync = async (callback, limit = 1, onTry, onError) => {
   const errors = [];
 
   for (let tentativa = 1; tentativa <= limit; tentativa++) {

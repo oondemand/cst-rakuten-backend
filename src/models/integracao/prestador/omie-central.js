@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const omieCentral = new mongoose.Schema(
   {
-    prestadorId: { type: mongoose.Schema.Types.ObjectId, ref: "Prestador" },
+    codigo_cliente_omie: String,
     etapa: {
       type: String,
       enum: ["requisicao", "reprocessar", "processando", "falhas", "sucesso"],

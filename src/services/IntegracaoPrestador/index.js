@@ -25,25 +25,27 @@ const centralOmie = async ({ prestador }) => {
   return integracao;
 };
 
-const omieCentral = async () => {
-  // await IntegracaoPrestadorOmieCentral.updateMany(
-  //   {
-  //     prestadorId: prestador._id,
-  //     arquivado: false,
-  //     etapa: { $in: ["falhas", "reprocessar", "requisicao"] },
-  //   },
-  //   {
-  //     $set: {
-  //       arquivado: true,
-  //       motivoArquivamento: "Duplicidade",
-  //     },
-  //   }
-  // );
+const omieCentral = async ({ payload, prestador }) => {
+  await IntegracaoPrestadorOmieCentral.updateMany(
+    {
+      codigo_cliente_omie: prestador.codigo_cliente_omie,
+      arquivado: false,
+      etapa: { $in: ["falhas", "reprocessar", "requisicao"] },
+    },
+    {
+      $set: {
+        arquivado: true,
+        motivoArquivamento: "Duplicidade",
+      },
+    }
+  );
 
   const integracao = await IntegracaoPrestadorOmieCentral.create({
-    // prestadorId: prestador._id,
+    codigo_cliente_omie: prestador.codigo_cliente_omie,
+    payload,
     etapa: "requisicao",
-    // prestador: prestador.toObject(),
+
+    prestador: prestador,
   });
 
   return integracao;

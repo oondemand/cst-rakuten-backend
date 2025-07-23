@@ -30,7 +30,6 @@ const criarFornecedor = ({ prestador }) => {
     };
 
     if (prestador?.tipo === "ext") {
-      cliente.cnpj_cpf = "";
       cliente.estado = "EX";
       cliente.cidade = "EX";
       cliente.exterior = "S";
@@ -79,6 +78,8 @@ const consultar = async (appKey, appSecret, codCliente) => {
 
     return data;
   } catch (error) {
+    console.log(error);
+
     if (
       error.response?.data?.faultstring?.includes(
         "Consumo redundante detectado"

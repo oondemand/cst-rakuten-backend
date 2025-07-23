@@ -9,6 +9,9 @@ const Usuario = require("../models/Usuario");
 const Servico = require("../models/Servico");
 const DocumentoFiscal = require("../models/DocumentoFiscal");
 const IntegracaoPrestadorService = require("../services/IntegracaoPrestador");
+const {
+  eventToPrestador,
+} = require("../services/prestador/buscarPrestadorOmie");
 
 // Método para obter prestador pelo idUsuario
 exports.obterPrestadorPorIdUsuario = async (req, res) => {
@@ -416,14 +419,26 @@ exports.prestadorWebHook = async (req, res) => {
     const { event, ping, topic } = req.body;
     if (ping === "omie") return res.status(200).json({ message: "pong" });
 
-    // if (topic === "ClienteFornecedor.Adicionado") {
-    //   console.log("🟨 Prestador adicionado", event);
-    // }
+    if (topic === "ClienteFornecedor.Adicionado") {
+      console.log("🟨 Prestador adicionado");
+      await IntegracaoPrestadorService.create.omieCentral({
+        prestador: eventToPrestador({ event }),
+        payload: {
+          url: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
+          body: req.body,
+        },
+      });
+    }
 
     if (topic === "ClienteFornecedor.Alterado") {
-      console.log("🟩 Prestador alterado", req);
-
-      await IntegracaoPrestadorService.create.omieCentral();
+      console.log("🟩 Prestador alterado");
+      await IntegracaoPrestadorService.create.omieCentral({
+        prestador: eventToPrestador({ event }),
+        payload: {
+          url: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
+          body: req.body,
+        },
+      });
 
       //   const documento = event?.cnpj_cpf
       //     ? Number(event.cnpj_cpf.replace(/[.\-\/]/g, ""))
@@ -453,6 +468,7 @@ exports.prestadorWebHook = async (req, res) => {
       //       estado: event?.estado ?? "",
       //     },
       //   };
+
       //   const prestador = await Prestador.findOne({
       //     $or: [
       //       { documento },
