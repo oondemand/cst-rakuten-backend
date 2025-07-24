@@ -53,7 +53,7 @@ const handler = async (integracao) => {
       integracao.etapa = "reprocessar";
       integracao.erros = [
         ...(integracao.erros || []),
-        ...(errors?.map((e) => e?.response?.data) || []),
+        ...(errors?.map((e) => e?.response?.data ?? e?.message) || []),
       ];
 
       await integracao.save();
@@ -70,7 +70,7 @@ const handler = async (integracao) => {
       integracao.etapa = "falhas";
       integracao.erros = [
         ...(integracao.erros || []),
-        ...(errors?.map((e) => e?.response?.data) || []),
+        ...(errors?.map((e) => e?.response?.data ?? e?.message) || []),
       ];
 
       await integracao.save();
@@ -86,7 +86,7 @@ const handler = async (integracao) => {
       integracao.etapa = "sucesso";
       integracao.erros = [
         ...(integracao.erros || []),
-        ...(errors?.map((e) => e?.response?.data) || []),
+        ...(errors?.map((e) => e?.response?.data ?? e?.message) || []),
       ];
       integracao.resposta = result;
       await integracao.save();
@@ -103,7 +103,7 @@ const handler = async (integracao) => {
     integracao.etapa = "falhas";
     integracao.errors = [
       ...(integracao.errors || []),
-      err?.response?.data?.faultstring ?? err?.message,
+      err?.response?.data ?? err?.message,
     ];
     integracao.executadoEm = new Date();
     await integracao.save();
@@ -115,15 +115,31 @@ const handler = async (integracao) => {
 };
 
 const fetchNextIntegracao = async () => {
+  const minExecutionTime = new Date(Date.now() - 60 * 1000);
+
   let integracao = await IntegracaoPrestadorCentralOmie.findOneAndUpdate(
-    { etapa: "requisicao", arquivado: false },
+    {
+      etapa: "requisicao",
+      arquivado: false,
+      $or: [
+        { executadoEm: { $exists: false } },
+        { executadoEm: { $lte: minExecutionTime } },
+      ],
+    },
     { etapa: "processando", executadoEm: new Date() },
     { sort: { createdAt: 1 }, new: true }
   );
 
   if (!integracao) {
     integracao = await IntegracaoPrestadorCentralOmie.findOneAndUpdate(
-      { etapa: "reprocessar", arquivado: false },
+      {
+        etapa: "reprocessar",
+        arquivado: false,
+        $or: [
+          { executadoEm: { $exists: false } },
+          { executadoEm: { $lte: minExecutionTime } },
+        ],
+      },
       { etapa: "processando", executadoEm: new Date() },
       { sort: { createdAt: 1 }, new: true }
     );

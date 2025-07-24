@@ -88,15 +88,32 @@ const handler = async (integracao) => {
 };
 
 const fetchNextIntegracao = async () => {
+  //ignora as que foram executadas a menos de um minuto
+  const minExecutionTime = new Date(Date.now() - 60 * 1000); // 1 min
+
   let integracao = await IntegracaoPrestadorOmieCentral.findOneAndUpdate(
-    { etapa: "requisicao", arquivado: false },
+    {
+      etapa: "requisicao",
+      arquivado: false,
+      $or: [
+        { executadoEm: { $exists: false } },
+        { executadoEm: { $lte: minExecutionTime } },
+      ],
+    },
     { etapa: "processando", executadoEm: new Date() },
     { sort: { createdAt: 1 }, new: true }
   );
 
   if (!integracao) {
     integracao = await IntegracaoPrestadorOmieCentral.findOneAndUpdate(
-      { etapa: "reprocessar", arquivado: false },
+      {
+        etapa: "reprocessar",
+        arquivado: false,
+        $or: [
+          { executadoEm: { $exists: false } },
+          { executadoEm: { $lte: minExecutionTime } },
+        ],
+      },
       { etapa: "processando", executadoEm: new Date() },
       { sort: { createdAt: 1 }, new: true }
     );
