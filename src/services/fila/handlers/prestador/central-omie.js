@@ -50,6 +50,7 @@ const handler = async (integracao) => {
     });
 
     if (!result && integracao.tentativas < 3) {
+      await sleep(1000 * 60); // Espera 1 minuto antes de tentar outra requisição
       integracao.etapa = "reprocessar";
       integracao.erros = [
         ...(integracao.erros || []),
@@ -60,8 +61,6 @@ const handler = async (integracao) => {
       await Prestador.findByIdAndUpdate(integracao.prestadorId, {
         status_sincronizacao_omie: "processando",
       });
-
-      await sleep(1000 * 60); // Espera 1 minuto antes de tentar outra requisição
 
       return;
     }
@@ -116,14 +115,14 @@ const handler = async (integracao) => {
 
 const fetchNextIntegracao = async () => {
   let integracao = await IntegracaoPrestadorCentralOmie.findOneAndUpdate(
-    { etapa: "requisicao" },
+    { etapa: "requisicao", arquivado: false },
     { etapa: "processando", executadoEm: new Date() },
     { sort: { createdAt: 1 }, new: true }
   );
 
   if (!integracao) {
     integracao = await IntegracaoPrestadorCentralOmie.findOneAndUpdate(
-      { etapa: "reprocessar" },
+      { etapa: "reprocessar", arquivado: false },
       { etapa: "processando", executadoEm: new Date() },
       { sort: { createdAt: 1 }, new: true }
     );

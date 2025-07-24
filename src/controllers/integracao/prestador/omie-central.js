@@ -1,5 +1,5 @@
 const IntegracaoPrestadorOmieCentral = require("../../../models/integracao/prestador/omie-central");
-// const PrestadorCentralOmieQueue = require("../../../services/fila/handlers/prestador/central-omie");
+const PrestadorOmieCentralQueue = require("../../../services/fila/handlers/prestador/omie-central");
 const filterOptions = require("../../../utils/filter");
 
 const listarTodas = async (req, res) => {
@@ -24,7 +24,7 @@ const listarTodas = async (req, res) => {
 
 const processar = async (req, res) => {
   try {
-    // PrestadorCentralOmieQueue.start();
+    PrestadorOmieCentralQueue.start();
     return res.status(200).json("Processamento iniciado com sucesso");
   } catch (error) {
     return res
@@ -61,7 +61,7 @@ const reprocessar = async (req, res) => {
 
     const integracaoASerProcessada =
       await IntegracaoPrestadorOmieCentral.findOne({
-        prestador: integracao.prestadorId,
+        codigo_cliente_omie: integracao.codigo_cliente_omie,
         etapa: "requisicao",
         arquivado: false,
       });
@@ -78,12 +78,14 @@ const reprocessar = async (req, res) => {
       await integracao.save();
     }
 
-    await Prestador.findByIdAndUpdate(integracao.prestadorId, {
-      status_sincronizacao_omie: "processando",
-    });
+    // await Prestador.findByIdAndUpdate(integracao.prestador?._id, {
+    //   status_sincronizacao_omie: "processando",
+    // });
 
     return res.status(200).json("Integração reprocessada com sucesso!");
   } catch (error) {
+    console.log(error);
+
     return res
       .status(500)
       .json("Um erro inesperado aconteceu ao reprocessar item!");
