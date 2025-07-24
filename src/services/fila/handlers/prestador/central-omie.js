@@ -50,7 +50,6 @@ const handler = async (integracao) => {
     });
 
     if (!result && integracao.tentativas < 3) {
-      await sleep(1000 * 60); // Espera 1 minuto antes de tentar outra requisição
       integracao.etapa = "reprocessar";
       integracao.erros = [
         ...(integracao.erros || []),
@@ -61,6 +60,8 @@ const handler = async (integracao) => {
       await Prestador.findByIdAndUpdate(integracao.prestadorId, {
         status_sincronizacao_omie: "processando",
       });
+
+      await sleep(1000 * 60); // Espera 1 minuto antes de tentar outra requisição
 
       return;
     }

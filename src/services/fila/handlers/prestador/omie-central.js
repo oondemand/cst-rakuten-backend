@@ -3,11 +3,7 @@ const IntegracaoPrestadorOmieCentral = require("../../../../models/integracao/pr
 const Prestador = require("../../../../models/Prestador");
 const { retryAsync, sleep } = require("../../../../utils");
 const BaseOmie = require("../../../../models/BaseOmie");
-const {
-  buscarPrestadorOmie,
-} = require("../../../prestador/buscarPrestadorOmie");
 const clienteService = require("../../../omie/clienteService");
-const { randomUUID } = require("crypto");
 
 const handler = async (integracao) => {
   if (!integracao || integracao.arquivado) return;
@@ -29,8 +25,6 @@ const handler = async (integracao) => {
         (item) => item.campo?.toUpperCase() === "SID"
       )?.conteudo;
 
-      throw new Error("Erro para fins de teste.");
-
       const prestador = await Prestador.findOneAndUpdate(
         { sid },
         { ...integracao.prestador, status_sincronizacao_omie: "sucesso" }
@@ -49,13 +43,13 @@ const handler = async (integracao) => {
     });
 
     if (!result && integracao.tentativas < 3) {
-      await sleep(1000 * 60); // Espera 1 minuto antes de tentar outra requisição
       integracao.etapa = "reprocessar";
       integracao.erros = [
         ...(integracao.erros || []),
         ...(errors?.map((e) => e?.response?.data ?? e?.message) || []),
       ];
       await integracao.save();
+      await sleep(1000 * 60); // Espera 1 minuto antes de tentar outra requisição
 
       return;
     }
