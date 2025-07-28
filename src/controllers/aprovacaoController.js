@@ -57,7 +57,7 @@ const aprovar = async (req, res) => {
 
     // Se estiver na última etapa antes de "conta-pagar", mover para "conta-pagar" e gerar a conta
     if (currentEtapaIndex === etapas.length - 1) {
-      // ticket.etapa = "integracao-omie";
+      ticket.etapa = "integracao-omie";
       ticket.status = "trabalhando";
       await ticket.save();
 
