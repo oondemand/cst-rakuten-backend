@@ -63,44 +63,44 @@ const criarConta = ({
 };
 
 const incluir = async (appKey, appSecret, conta, maxTentativas = 3) => {
-  let tentativas = 0;
-  let erroEncontrado;
+  // let tentativas = 0;
+  // let erroEncontrado;
 
-  while (tentativas < maxTentativas) {
-    // console.log(
-    //   `[CONTA A PAGAR]: Criando conta a pagar tentativa ${tentativas + 1}`
-    // );
-    try {
-      const body = {
-        call: "IncluirContaPagar",
-        app_key: appKey,
-        app_secret: appSecret,
-        param: [conta],
-      };
+  // while (tentativas < maxTentativas) {
+  // console.log(
+  //   `[CONTA A PAGAR]: Criando conta a pagar tentativa ${tentativas + 1}`
+  // );
+  // try {
+  const body = {
+    call: "IncluirContaPagar",
+    app_key: appKey,
+    app_secret: appSecret,
+    param: [conta],
+  };
 
-      const response = await apiOmie.post("financas/contapagar/", body);
-      return response.data;
-    } catch (error) {
-      tentativas++;
-      if (
-        error.response?.data?.faultstring?.includes(
-          "Consumo redundante detectado"
-        )
-      ) {
-        await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
-      }
+  const response = await apiOmie.post("financas/contapagar/", body);
+  return response.data;
+  // } catch (error) {
+  //   tentativas++;
+  //   if (
+  //     error.response?.data?.faultstring?.includes(
+  //       "Consumo redundante detectado"
+  //     )
+  //   ) {
+  //     await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+  //   }
 
-      erroEncontrado =
-        error.response?.data?.faultstring ||
-        error.response?.data ||
-        error.response ||
-        error;
+  //   erroEncontrado =
+  //     error.response?.data?.faultstring ||
+  //     error.response?.data ||
+  //     error.response ||
+  //     error;
 
-      // console.log(`Falha ao criar conta a pagar: ${erroEncontrado}`);
-    }
-  }
+  // console.log(`Falha ao criar conta a pagar: ${erroEncontrado}`);
+  // }
+  // }
 
-  throw `Falha ao criar conta a pagar após ${maxTentativas} tentativas. ${erroEncontrado}`;
+  // throw `Falha ao criar conta a pagar após ${maxTentativas} tentativas. ${erroEncontrado}`;
 };
 
 const remover = async (

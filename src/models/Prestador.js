@@ -35,6 +35,7 @@ const prestadorSchema = new mongoose.Schema(
     status_sincronizacao_omie: {
       type: String,
       enum: ["sucesso", "processando", "erro"],
+      default: "processando",
     },
     sid: {
       type: Number,
@@ -51,8 +52,8 @@ const prestadorSchema = new mongoose.Schema(
     email: {
       type: String,
       lowercase: true,
-      required: true,
-      unique: true,
+      // required: true,
+      // unique: true,
       validate: {
         validator: function (v) {
           return v === null ? true : /\S+@\S+\.\S+/.test(v);

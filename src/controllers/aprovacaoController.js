@@ -18,11 +18,14 @@ const {
   buscarPrestadorOmie,
 } = require("../services/prestador/buscarPrestadorOmie");
 
+const IntegracaoContaPagarService = require("../services/contaPagar");
+const { formatarDataOmie } = require("../utils/dateUtils");
+const crypto = require("crypto");
+
 // Função para aprovar um ticket
 const aprovar = async (req, res) => {
   try {
     const { ticketId } = req.params;
-
     const ticket = await Ticket.findById(ticketId)
       .populate("arquivos")
       .populate("servicos")
@@ -54,15 +57,43 @@ const aprovar = async (req, res) => {
 
     // Se estiver na última etapa antes de "conta-pagar", mover para "conta-pagar" e gerar a conta
     if (currentEtapaIndex === etapas.length - 1) {
-      ticket.etapa = "integracao-omie";
+      // ticket.etapa = "integracao-omie";
       ticket.status = "trabalhando";
       await ticket.save();
 
-      await gerarContaPagar({ ticket, usuario: req.usuario });
+      const baseOmie = await BaseOmie.findOne({ status: "ativo" });
+      if (!baseOmie) throw "Base omie não encontrada";
+
+      if (ticket?.servicos) {
+        const valorTotalDosServicos =
+          ticket?.servicos?.reduce((total, servico) => {
+            return total + (servico?.valor || 0);
+          }, 0) ?? 0;
+
+        if (valorTotalDosServicos > 0) {
+          const conta = await ContaPagar.create({
+            baseOmie,
+            status_titulo: "A VENCER",
+            data_emissao: formatarDataOmie(new Date()),
+            data_vencimento: formatarDataOmie(add(new Date(), { hours: 24 })),
+            codigo_lancamento_integracao: crypto.randomUUID(),
+            numero_documento: `oon-${1}`,
+            valor_documento: valorTotalDosServicos,
+          });
+
+          ticket.contaPagarOmie = conta;
+          await ticket.save();
+
+          IntegracaoContaPagarService.create.centralOmie({
+            contaPagar: conta,
+            prestador: ticket.prestador,
+          });
+        }
+      }
 
       return res.send({
         success: true,
-        message: `Ticket movido para a etapa "conta-pagar" e conta gerada.`,
+        message: `Ticket movido para a etapa "conta-pagar".`,
       });
     }
 
@@ -113,7 +144,7 @@ const aprovar = async (req, res) => {
       message: `Ticket aprovado e movido para a etapa: ${ticket.etapa}`,
     });
   } catch (error) {
-    // console.error("Erro ao aprovar ticket:", error);
+    console.error("Erro ao aprovar ticket:", error);
     res.status(500).send({
       success: false,
       message: "Erro ao aprovar ticket",
@@ -181,296 +212,300 @@ const recusar = async (req, res) => {
 };
 
 // Função para gerar a conta a pagar
-const gerarContaPagar = async ({ ticket, usuario }) => {
-  try {
-    const baseOmie = await BaseOmie.findOne({ status: "ativo" });
+// const gerarContaPagar = async ({ ticket, usuario }) => {
+//   try {
+//     const baseOmie = await BaseOmie.findOne({ status: "ativo" });
 
-    if (!baseOmie) throw "Base omie não encontrada";
+//     if (!baseOmie) throw "Base omie não encontrada";
 
-    // Busca um prestador
-    const fornecedor = await atualizarOuCriarFornecedor({
-      appKey: baseOmie.appKey,
-      appSecret: baseOmie.appSecret,
-      prestadorId: ticket.prestador,
-    });
+//     // Busca um prestador
+//     const fornecedor = await atualizarOuCriarFornecedor({
+//       appKey: baseOmie.appKey,
+//       appSecret: baseOmie.appSecret,
+//       prestadorId: ticket.prestador,
+//     });
 
-    // console.log(fornecedor);
+//     // console.log(fornecedor);
 
-    // Caso ticket nã tenha serviços adiciona anexo ao prestador
-    if (ticket.servicos.length === 0) {
-      await uploadDeArquivosOmie({
-        ticket,
-        nId: fornecedor.codigo_cliente_omie,
-        tabela: "cliente",
-      });
+//     // Caso ticket nã tenha serviços adiciona anexo ao prestador
+//     if (ticket.servicos.length === 0) {
+//       await uploadDeArquivosOmie({
+//         ticket,
+//         nId: fornecedor.codigo_cliente_omie,
+//         tabela: "cliente",
+//       });
 
-      ticket.status = "concluido";
-      return await ticket.save();
-    }
+//       ticket.status = "concluido";
+//       return await ticket.save();
+//     }
 
-    // caso ticket tenha serviço tenta criar uma conta
-    let conta = await cadastrarContaAPagar(
-      baseOmie,
-      fornecedor.codigo_cliente_omie,
-      ticket
-    );
+//     // caso ticket tenha serviço tenta criar uma conta
+//     let conta = await cadastrarContaAPagar(
+//       baseOmie,
+//       fornecedor.codigo_cliente_omie,
+//       ticket
+//     );
 
-    //caso tenha uma conta tenta fazer o upload de arquivos
-    if (conta) {
-      try {
-        await uploadDeArquivosOmie({
-          ticket,
-          nId: conta.codigo_lancamento_omie,
-          tabela: "conta-pagar",
-        });
+//     //caso tenha uma conta tenta fazer o upload de arquivos
+//     if (conta) {
+//       try {
+//         await uploadDeArquivosOmie({
+//           ticket,
+//           nId: conta.codigo_lancamento_omie,
+//           tabela: "conta-pagar",
+//         });
 
-        await uploadDocumentosFiscaisOmie({
-          ticket,
-          nId: conta.codigo_lancamento_omie,
-          tabela: "conta-pagar",
-        });
+//         await uploadDocumentosFiscaisOmie({
+//           ticket,
+//           nId: conta.codigo_lancamento_omie,
+//           tabela: "conta-pagar",
+//         });
 
-        ticket.contaPagarOmie = conta?._id;
-      } catch (error) {
-        // caso tenha algum erro no upload de arquivos, tenta remover a conta
-        try {
-          await contaPagarService.remover({
-            codigo_lancamento_integracao: conta.codigo_lancamento_integracao,
-            codigo_lancamento_omie: conta.codigo_lancamento_omie,
-            appKey: baseOmie.appKey,
-            appSecret: baseOmie.appSecret,
-          });
+//         ticket.contaPagarOmie = conta?._id;
+//       } catch (error) {
+//         // caso tenha algum erro no upload de arquivos, tenta remover a conta
+//         try {
+//           await contaPagarService.remover({
+//             codigo_lancamento_integracao: conta.codigo_lancamento_integracao,
+//             codigo_lancamento_omie: conta.codigo_lancamento_omie,
+//             appKey: baseOmie.appKey,
+//             appSecret: baseOmie.appSecret,
+//           });
 
-          throw error;
-        } catch (error) {
-          //caso de erro ao remover a conta repassa o erro
-          throw error;
-        }
-      }
-    }
+//           throw error;
+//         } catch (error) {
+//           //caso de erro ao remover a conta repassa o erro
+//           throw error;
+//         }
+//       }
+//     }
 
-    ticket.status = "concluido";
-    await ticket.save();
+//     ticket.status = "concluido";
+//     await ticket.save();
 
-    ControleAlteracaoService.registrarAlteracao({
-      acao: "aprovar",
-      dataHora: new Date(),
-      idRegistroAlterado: ticket?._id,
-      origem: "formulario",
-      dadosAtualizados: ticket,
-      tipoRegistroAlterado: "ticket",
-      usuario: usuario?._id,
-    });
-  } catch (error) {
-    // se ocorrer qualquer erro, volta ticket para etapa de aprovação, criar obs e atualiza o status
-    ticket.observacao += `\n ${error} - ${format(new Date(), "dd/MM/yyyy")}`;
-    ticket.etapa = "aprovacao-fiscal";
-    ticket.status = "revisao";
-    await ticket.save();
+//     ControleAlteracaoService.registrarAlteracao({
+//       acao: "aprovar",
+//       dataHora: new Date(),
+//       idRegistroAlterado: ticket?._id,
+//       origem: "formulario",
+//       dadosAtualizados: ticket,
+//       tipoRegistroAlterado: "ticket",
+//       usuario: usuario?._id,
+//     });
+//   } catch (error) {
+//     // se ocorrer qualquer erro, volta ticket para etapa de aprovação, criar obs e atualiza o status
+//     ticket.observacao += `\n ${error} - ${format(new Date(), "dd/MM/yyyy")}`;
+//     ticket.etapa = "aprovacao-fiscal";
+//     ticket.status = "revisao";
+//     await ticket.save();
 
-    ControleAlteracaoService.registrarAlteracao({
-      acao: "aprovar",
-      dataHora: new Date(),
-      idRegistroAlterado: ticket?._id,
-      origem: "formulario",
-      dadosAtualizados: ticket,
-      tipoRegistroAlterado: "ticket",
-      usuario: usuario?._id,
-    });
+//     ControleAlteracaoService.registrarAlteracao({
+//       acao: "aprovar",
+//       dataHora: new Date(),
+//       idRegistroAlterado: ticket?._id,
+//       origem: "formulario",
+//       dadosAtualizados: ticket,
+//       tipoRegistroAlterado: "ticket",
+//       usuario: usuario?._id,
+//     });
 
-    await emailUtils.emailErroIntegracaoOmie({
-      error: error,
-      usuario: usuario,
-    });
-  }
-};
+//     await emailUtils.emailErroIntegracaoOmie({
+//       error: error,
+//       usuario: usuario,
+//     });
+//   }
+// };
 
-const atualizarOuCriarFornecedor = async ({
-  appKey,
-  appSecret,
-  prestadorId,
-}) => {
-  try {
-    const prestador = await Prestador.findById(prestadorId);
+// const atualizarOuCriarFornecedor = async ({
+//   appKey,
+//   appSecret,
+//   prestadorId,
+// }) => {
+//   try {
+//     const prestador = await Prestador.findById(prestadorId);
 
-    let fornecedor = await buscarPrestadorOmie({
-      appKey,
-      appSecret,
-      prestador,
-    });
+//     let fornecedor = await buscarPrestadorOmie({
+//       appKey,
+//       appSecret,
+//       prestador,
+//     });
 
-    const novoFornecedor = clienteService.criarFornecedor({
-      documento: prestador.documento,
-      nome: prestador.nome,
-      tipo: prestador.tipo,
-      email: prestador.email,
-      cep: prestador.endereco ? prestador.endereco.cep : "",
-      rua: prestador.endereco ? prestador.endereco.rua : "",
-      numeroDoEndereco: prestador.endereco ? prestador.endereco.numero : "",
-      complemento: prestador.endereco ? prestador.endereco.complemento : "",
-      cidade: prestador.endereco ? `${prestador.endereco?.cidade}` : "",
-      estado: prestador.endereco ? prestador.endereco.estado : "",
-      razaoSocial: prestador.nome,
-      banco: prestador?.dadosBancarios?.banco ?? "",
-      agencia: prestador.dadosBancarios ? prestador.dadosBancarios.agencia : "",
-      conta: prestador.dadosBancarios ? prestador.dadosBancarios.conta : "",
-      tipoConta: prestador.dadosBancarios
-        ? prestador.dadosBancarios.tipoConta
-        : "",
-      codPais: prestador?.endereco?.pais?.cod,
-    });
+//     const novoFornecedor = clienteService.criarFornecedor({
+//       documento: prestador.documento,
+//       nome: prestador.nome,
+//       tipo: prestador.tipo,
+//       email: prestador.email,
+//       cep: prestador.endereco ? prestador.endereco.cep : "",
+//       rua: prestador.endereco ? prestador.endereco.rua : "",
+//       numeroDoEndereco: prestador.endereco ? prestador.endereco.numero : "",
+//       complemento: prestador.endereco ? prestador.endereco.complemento : "",
+//       cidade: prestador.endereco ? `${prestador.endereco?.cidade}` : "",
+//       estado: prestador.endereco ? prestador.endereco.estado : "",
+//       razaoSocial: prestador.nome,
+//       banco: prestador?.dadosBancarios?.banco ?? "",
+//       agencia: prestador.dadosBancarios ? prestador.dadosBancarios.agencia : "",
+//       conta: prestador.dadosBancarios ? prestador.dadosBancarios.conta : "",
+//       tipoConta: prestador.dadosBancarios
+//         ? prestador.dadosBancarios.tipoConta
+//         : "",
+//       codPais: prestador?.endereco?.pais?.cod,
+//     });
 
-    if (fornecedor) {
-      novoFornecedor.codigo_cliente_integracao =
-        fornecedor.codigo_cliente_integracao;
+//     if (fornecedor) {
+//       novoFornecedor.codigo_cliente_integracao =
+//         fornecedor.codigo_cliente_integracao;
 
-      novoFornecedor.codigo_cliente_omie = fornecedor.codigo_cliente_omie;
+//       novoFornecedor.codigo_cliente_omie = fornecedor.codigo_cliente_omie;
 
-      const fornecedorCadastrado = await clienteService.update(
-        appKey,
-        appSecret,
-        novoFornecedor
-      );
+//       const fornecedorCadastrado = await clienteService.update(
+//         appKey,
+//         appSecret,
+//         novoFornecedor
+//       );
 
-      prestador.codigo_cliente_omie = fornecedorCadastrado?.codigo_cliente_omie;
-      prestador.save();
-      fornecedor = fornecedorCadastrado;
-    }
+//       prestador.codigo_cliente_omie = fornecedorCadastrado?.codigo_cliente_omie;
+//       prestador.save();
+//       fornecedor = fornecedorCadastrado;
+//     }
 
-    if (!fornecedor) {
-      novoFornecedor.codigo_cliente_integracao = prestador._id;
-      const fornecedorCadastrado = await clienteService.incluir(
-        appKey,
-        appSecret,
-        novoFornecedor
-      );
+//     if (!fornecedor) {
+//       novoFornecedor.codigo_cliente_integracao = prestador._id;
+//       const fornecedorCadastrado = await clienteService.incluir(
+//         appKey,
+//         appSecret,
+//         novoFornecedor
+//       );
 
-      prestador.codigo_cliente_omie = fornecedorCadastrado?.codigo_cliente_omie;
-      prestador.save();
-      fornecedor = fornecedorCadastrado;
-    }
+//       prestador.codigo_cliente_omie = fornecedorCadastrado?.codigo_cliente_omie;
+//       prestador.save();
+//       fornecedor = fornecedorCadastrado;
+//     }
 
-    return fornecedor;
-  } catch (error) {
-    throw `Erro ao obter ou cadastrar fornecedor. ${error}`;
-  }
-};
+//     return fornecedor;
+//   } catch (error) {
+//     throw `Erro ao obter ou cadastrar fornecedor. ${error}`;
+//   }
+// };
 
-const cadastrarContaAPagar = async (baseOmie, codigoFornecedor, ticket) => {
-  try {
-    let valorTotalDaNota = 0;
-    let observacao = `Serviços prestados SID - ${ticket.prestador.sid}\n-- Serviços --\n`;
-    let notaFiscalOmie = "";
+// const cadastrarContaAPagar = async (baseOmie, codigoFornecedor, ticket) => {
+//   try {
+//     let valorTotalDaNota = 0;
+//     let observacao = `Serviços prestados SID - ${ticket.prestador.sid}\n-- Serviços --\n`;
+//     let notaFiscalOmie = "";
 
-    const config = await Sistema.findOne();
+//     const config = await Sistema.findOne();
 
-    for (const id of ticket.servicos) {
-      const { valor, competencia, notaFiscal } = await Servico.findById(id);
+//     for (const id of ticket.servicos) {
+//       const { valor, competencia, notaFiscal } = await Servico.findById(id);
 
-      const valorTotalFormatado = valor.toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-      });
+//       const valorTotalFormatado = valor.toLocaleString("pt-BR", {
+//         style: "currency",
+//         currency: "BRL",
+//       });
 
-      observacao += `Competência: ${competencia?.mes}/${competencia?.ano} - Valor total: ${valorTotalFormatado}\n`;
-      valorTotalDaNota += valor;
-      notaFiscalOmie += `/${notaFiscal}`;
-    }
+//       observacao += `Competência: ${competencia?.mes}/${competencia?.ano} - Valor total: ${valorTotalFormatado}\n`;
+//       valorTotalDaNota += valor;
+//       notaFiscalOmie += `/${notaFiscal}`;
+//     }
 
-    if (valorTotalDaNota === 0) {
-      // console.error("Valor do serviço é zero. Não será gerada conta a pagar.");
-      return;
-    }
+//     if (valorTotalDaNota === 0) {
+//       // console.error("Valor do serviço é zero. Não será gerada conta a pagar.");
+//       return;
+//     }
 
-    const dataDaEmissão = new Date();
+//     const dataDaEmissao = new Date(); // TODO: Isso gera um bug
 
-    const conta = contaPagarService.criarConta({
-      numeroDocumento: 1,
-      numeroDocumentoFiscal: 1,
-      codigoFornecedor: codigoFornecedor,
-      dataEmissao: dataDaEmissão,
-      dataVencimento: add(dataDaEmissão, { hours: 24 }), // 24 horas a mais
-      observacao,
-      valor: valorTotalDaNota,
-      id_conta_corrente: config?.omie?.id_conta_corrente,
-      dataRegistro: ticket?.servicos[0]?.dataRegistro,
-      notaFiscal: notaFiscalOmie?.replace("/", ""),
-      codigo_categoria: config?.omie?.codigo_categoria,
-    });
+//     const conta = contaPagarService.criarConta({
+//       numeroDocumento: 1,
+//       numeroDocumentoFiscal: 1,
+//       codigoFornecedor: codigoFornecedor,
+//       dataEmissao: dataDaEmissao,
+//       dataVencimento: add(dataDaEmissao, { hours: 24 }), // 24 horas a mais
+//       observacao,
+//       valor: valorTotalDaNota,
+//       id_conta_corrente: config?.omie?.id_conta_corrente,
+//       dataRegistro: ticket?.servicos[0]?.dataRegistro,
+//       notaFiscal: notaFiscalOmie?.replace("/", ""),
+//       codigo_categoria: config?.omie?.codigo_categoria,
+//     });
 
-    const contaPagarOmie = await contaPagarService.incluir(
-      baseOmie.appKey,
-      baseOmie.appSecret,
-      {
-        ...conta,
-      }
-    );
+//     console.log("CONTA OMIE:", conta);
 
-    const contaPagarCompleta = await contaPagarService.consultar(
-      baseOmie.appKey,
-      baseOmie.appSecret,
-      contaPagarOmie.codigo_lancamento_omie
-    );
+//     const contaPagarOmie = await contaPagarService.incluir(
+//       baseOmie.appKey,
+//       baseOmie.appSecret,
+//       {
+//         ...conta,
+//       }
+//     );
 
-    const contaPagar = new ContaPagar({
-      ...contaPagarCompleta,
-      baseOmie: baseOmie._id,
-    });
+//     const contaPagarCompleta = await contaPagarService.consultar(
+//       baseOmie.appKey,
+//       baseOmie.appSecret,
+//       contaPagarOmie.codigo_lancamento_omie
+//     );
 
-    await contaPagar.save();
+//     console.log("Conta pagar completa", contaPagarCompleta);
 
-    return contaPagar;
-  } catch (error) {
-    throw `Erro ao cadastrar conta a pagar. ${error}`;
-  }
-};
+//     const contaPagar = new ContaPagar({
+//       ...contaPagarCompleta,
+//       baseOmie: baseOmie._id,
+//     });
 
-const uploadDeArquivosOmie = async ({ ticket, nId, tabela }) => {
-  if (ticket.arquivos.length === 0) return;
+//     await contaPagar.save();
 
-  const baseOmie = await BaseOmie.findOne({ status: "ativo" });
+//     return contaPagar;
+//   } catch (error) {
+//     throw `Erro ao cadastrar conta a pagar. ${error}`;
+//   }
+// };
 
-  try {
-    for (const arquivo of ticket.arquivos) {
-      await anexoService.incluir({
-        appKey: baseOmie.appKey,
-        appSecret: baseOmie.appSecret,
-        tabela,
-        nId,
-        nomeArquivo: arquivo.nomeOriginal,
-        tipoArquivo: arquivo.mimetype,
-        arquivo: arquivo.buffer,
-      });
-    }
-  } catch (error) {
-    // console.log("Erro ao anexar arquivo:", error);
-    throw error;
-  }
-};
+// const uploadDeArquivosOmie = async ({ ticket, nId, tabela }) => {
+//   if (ticket.arquivos.length === 0) return;
 
-const uploadDocumentosFiscaisOmie = async ({ ticket, nId, tabela }) => {
-  if (ticket.documentosFiscais.length === 0) return;
+//   const baseOmie = await BaseOmie.findOne({ status: "ativo" });
 
-  const baseOmie = await BaseOmie.findOne({ status: "ativo" });
+//   try {
+//     for (const arquivo of ticket.arquivos) {
+//       await anexoService.incluir({
+//         appKey: baseOmie.appKey,
+//         appSecret: baseOmie.appSecret,
+//         tabela,
+//         nId,
+//         nomeArquivo: arquivo.nomeOriginal,
+//         tipoArquivo: arquivo.mimetype,
+//         arquivo: arquivo.buffer,
+//       });
+//     }
+//   } catch (error) {
+//     // console.log("Erro ao anexar arquivo:", error);
+//     throw error;
+//   }
+// };
 
-  try {
-    for (const documentoFiscal of ticket?.documentosFiscais) {
-      if (documentoFiscal?.arquivo) {
-        await anexoService.incluir({
-          appKey: baseOmie.appKey,
-          appSecret: baseOmie.appSecret,
-          tabela,
-          nId,
-          nomeArquivo: documentoFiscal?.arquivo?.nomeOriginal,
-          tipoArquivo: documentoFiscal?.arquivo?.mimetype,
-          arquivo: documentoFiscal?.arquivo?.buffer,
-        });
-      }
-    }
-  } catch (error) {
-    // console.log("Erro ao anexar arquivo:", error);
-    throw error;
-  }
-};
+// const uploadDocumentosFiscaisOmie = async ({ ticket, nId, tabela }) => {
+//   if (ticket.documentosFiscais.length === 0) return;
+
+//   const baseOmie = await BaseOmie.findOne({ status: "ativo" });
+
+//   try {
+//     for (const documentoFiscal of ticket?.documentosFiscais) {
+//       if (documentoFiscal?.arquivo) {
+//         await anexoService.incluir({
+//           appKey: baseOmie.appKey,
+//           appSecret: baseOmie.appSecret,
+//           tabela,
+//           nId,
+//           nomeArquivo: documentoFiscal?.arquivo?.nomeOriginal,
+//           tipoArquivo: documentoFiscal?.arquivo?.mimetype,
+//           arquivo: documentoFiscal?.arquivo?.buffer,
+//         });
+//       }
+//     }
+//   } catch (error) {
+//     // console.log("Erro ao anexar arquivo:", error);
+//     throw error;
+//   }
+// };
 
 module.exports = { aprovar, recusar };
