@@ -1,5 +1,7 @@
 const { createQueue } = require("../../index");
 const IntegracaoContaPagarCentralOmie = require("../../../../models/integracao/contaPagar/central-omie");
+const IntegracaoArquivosCentralOmieService = require("../../../arquivos/index");
+
 const Prestador = require("../../../../models/Prestador");
 const { retryAsync, sleep } = require("../../../../utils");
 const BaseOmie = require("../../../../models/BaseOmie");
@@ -11,6 +13,7 @@ const contaPagarService = require("../../../omie/contaPagarService");
 
 const { randomUUID } = require("crypto");
 const Ticket = require("../../../../models/Ticket");
+const ContaPagar = require("../../../../models/ContaPagar");
 const Sistema = require("../../../../models/Sistema");
 const { add } = require("date-fns");
 
@@ -107,6 +110,26 @@ const handler = async (integracao) => {
             integracao.contaPagar.codigo_lancamento_integracao,
         }
       );
+
+      const contaPagarCentral = await ContaPagar.findByIdAndUpdate(
+        integracao.contaPagarId,
+        { ...contaPagarOmie },
+        { new: true }
+      );
+
+      if (ticket.arquivos?.length > 0 || ticket.documentosFiscais) {
+        IntegracaoArquivosCentralOmieService.create.centralOmie({
+          contaPagar: contaPagarCentral,
+          prestador: ticket.prestador,
+          arquivos: [
+            ...(ticket?.arquivos ? ticket.arquivos : []),
+            ...(ticket?.documentosFiscais
+              ? ticket.documentosFiscais?.map((item) => item?.arquivo)
+              : []),
+          ],
+          integracaoContaPagarId: integracao?._id,
+        });
+      }
 
       return contaPagarOmie;
     });
