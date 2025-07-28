@@ -110,7 +110,16 @@ exports.getAllByBaseOmie = async (req, res) => {
 
 exports.getAllTickets = async (req, res) => {
   try {
-    const filtros = req.query;
+    const { time = 1, ...rest } = req.query;
+
+    console.log("TIME", time, req.query);
+
+    const umDiaEmMilissegundos = 1000 * 60 * 60 * 24;
+    const filtros = {
+      updatedAt: { $gte: new Date(Date.now() - time * umDiaEmMilissegundos) },
+      ...rest,
+    };
+
     const tickets = await Ticket.find({
       ...filtros,
       status: { $nin: ["arquivado"] },
@@ -129,7 +138,7 @@ exports.getAllTickets = async (req, res) => {
 
     res.status(200).json(tickets);
   } catch (error) {
-    // console.error("Erro ao buscar tickets:", error);
+    console.error("Erro ao buscar tickets:", error);
     res.status(500).json({
       message: "Erro ao buscar tickets",
       detalhes: error.message,
