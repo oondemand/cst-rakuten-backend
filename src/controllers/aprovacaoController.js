@@ -49,6 +49,8 @@ const aprovar = async (req, res) => {
       (etapa) => etapa.codigo === ticket.etapa
     );
 
+    const codigoEtapaAtual = ticket.etapa;
+
     if (currentEtapaIndex < 0) {
       return res
         .status(400)
@@ -60,6 +62,48 @@ const aprovar = async (req, res) => {
       ticket.etapa = "integracao-omie";
       ticket.status = "trabalhando";
       await ticket.save();
+
+      return res.send({
+        success: true,
+        message: `Ticket aprovado!".`,
+      });
+    }
+
+    if (
+      !["requisicao", "aprovacao-cadastro", "aprovacao-fiscal"].includes(
+        codigoEtapaAtual
+      )
+    ) {
+      ticket.etapa = etapas[currentEtapaIndex + 1].codigo;
+    }
+
+    if (codigoEtapaAtual === "aprovacao-cadastro") {
+      ticket.etapa = etapas[currentEtapaIndex + 1].codigo;
+
+      if (ticket?.prestador?.tipo !== "pf") {
+        ticket.etapa = "aprovacao-fiscal";
+      }
+    }
+
+    if (codigoEtapaAtual === "requisicao") {
+      ticket.etapa = etapas[currentEtapaIndex + 1].codigo;
+
+      const jaExisteServicoPago = await Servico.findOne({
+        prestador: ticket?.prestador?._id,
+        status: "pago",
+      });
+
+      if (jaExisteServicoPago) {
+        if (ticket?.prestador?.tipo !== "pf") {
+          ticket.etapa = "aprovacao-fiscal";
+        } else {
+          ticket.etapa = "geracao-rpa";
+        }
+      }
+    }
+
+    if (codigoEtapaAtual === "aprovacao-fiscal") {
+      ticket.etapa = etapas[currentEtapaIndex + 1].codigo;
 
       const baseOmie = await BaseOmie.findOne({ status: "ativo" });
       if (!baseOmie) throw "Base omie não encontrada";
@@ -88,40 +132,6 @@ const aprovar = async (req, res) => {
             contaPagar: conta,
             prestador: ticket.prestador,
           });
-        }
-      }
-
-      return res.send({
-        success: true,
-        message: `Ticket movido para a etapa "conta-pagar".`,
-      });
-    }
-
-    if (!["requisicao", "aprovacao-cadastro"].includes(ticket.etapa)) {
-      ticket.etapa = etapas[currentEtapaIndex + 1].codigo;
-    }
-
-    if (ticket?.etapa === "aprovacao-cadastro") {
-      ticket.etapa = etapas[currentEtapaIndex + 1].codigo;
-
-      if (ticket?.prestador?.tipo !== "pf") {
-        ticket.etapa = "aprovacao-fiscal";
-      }
-    }
-
-    if (ticket.etapa === "requisicao") {
-      ticket.etapa = etapas[currentEtapaIndex + 1].codigo;
-
-      const jaExisteServicoPago = await Servico.findOne({
-        prestador: ticket?.prestador?._id,
-        status: "pago",
-      });
-
-      if (jaExisteServicoPago) {
-        if (ticket?.prestador?.tipo !== "pf") {
-          ticket.etapa = "aprovacao-fiscal";
-        } else {
-          ticket.etapa = "geracao-rpa";
         }
       }
     }

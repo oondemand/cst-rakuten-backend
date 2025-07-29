@@ -81,6 +81,7 @@ const handler = async (integracao) => {
         codigo_categoria: config?.omie?.codigo_categoria,
       });
 
+      integracao.contaPagar = { ...integracao.contaPagar, ...conta };
       integracao.payload = {
         url: `${process.env.API_OMIE}/financas/contapagar/`,
         body: {
@@ -97,6 +98,8 @@ const handler = async (integracao) => {
         },
       };
 
+      await integracao.save();
+
       const contaPagarOmie = await contaPagarService.incluir(
         appKey,
         appSecret,
@@ -106,6 +109,9 @@ const handler = async (integracao) => {
             integracao.contaPagar.codigo_lancamento_integracao,
         }
       );
+
+      integracao.contaPagar = { ...integracao.contaPagar, ...contaPagarOmie };
+      await integracao.save();
 
       const contaPagarCentral = await ContaPagar.findByIdAndUpdate(
         integracao.contaPagarId,
