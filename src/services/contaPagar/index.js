@@ -1,5 +1,5 @@
 const IntegracaoContaPagarCentralOmie = require("../../models/integracao/contaPagar/central-omie");
-// const IntegracaoPrestadorOmieCentral = require("../../models/integracao/prestador/omie-central");
+const IntegracaoContaPagarOmieCentral = require("../../models/integracao/contaPagar/omie-central");
 
 const centralOmie = async ({ contaPagar, prestador, ticketId }) => {
   await IntegracaoContaPagarCentralOmie.updateMany(
@@ -8,12 +8,7 @@ const centralOmie = async ({ contaPagar, prestador, ticketId }) => {
       arquivado: false,
       etapa: { $in: ["falhas", "reprocessar", "requisicao"] },
     },
-    {
-      $set: {
-        arquivado: true,
-        motivoArquivamento: "Duplicidade",
-      },
-    }
+    { $set: { arquivado: true, motivoArquivamento: "Duplicidade" } }
   );
 
   const integracao = await IntegracaoContaPagarCentralOmie.create({
@@ -27,35 +22,37 @@ const centralOmie = async ({ contaPagar, prestador, ticketId }) => {
   return integracao;
 };
 
-// const omieCentral = async ({ requisicao, prestador }) => {
-//   await IntegracaoPrestadorOmieCentral.updateMany(
-//     {
-//       codigo_cliente_omie: prestador.codigo_cliente_omie,
-//       arquivado: false,
-//       etapa: { $in: ["falhas", "reprocessar", "requisicao"] },
-//     },
-//     {
-//       $set: {
-//         arquivado: true,
-//         motivoArquivamento: "Duplicidade",
-//       },
-//     }
-//   );
+const omieCentral = async ({ tipo, requisicao, payload }) => {
+  await IntegracaoContaPagarOmieCentral.updateMany(
+    {
+      codigo_lancamento_integracao: payload.codigo_lancamento_integracao,
+      codigo_lancamento_omie: payload.codigo_lancamento_omie,
+      arquivado: false,
+      etapa: { $in: ["falhas", "reprocessar", "requisicao"] },
+    },
+    {
+      $set: {
+        arquivado: true,
+        motivoArquivamento: "Duplicidade",
+      },
+    }
+  );
 
-//   const integracao = await IntegracaoPrestadorOmieCentral.create({
-//     codigo_cliente_omie: prestador.codigo_cliente_omie,
-//     requisicao,
-//     etapa: "requisicao",
+  const integracao = await IntegracaoContaPagarOmieCentral.create({
+    codigo_lancamento_integracao: payload.codigo_lancamento_integracao,
+    codigo_lancamento_omie: payload.codigo_lancamento_omie,
+    etapa: "requisicao",
+    requisicao,
+    payload,
+    tipo,
+  });
 
-//     prestador: prestador,
-//   });
-
-//   return integracao;
-// };
+  return integracao;
+};
 
 module.exports = {
   create: {
     centralOmie,
-    // omieCentral,
+    omieCentral,
   },
 };

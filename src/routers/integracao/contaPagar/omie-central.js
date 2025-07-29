@@ -1,21 +1,21 @@
 const express = require("express");
 const router = express.Router();
-const IntegracaoContaPagarCentralOmieController = require("../../../controllers/integracao/contaPagar/central-omie");
+const IntegracaoContaPagarOmieCentralController = require("../../../controllers/integracao/contaPagar/omie-central");
 
-router.get("/", IntegracaoContaPagarCentralOmieController.listarComPaginacao);
+router.get("/", IntegracaoContaPagarOmieCentralController.listarComPaginacao);
 
-router.get("/todos", IntegracaoContaPagarCentralOmieController.listarTodas);
+router.get("/todos", IntegracaoContaPagarOmieCentralController.listarTodas);
 
-router.post("/processar", IntegracaoContaPagarCentralOmieController.processar);
+router.post("/processar", IntegracaoContaPagarOmieCentralController.processar);
 
 router.post(
   "/arquivar/:id",
-  IntegracaoContaPagarCentralOmieController.arquivar
+  IntegracaoContaPagarOmieCentralController.arquivar
 );
 
 router.post(
   "/reprocessar/:id",
-  IntegracaoContaPagarCentralOmieController.reprocessar
+  IntegracaoContaPagarOmieCentralController.reprocessar
 );
 
 module.exports = router;

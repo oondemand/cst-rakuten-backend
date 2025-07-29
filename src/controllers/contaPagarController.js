@@ -6,6 +6,8 @@ const BaseOmie = require("../models/BaseOmie");
 const { consultar } = require("../services/omie/contaPagarService");
 const ContaPagar = require("../models/ContaPagar");
 
+const IntegracaoContaPagarService = require("../services/contaPagar");
+
 const obterContaPagarOmie = async (req, res) => {
   try {
     const { codigoLancamento } = req.params;
@@ -77,7 +79,7 @@ const contaPagarWebHook = async (req, res) => {
     const { event, ping, topic } = req.body;
     if (ping === "omie") return res.status(200).json({ message: "pong" });
 
-    console.log("[EVENT]:", event);
+    // console.log("[EVENT]:", event[0].conta_a_pagar[0]);
 
     // [EVENT]: [
     //   {
@@ -98,7 +100,31 @@ const contaPagarWebHook = async (req, res) => {
     // ]
 
     if (topic === "Financas.ContaPagar.Alterado") {
-      // console.log("🟩 Conta a pagar alterada");
+      console.log("🟩 Conta a pagar alterada");
+
+      const contaPagarOmie = event;
+
+      // const contaPagar = await ContaPagar.findOne({
+      //   codigo_lancamento_integracao:
+      //     contaPagarOmie.codigo_lancamento_integracao,
+      //   codigo_lancamento_omie: contaPagarOmie.codigo_lancamento_omie,
+      // });
+
+      // if (!contaPagar) {
+      //   return res
+      //     .status(200)
+      //     .json({ message: "Webhook recebido. Conta pagar não encontrada" });
+      // }
+
+      IntegracaoContaPagarService.create.omieCentral({
+        tipo: "alterado",
+        payload: contaPagarOmie,
+        requisicao: {
+          url: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
+          body: req.body,
+        },
+      });
+
       // await ContaPagar.findOneAndUpdate(
       //   {
       //     codigo_lancamento_omie: event?.codigo_lancamento_omie,
@@ -111,7 +137,31 @@ const contaPagarWebHook = async (req, res) => {
     }
 
     if (topic === "Financas.ContaPagar.BaixaRealizada") {
-      // console.log("🟨 Baixa realizada no omie");
+      console.log("🟨 [RECEBENDO WEBHOOK BAIXA REALIZADA NO OMIE]");
+
+      const contaPagarOmie = event[0].conta_a_pagar[0];
+
+      // const contaPagar = await ContaPagar.findOne({
+      //   codigo_lancamento_integracao:
+      //     contaPagarOmie.codigo_lancamento_integracao,
+      //   codigo_lancamento_omie: contaPagarOmie.codigo_lancamento_omie,
+      // });
+
+      // if (!contaPagar) {
+      //   return res
+      //     .status(200)
+      //     .json({ message: "Webhook recebido. Conta pagar não encontrada" });
+      // }
+
+      IntegracaoContaPagarService.create.omieCentral({
+        tipo: "baixa-realizada",
+        payload: contaPagarOmie,
+        requisicao: {
+          url: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
+          body: req.body,
+        },
+      });
+
       // const contaPagar = await ContaPagar.findOneAndUpdate(
       //   {
       //     codigo_lancamento_omie:
@@ -145,6 +195,29 @@ const contaPagarWebHook = async (req, res) => {
     }
 
     if (topic === "Financas.ContaPagar.BaixaCancelada") {
+      const contaPagarOmie = event[0].conta_a_pagar[0];
+
+      // const contaPagar = await ContaPagar.findOne({
+      //   codigo_lancamento_integracao:
+      //     contaPagarOmie.codigo_lancamento_integracao,
+      //   codigo_lancamento_omie: contaPagarOmie.codigo_lancamento_omie,
+      // });
+
+      // if (!contaPagar) {
+      //   return res
+      //     .status(200)
+      //     .json({ message: "Webhook recebido. Conta pagar não encontrada" });
+      // }
+
+      IntegracaoContaPagarService.create.omieCentral({
+        tipo: "baixa-cancelada",
+        payload: contaPagarOmie,
+        requisicao: {
+          url: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
+          body: req.body,
+        },
+      });
+
       // console.log("🟧 Baixa cancelada no omie");
       // const contaPagar = await ContaPagar.findOneAndUpdate(
       //   {
@@ -179,6 +252,28 @@ const contaPagarWebHook = async (req, res) => {
     }
 
     if (topic === "Financas.ContaPagar.Excluido") {
+      const contaPagarOmie = event;
+
+      // const contaPagar = await ContaPagar.findOne({
+      //   codigo_lancamento_integracao:
+      //     contaPagarOmie.codigo_lancamento_integracao,
+      //   codigo_lancamento_omie: contaPagarOmie.codigo_lancamento_omie,
+      // });
+
+      // if (!contaPagar) {
+      //   return res
+      //     .status(200)
+      //     .json({ message: "Webhook recebido. Conta pagar não encontrada" });
+      // }
+
+      IntegracaoContaPagarService.create.omieCentral({
+        tipo: "excluido",
+        payload: contaPagarOmie,
+        requisicao: {
+          url: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
+          body: req.body,
+        },
+      });
       // console.log("🟥 Conta pagar excluída no omie");
       // const contaPagar = await ContaPagar.findOneAndDelete({
       //   codigo_lancamento_omie: event?.codigo_lancamento_omie,
@@ -209,7 +304,7 @@ const contaPagarWebHook = async (req, res) => {
       // }
     }
 
-    res.status(200).json({ message: "Webhook recebido. Fatura sendo gerada." });
+    res.status(200).json({ message: "Webhook recebido." });
   } catch (error) {
     console.error("Erro ao processar o webhook:", error);
     res.status(500).json({ error: "Erro ao processar o webhook." });

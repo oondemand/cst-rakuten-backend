@@ -90,6 +90,11 @@ app.use(
 );
 
 app.use(
+  "/integracao/conta-pagar/omie-central",
+  require("./routers/integracao/contaPagar/omie-central")
+);
+
+app.use(
   "/integracao/arquivos/central-omie",
   require("./routers/integracao/arquivos/central-omie")
 );
