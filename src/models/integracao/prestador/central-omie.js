@@ -7,7 +7,7 @@ const centralOmie = new mongoose.Schema(
       type: String,
       enum: ["requisicao", "reprocessar", "processando", "falhas", "sucesso"],
     },
-    payload: Object,
+    requisicao: Object,
     resposta: Object,
     erros: { type: [mongoose.Schema.Types.Mixed] },
     reprocessado: { type: Boolean, default: false },

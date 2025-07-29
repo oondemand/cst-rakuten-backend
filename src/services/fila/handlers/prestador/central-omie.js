@@ -26,7 +26,7 @@ const handler = async (integracao) => {
 
     integracao.executadoEm = new Date();
     integracao.tentativas = (integracao.tentativas || 0) + 1;
-    integracao.payload = {
+    integracao.requisicao = {
       url: `${process.env.API_OMIE}/geral/clientes/`,
       body: {
         call: prestadorOmie ? "AlterarCliente" : "IncluirCliente",
@@ -60,8 +60,6 @@ const handler = async (integracao) => {
       await Prestador.findByIdAndUpdate(integracao.prestadorId, {
         status_sincronizacao_omie: "processando",
       });
-
-      await sleep(1000 * 60); // Espera 1 minuto antes de tentar outra requisição
 
       return;
     }

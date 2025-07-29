@@ -49,7 +49,6 @@ const handler = async (integracao) => {
         ...(errors?.map((e) => e?.response?.data ?? e?.message) || []),
       ];
       await integracao.save();
-      await sleep(1000 * 60); // Espera 1 minuto antes de tentar outra requisição
 
       return;
     }
