@@ -82,7 +82,7 @@ const handler = async (integracao) => {
       });
 
       integracao.contaPagar = { ...integracao.contaPagar, ...conta };
-      integracao.payload = {
+      integracao.requisicao = {
         url: `${process.env.API_OMIE}/financas/contapagar/`,
         body: {
           call: "IncluirContaPagar",

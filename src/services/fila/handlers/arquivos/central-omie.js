@@ -42,7 +42,7 @@ const handler = async (integracao) => {
         cMd5: arquivoCompactado.md5,
       };
 
-      integracao.payload = {
+      integracao.requisicao = {
         url: `${process.env.API_OMIE}/geral/anexo/`,
         body: {
           call: "IncluirAnexo",

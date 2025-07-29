@@ -1,18 +1,16 @@
 const { default: mongoose } = require("mongoose");
 
-const centralOmie = mongoose.Schema(
+const omieCentral = mongoose.Schema(
   {
     contaPagarId: String,
+    ticketId: { type: mongoose.Types.ObjectId, ref: "Ticket" },
     etapa: {
       type: String,
-      enum: [
-        "requisicao",
-        "reprocessar",
-        "processando",
-        "falhas",
-        "upload_arquivos",
-        "sucesso",
-      ],
+      enum: ["requisicao", "reprocessar", "processando", "falhas", "sucesso"],
+    },
+    type: {
+      type: String,
+      enum: ["baixa-cancelada", "baixa-realizada", "alterado", "excluido"],
     },
     requisicao: Object,
     resposta: Object,
@@ -23,7 +21,6 @@ const centralOmie = mongoose.Schema(
     prestador: Object,
     executadoEm: Date,
     arquivado: { type: Boolean, default: false },
-    ticketId: { type: mongoose.Types.ObjectId, ref: "Ticket" },
     motivoArquivamento: {
       type: String,
       enum: ["duplicidade", "arquivado pelo usuario"],
@@ -32,4 +29,4 @@ const centralOmie = mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("IntegracaoContaPagarCentralOmie", centralOmie);
+module.exports = mongoose.model("IntegracaoContaPagarOmieCentral", omieCentral);

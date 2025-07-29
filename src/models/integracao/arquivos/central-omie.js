@@ -18,7 +18,7 @@ const centralOmie = mongoose.Schema(
         "sucesso",
       ],
     },
-    payload: Object,
+    requisicao: Object,
     resposta: Object,
     erros: { type: [mongoose.Schema.Types.Mixed] },
     reprocessado: { type: Boolean, default: false },

@@ -33,7 +33,7 @@ const centralOmie = async ({
   return integracao;
 };
 
-// const omieCentral = async ({ payload, prestador }) => {
+// const omieCentral = async ({ requisicao, prestador }) => {
 //   await IntegracaoPrestadorOmieCentral.updateMany(
 //     {
 //       codigo_cliente_omie: prestador.codigo_cliente_omie,
@@ -50,7 +50,7 @@ const centralOmie = async ({
 
 //   const integracao = await IntegracaoPrestadorOmieCentral.create({
 //     codigo_cliente_omie: prestador.codigo_cliente_omie,
-//     payload,
+//     requisicao,
 //     etapa: "requisicao",
 
 //     prestador: prestador,

@@ -423,7 +423,7 @@ exports.prestadorWebHook = async (req, res) => {
       console.log("🟨 Prestador adicionado");
       await IntegracaoPrestadorService.create.omieCentral({
         prestador: eventToPrestador({ event }),
-        payload: {
+        requisicao: {
           url: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
           body: req.body,
         },
@@ -434,7 +434,7 @@ exports.prestadorWebHook = async (req, res) => {
       console.log("🟩 Prestador alterado");
       await IntegracaoPrestadorService.create.omieCentral({
         prestador: eventToPrestador({ event }),
-        payload: {
+        requisicao: {
           url: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
           body: req.body,
         },
