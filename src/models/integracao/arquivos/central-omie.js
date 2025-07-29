@@ -23,7 +23,7 @@ const centralOmie = mongoose.Schema(
     erros: { type: [mongoose.Schema.Types.Mixed] },
     reprocessado: { type: Boolean, default: false },
     tentativas: { type: Number, default: 0 },
-    arquivos: { type: [mongoose.Schema.Types.Mixed] },
+    arquivo: Object,
     prestador: Object,
     executadoEm: Date,
     arquivado: { type: Boolean, default: false },

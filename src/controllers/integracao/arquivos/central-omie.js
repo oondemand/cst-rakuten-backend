@@ -1,4 +1,5 @@
 const IntegracaoArquivosCentralOmie = require("../../../models/integracao/arquivos/central-omie");
+const IntegracaoContaPagarCentralOmie = require("../../../models/integracao/contaPagar/central-omie");
 const ArquivosCentralOmieQueue = require("../../../services/fila/handlers/arquivos/central-omie");
 const filterUtils = require("../../../utils/filter");
 // const Prestador = require("../../../models/Prestador");
@@ -43,8 +44,26 @@ const arquivar = async (req, res) => {
         motivoArquivamento: "arquivado pelo usuario",
       });
 
+    const integracaoArquivoPendente =
+      await IntegracaoArquivosCentralOmie.findOne({
+        integracaoContaPagarId: ticketArquivado.integracaoContaPagarId,
+        arquivado: false,
+        etapa: { $nin: ["sucesso"] },
+      });
+
+    if (!integracaoArquivoPendente) {
+      await IntegracaoContaPagarCentralOmie.findByIdAndUpdate(
+        ticketArquivado.integracaoContaPagarId,
+        {
+          etapa: "sucesso",
+        }
+      );
+    }
+
     res.status(200).json(ticketArquivado);
   } catch (error) {
+    console.log(error);
+
     return res
       .status(500)
       .json("Um erro inesperado aconteceu ao arquivar item!");

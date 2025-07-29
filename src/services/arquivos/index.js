@@ -4,7 +4,7 @@ const IntegracaoArquivosCentralOmie = require("../../models/integracao/arquivos/
 const centralOmie = async ({
   contaPagar,
   prestador,
-  arquivos,
+  arquivo,
   integracaoContaPagarId,
 }) => {
   await IntegracaoArquivosCentralOmie.updateMany(
@@ -27,7 +27,7 @@ const centralOmie = async ({
     contaPagarId: contaPagar?._id,
     prestador: prestador.toObject(),
     integracaoContaPagarId,
-    arquivos: arquivos?.map((item) => item.toObject()),
+    arquivo: arquivo?.toObject(),
   });
 
   return integracao;

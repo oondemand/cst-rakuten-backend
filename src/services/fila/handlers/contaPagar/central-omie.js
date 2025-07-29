@@ -1,21 +1,17 @@
 const { createQueue } = require("../../index");
 const IntegracaoContaPagarCentralOmie = require("../../../../models/integracao/contaPagar/central-omie");
 const IntegracaoArquivosCentralOmieService = require("../../../arquivos/index");
-
-const Prestador = require("../../../../models/Prestador");
-const { retryAsync, sleep } = require("../../../../utils");
 const BaseOmie = require("../../../../models/BaseOmie");
-const {
-  buscarPrestadorOmie,
-} = require("../../../prestador/buscarPrestadorOmie");
-const clienteService = require("../../../omie/clienteService");
-const contaPagarService = require("../../../omie/contaPagarService");
-
-const { randomUUID } = require("crypto");
+const { retryAsync } = require("../../../../utils");
 const Ticket = require("../../../../models/Ticket");
 const ContaPagar = require("../../../../models/ContaPagar");
 const Sistema = require("../../../../models/Sistema");
 const { add } = require("date-fns");
+
+const {
+  buscarPrestadorOmie,
+} = require("../../../prestador/buscarPrestadorOmie");
+const contaPagarService = require("../../../omie/contaPagarService");
 
 const handler = async (integracao) => {
   if (!integracao || integracao.arquivado) return;
@@ -117,18 +113,28 @@ const handler = async (integracao) => {
         { new: true }
       );
 
-      if (ticket.arquivos?.length > 0 || ticket.documentosFiscais) {
-        IntegracaoArquivosCentralOmieService.create.centralOmie({
-          contaPagar: contaPagarCentral,
-          prestador: ticket.prestador,
-          arquivos: [
-            ...(ticket?.arquivos ? ticket.arquivos : []),
-            ...(ticket?.documentosFiscais
-              ? ticket.documentosFiscais?.map((item) => item?.arquivo)
-              : []),
-          ],
-          integracaoContaPagarId: integracao?._id,
-        });
+      if (ticket.arquivos?.length > 0) {
+        for (const arquivo of ticket.arquivos) {
+          IntegracaoArquivosCentralOmieService.create.centralOmie({
+            contaPagar: contaPagarCentral,
+            prestador: ticket.prestador,
+            arquivo: arquivo,
+            integracaoContaPagarId: integracao?._id,
+          });
+        }
+      }
+
+      if (ticket.documentosFiscais?.length > 0) {
+        for (const item of ticket.documentosFiscais) {
+          if (item?.arquivo) {
+            IntegracaoArquivosCentralOmieService.create.centralOmie({
+              contaPagar: contaPagarCentral,
+              prestador: ticket.prestador,
+              arquivo: item?.arquivo,
+              integracaoContaPagarId: integracao?._id,
+            });
+          }
+        }
       }
 
       return contaPagarOmie;
