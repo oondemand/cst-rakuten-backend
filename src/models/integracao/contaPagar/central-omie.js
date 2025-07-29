@@ -23,7 +23,7 @@ const centralOmie = mongoose.Schema(
     prestador: Object,
     executadoEm: Date,
     arquivado: { type: Boolean, default: false },
-
+    ticketId: { type: mongoose.Types.ObjectId, ref: "Ticket" },
     motivoArquivamento: {
       type: String,
       enum: ["duplicidade", "arquivado pelo usuario"],

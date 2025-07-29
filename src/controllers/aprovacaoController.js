@@ -131,6 +131,7 @@ const aprovar = async (req, res) => {
           IntegracaoContaPagarService.create.centralOmie({
             contaPagar: conta,
             prestador: ticket.prestador,
+            ticketId: ticket._id,
           });
         }
       }

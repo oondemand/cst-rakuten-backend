@@ -1,7 +1,7 @@
 const IntegracaoContaPagarCentralOmie = require("../../models/integracao/contaPagar/central-omie");
 // const IntegracaoPrestadorOmieCentral = require("../../models/integracao/prestador/omie-central");
 
-const centralOmie = async ({ contaPagar, prestador }) => {
+const centralOmie = async ({ contaPagar, prestador, ticketId }) => {
   await IntegracaoContaPagarCentralOmie.updateMany(
     {
       contaPagarId: contaPagar?._id,
@@ -21,6 +21,7 @@ const centralOmie = async ({ contaPagar, prestador }) => {
     etapa: "requisicao",
     contaPagar: contaPagar.toObject(),
     prestador: prestador.toObject(),
+    ticketId,
   });
 
   return integracao;
