@@ -118,7 +118,7 @@ const contaPagarWebHook = async (req, res) => {
 
       IntegracaoContaPagarService.create.omieCentral({
         tipo: "alterado",
-        payload: contaPagarOmie,
+        contaPagar: contaPagarOmie,
         requisicao: {
           url: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
           body: req.body,
@@ -155,7 +155,7 @@ const contaPagarWebHook = async (req, res) => {
 
       IntegracaoContaPagarService.create.omieCentral({
         tipo: "baixa-realizada",
-        payload: contaPagarOmie,
+        contaPagar: contaPagarOmie,
         requisicao: {
           url: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
           body: req.body,
@@ -211,7 +211,7 @@ const contaPagarWebHook = async (req, res) => {
 
       IntegracaoContaPagarService.create.omieCentral({
         tipo: "baixa-cancelada",
-        payload: contaPagarOmie,
+        contaPagar: contaPagarOmie,
         requisicao: {
           url: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
           body: req.body,
@@ -268,7 +268,7 @@ const contaPagarWebHook = async (req, res) => {
 
       IntegracaoContaPagarService.create.omieCentral({
         tipo: "excluido",
-        payload: contaPagarOmie,
+        contaPagar: contaPagarOmie,
         requisicao: {
           url: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
           body: req.body,

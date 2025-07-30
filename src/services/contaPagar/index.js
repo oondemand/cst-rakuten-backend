@@ -22,11 +22,11 @@ const centralOmie = async ({ contaPagar, prestador, ticketId }) => {
   return integracao;
 };
 
-const omieCentral = async ({ tipo, requisicao, payload }) => {
+const omieCentral = async ({ tipo, requisicao, contaPagar, prestador }) => {
   await IntegracaoContaPagarOmieCentral.updateMany(
     {
-      codigo_lancamento_integracao: payload.codigo_lancamento_integracao,
-      codigo_lancamento_omie: payload.codigo_lancamento_omie,
+      codigo_lancamento_integracao: contaPagar.codigo_lancamento_integracao,
+      codigo_lancamento_omie: contaPagar.codigo_lancamento_omie,
       arquivado: false,
       etapa: { $in: ["falhas", "reprocessar", "requisicao"] },
     },
@@ -39,11 +39,12 @@ const omieCentral = async ({ tipo, requisicao, payload }) => {
   );
 
   const integracao = await IntegracaoContaPagarOmieCentral.create({
-    codigo_lancamento_integracao: payload.codigo_lancamento_integracao,
-    codigo_lancamento_omie: payload.codigo_lancamento_omie,
+    codigo_lancamento_integracao: contaPagar.codigo_lancamento_integracao,
+    codigo_lancamento_omie: contaPagar.codigo_lancamento_omie,
     etapa: "requisicao",
     requisicao,
-    payload,
+    contaPagar,
+    prestador,
     tipo,
   });
 

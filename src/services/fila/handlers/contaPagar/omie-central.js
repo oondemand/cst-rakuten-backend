@@ -28,10 +28,11 @@ const handler = async (integracao) => {
         const contaPagar = await ContaPagar.findOneAndUpdate(
           {
             codigo_lancamento_integracao:
-              integracao.payload.codigo_lancamento_integracao,
-            codigo_lancamento_omie: integracao.payload.codigo_lancamento_omie,
+              integracao.contaPagar.codigo_lancamento_integracao,
+            codigo_lancamento_omie:
+              integracao.contaPagar.codigo_lancamento_omie,
           },
-          { ...integracao.payload, status_titulo: "pago" }
+          { ...integracao.contaPagar, status_titulo: "pago" }
         );
 
         if (!contaPagar) throw new Error("Conta pagar não encontrada.");
@@ -39,7 +40,12 @@ const handler = async (integracao) => {
         const ticket = await Ticket.findOneAndUpdate(
           { contaPagarOmie: contaPagar._id },
           { status: "concluido", etapa: "concluido" }
-        );
+        ).populate("prestador");
+
+        console.log("Prestador", ticket?.prestador);
+
+        integracao.prestador = ticket?.prestador?.toObject();
+        await integracao.save();
 
         if (ticket?.servicos.length > 0) {
           await Servico.updateMany(
@@ -62,10 +68,11 @@ const handler = async (integracao) => {
         const contaPagar = await ContaPagar.findOneAndUpdate(
           {
             codigo_lancamento_integracao:
-              integracao.payload.codigo_lancamento_integracao,
-            codigo_lancamento_omie: integracao.payload.codigo_lancamento_omie,
+              integracao.contaPagar.codigo_lancamento_integracao,
+            codigo_lancamento_omie:
+              integracao.contaPagar.codigo_lancamento_omie,
           },
-          { ...integracao.payload, status_titulo: "A vencer" }
+          { ...integracao.contaPagar, status_titulo: "A vencer" }
         );
 
         if (!contaPagar) throw new Error("Conta pagar não encontrada.");
@@ -73,7 +80,10 @@ const handler = async (integracao) => {
         const ticket = await Ticket.findOneAndUpdate(
           { contaPagarOmie: contaPagar._id },
           { status: "trabalhando", etapa: "conta-pagar-omie-central" }
-        );
+        ).populate("prestador");
+
+        integracao.prestador = ticket?.prestador?.toObject();
+        await integracao.save();
 
         if (ticket?.servicos.length > 0) {
           await Servico.updateMany(
@@ -95,8 +105,8 @@ const handler = async (integracao) => {
       if (integracao.tipo === "excluido") {
         const contaPagar = await ContaPagar.findOneAndDelete({
           codigo_lancamento_integracao:
-            integracao.payload.codigo_lancamento_integracao,
-          codigo_lancamento_omie: integracao.payload.codigo_lancamento_omie,
+            integracao.contaPagar.codigo_lancamento_integracao,
+          codigo_lancamento_omie: integracao.contaPagar.codigo_lancamento_omie,
         });
 
         if (!contaPagar) throw new Error("Conta pagar não encontrada.");
@@ -109,7 +119,10 @@ const handler = async (integracao) => {
             contaPagarOmie: null,
             observacao: "[CONTA A PAGAR REMOVIDA DO OMIE]",
           }
-        );
+        ).populate("prestador");
+
+        integracao.prestador = ticket?.prestador?.toObject();
+        await integracao.save();
 
         if (ticket?.servicos.length > 0) {
           await Servico.updateMany(
@@ -129,27 +142,29 @@ const handler = async (integracao) => {
       }
 
       if (integracao.tipo === "alterado") {
-        console.log("[Payload]", integracao.payload);
-
         const contaPagar = await ContaPagar.findOneAndUpdate(
           {
-            codigo_lancamento_omie: integracao?.payload.codigo_lancamento_omie,
+            codigo_lancamento_omie:
+              integracao?.contaPagar.codigo_lancamento_omie,
           },
           {
-            ...integracao?.payload,
-            status_titulo: integracao?.payload?.situacao,
+            ...integracao?.contaPagar,
+            status_titulo: integracao?.contaPagar?.situacao,
           }
         );
 
-        if (contaPagar) {
-          await Ticket.findOneAndUpdate(
-            { contaPagarOmie: contaPagar?._id },
-            {
-              etapa: "conta-pagar-omie-central",
-              status: "trabalhando",
-            }
-          );
-        }
+        if (!contaPagar) throw new Error("Conta pagar não encontrada.");
+
+        const ticket = await Ticket.findOneAndUpdate(
+          { contaPagarOmie: contaPagar?._id },
+          {
+            etapa: "conta-pagar-omie-central",
+            status: "trabalhando",
+          }
+        );
+
+        integracao.prestador = ticket?.prestador?.toObject();
+        await integracao.save();
 
         return { message: "Conta pagar sincronizada com sucesso!" };
       }
@@ -178,10 +193,6 @@ const handler = async (integracao) => {
     }
 
     if (result) {
-      // ticket.arquivos?.length > 0
-      //   ? (integracao.etapa = "upload_arquivos")
-      //   : (integracao.etapa = "sucesso");
-
       integracao.resposta = result;
       integracao.etapa = "sucesso";
       integracao.erros = [

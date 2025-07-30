@@ -3,7 +3,6 @@ const { default: mongoose } = require("mongoose");
 const omieCentral = mongoose.Schema(
   {
     ticket: { type: mongoose.Types.ObjectId, ref: "Ticket" },
-    // contaPagar: { type: mongoose.Types.ObjectId, ref: "ContaPagar" },
     codigo_lancamento_integracao: String,
     codigo_lancamento_omie: String,
     etapa: {
@@ -20,9 +19,8 @@ const omieCentral = mongoose.Schema(
     erros: { type: [mongoose.Schema.Types.Mixed] },
     reprocessado: { type: Boolean, default: false },
     tentativas: { type: Number, default: 0 },
-    payload: Object,
-    // contaPagar: Object,
-    // prestador: Object,
+    contaPagar: Object,
+    prestador: Object,
     executadoEm: Date,
     arquivado: { type: Boolean, default: false },
     motivoArquivamento: {

@@ -13,9 +13,6 @@ const router = Router();
 router.get("/servicos/valores", valoresPorStatus);
 router.get("/tickets/status", ticketsPorStatus);
 router.get("/tickets/etapa", ticketsPorEtapa);
-router.get(
-  "/integracao/prestador/central-omie",
-  integracaoPrestadorOmieCentralPorEtapa
-);
+router.get("/integracao", integracaoPrestadorOmieCentralPorEtapa);
 
 module.exports = router;
