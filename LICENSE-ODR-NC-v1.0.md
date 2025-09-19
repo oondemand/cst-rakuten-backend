@@ -34,7 +34,7 @@ Qualquer permissão de Uso Comercial deverá:
 
 ## 6. Cláusula Penal (Multa) por Uso Indevido
 O uso em desacordo com esta Licença (incluindo Uso Comercial sem autorização) sujeitará a Licenciada ao pagamento de **cláusula penal não compensatória** no valor de **R$ 600.000,00 (seiscentos mil reais) por infração**, **cumulável** com:
-- **R$ 5.000,00 (cinco mil reais) por dia** enquanto perdurar a infração; e
+- **R$ 10.000,00 (dez mil reais) por dia** enquanto perdurar a infração; e
 - Indenização adicional por **perdas e danos** e **honorários advocatícios**.
 A aplicação desta cláusula penal **não limita** o direito da Licenciante de buscar tutela específica, inclusive **medidas liminares/inibitórias**.
 
@@ -77,16 +77,3 @@ Copie e adapte o bloco conforme a linguagem:
  Licença ODR‑NC v1.0 — Uso interno não comercial. Proibida revenda/redistribuição/uso comercial sem autorização expressa da OonDemand. Violação sujeita à multa, conforme LICENSE.md.
  (c) 2025 OonDemand. Todos os direitos reservados.
 */
-
-### Python
-"""
-OonDemand — Código-Fonte Proprietário
-Licença ODR‑NC v1.0 — Uso interno não comercial. Proibida revenda/redistribuição/uso comercial sem autorização expressa da OonDemand. Violação sujeita à multa, conforme LICENSE.md.
-(c) 2025 OonDemand. Todos os direitos reservados.
-"""
-
-### Shell/YAML
-# OonDemand — Código-Fonte Proprietário
-# Licença ODR‑NC v1.0 — Uso interno não comercial. Proibida revenda/redistribuição/uso comercial sem autorização expressa da OonDemand. Violação sujeita à multa, conforme LICENSE.md.
-# (c) 2025 OonDemand. Todos os direitos reservados.
-
