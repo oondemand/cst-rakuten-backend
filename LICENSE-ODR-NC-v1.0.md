@@ -32,11 +32,30 @@ Qualquer permissão de Uso Comercial deverá:
 - Constar em contrato específico **ou** no arquivo `AUTORIZACOES.md` deste repositório, com **razão social/CNPJ**, **escopo**, **prazo** e **condições comerciais**; e
 - Ser **revogável** por descumprimento.
 
-## 6. Cláusula Penal (Multa) por Uso Indevido
-O uso em desacordo com esta Licença (incluindo Uso Comercial sem autorização) sujeitará a Licenciada ao pagamento de **cláusula penal não compensatória** no valor de **R$ 600.000,00 (seiscentos mil reais) por infração**, **cumulável** com:
-- **R$ 10.000,00 (dez mil reais) por dia** enquanto perdurar a infração; e
-- Indenização adicional por **perdas e danos** e **honorários advocatícios**.
-A aplicação desta cláusula penal **não limita** o direito da Licenciante de buscar tutela específica, inclusive **medidas liminares/inibitórias**.
+## 6. Cláusula Penal e Indenização Integral
+
+### 6.1 Penalidade mínima
+
+O uso em desacordo com esta Licença sujeitará a Licenciada ao pagamento de **cláusula penal não compensatória** no valor de **R\$ 600.000,00 (seiscentos mil reais) por infração**, acrescida de multa de **R\$ 10.000,00 (dez mil reais) por dia** enquanto perdurar a infração.
+
+Esse valor constitui **piso mínimo**, jamais limitando o direito da Licenciante de buscar indenização integral.
+
+### 6.2 Indenização integral
+
+A indenização devida será calculada considerando, cumulativa ou alternativamente:
+
+1. **Ganhos econômicos indevidos** da Licenciada ou de terceiros, obtidos por meio da exploração ilícita;
+2. **Valor de mercado de contratos celebrados** ou mantidos em razão do uso indevido do Código;
+3. **Multas e passivos regulatórios** evitados pela utilização do Código em conformidade com a LGPD, compliance financeiro e regras de auditoria;
+4. **Danos reputacionais e morais empresariais** da Licenciante.
+
+### 6.3 Valor de referência
+
+Para fins de liquidação judicial ou arbitral, a indenização será estimada:
+
+* Pelo **valor de mercado da licença comercial plena** do Código; ou
+* Pelos **royalties razoáveis** que seriam devidos em condições normais de negociação; ou
+* Pelo **valor total dos riscos e ganhos econômicos** diretamente associados ao uso do Código.
 
 ## 7. Confidencialidade
 O Código e a documentação correlata constituem **informação confidencial**. A Licenciada deve preservá-la com o mesmo grau de zelo usado para suas informações confidenciais, nunca inferior ao razoável.
@@ -51,27 +70,14 @@ Esta Licença vigora enquanto o Código estiver em posse da Licenciada e poderá
 Componentes de terceiros incluídos no repositório permanecem regidos por suas **próprias licenças**. Em caso de conflito, prevalece a licença do respectivo terceiro para tal componente.
 
 ## 11. Lei Aplicável e Foro
-Aplica-se a legislação brasileira. Fica eleito o **Foro da Comarca de São Paulo/SP**, com renúncia a qualquer outro, por mais privilegiado que seja.
+Aplica-se a legislação brasileira. Fica eleito o **Foro da Comarca de São Bernardo do Campo/SP**, com renúncia a qualquer outro, por mais privilegiado que seja.
 
 ## 12. Disposições Finais
 Se qualquer cláusula for considerada inválida, as demais permanecem válidas. Qualquer tolerância não implicará renúncia. Esta é a versão **ODR‑NC v1.0**. A Licenciante poderá publicar **atualizações** desta Licença; versões futuras não terão efeito retroativo sem aceite da Licenciada.
 
 ---
 
-### Identificação de Autorização (opcional, para uso interno)
-> Este repositório está licenciado para uso interno por: **[RAZÃO SOCIAL]**, **CNPJ [XX.XXX.XXX/0001-XX]**, conforme autorização datada de **[DATA]** e/ou contrato específico. Escopo: **[DESCREVER]**.
-
-### Como cumprir esta Licença
-1) Mantenha este arquivo `LICENSE.md` na raiz do repositório;  
-2) Liste autorizações de uso comercial, se houver, em `AUTORIZACOES.md`; e  
-3) Inclua o cabeçalho de licença abaixo em **cada arquivo-fonte**.
-
----
-
 ## Cabeçalho de Licença para Arquivos-Fonte
-Copie e adapte o bloco conforme a linguagem:
-
-### Padrão (C/Java/JS/TS)
 /*
  OonDemand — Código-Fonte Proprietário
  Licença ODR‑NC v1.0 — Uso interno não comercial. Proibida revenda/redistribuição/uso comercial sem autorização expressa da OonDemand. Violação sujeita à multa, conforme LICENSE.md.
